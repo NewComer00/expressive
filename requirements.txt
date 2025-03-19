@@ -1,0 +1,15 @@
+numpy<2
+tensorflow==2.10
+nvidia-cuda-runtime-cu11
+nvidia-cublas-cu11
+nvidia-cusolver-cu11
+nvidia-cusparse-cu11
+nvidia-cudnn-cu11==8
+crepe
+oyaml
+fastdtw
+scipy
+yamlcore
+platformdirs
+librosa
+matplotlib
