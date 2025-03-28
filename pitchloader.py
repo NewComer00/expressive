@@ -537,11 +537,11 @@ if __name__ == '__main__':
     # clear_cache()
 
     # Load USTX file and extract tempo
-    ustx_dict = load_ustx(ustx_path="examples/Прекрасное Далеко/input.ustx")
+    ustx_dict = load_ustx(ustx_path="examples/Прекрасное Далеко/project.ustx")
     tempo = ustx_dict['tempos'][0]['bpm']
 
     # Extract pitch features from WAV files
-    input_wav = "examples/Прекрасное Далеко/input.wav"
+    input_wav = "examples/Прекрасное Далеко/utau.wav"
     utau_tick, utau_pitch, utau_features = get_wav_features(
         wav_path=input_wav,
         tempo=tempo,

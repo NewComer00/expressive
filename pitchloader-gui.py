@@ -435,9 +435,10 @@ class PitchLoaderGUI:
 if __name__ == "__main__":
     add_cuda_path()
 
-    # DPI Setting
+    # DPI Setting for Windows
     # https://stackoverflow.com/a/70720420/15283141
-    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    if os.name == "nt":
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
     root = tk.Tk()
 

@@ -6,7 +6,7 @@
 
 
 ## 适用平台
-- Windows >= 10
+- Windows / Linux
 - OpenUtau
 - Python 3.8 - 3.10 *
 
@@ -46,7 +46,7 @@
 ### 平台
 - [x] NVIDIA GPU 加速
 - [x] Windows 适配
-- [ ] Linux 适配
+- [x] Linux 适配
 
 ## 已知问题
 1. 目前尚不支持单轨道内`Tempo`的变化，全工程请使用同一个`Tempo`。未来版本将做出修复。
@@ -59,6 +59,11 @@
 克隆本仓库的最新内容
 ```sh
 git clone https://github.com/NewComer00/openutau-pitchloader.git --depth 1
+```
+
+进入仓库所在目录
+```sh
+cd openutau-pitchloader
 ```
 
 在当前Python环境中下载并安装依赖包

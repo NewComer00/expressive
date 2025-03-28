@@ -7,7 +7,7 @@ nvidia-cusolver-cu11
 nvidia-cusparse-cu11
 nvidia-cufft-cu11
 nvidia-curand-cu11
-nvidia-cudnn-cu11==8
+nvidia-cudnn-cu11==8.*
 crepe
 oyaml
 fastdtw
@@ -16,4 +16,4 @@ yamlcore
 platformdirs
 librosa
 matplotlib
-sklearn
+scikit-learn
