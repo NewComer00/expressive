@@ -5,6 +5,14 @@
 当前版本仅支持`Pitch Deviation`表情参数导入，故本应用的暂用名为“Pitchloader”。
 
 
+<p align="middle">
+  <img src="https://github.com/user-attachments/assets/98113e7e-a512-4ad5-9dd6-822af82f21af" width="45%" />
+  <img src="https://github.com/user-attachments/assets/02c1bea8-1367-4f7d-a5c9-578bb2205995" width="45%" /> 
+</p>
+
+OpenUtau from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)  
+Singer from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)
+
 ## 适用平台
 - Windows / Linux
 - OpenUtau
