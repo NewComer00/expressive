@@ -73,7 +73,7 @@ graph TD;
 
     time_algn["Time Alignment<br>FastDTW"]
     feat_ext-->time_algn
-    ustx_in--Tempo-->time_algn
+    ustx_in-->|Tempo|time_algn
 
     pitch_algn["Pitch Alignment"]
     time_algn-->pitch_algn
