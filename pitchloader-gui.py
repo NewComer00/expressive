@@ -313,41 +313,39 @@ class PitchLoaderGUI:
                 ustx_tempo = ustx_dict['tempos'][0]['bpm']
                 self.progress_bar.step(10)
 
-                # Step 2: Extract USTX WAV features
+                # Step 2: Extract UTAU WAV features
                 self.update_status(_("Extracting pitch from USTX WAV..."))
-                utau_tick, utau_pitch, utau_features = pitchloader.get_wav_features(
+                utau_time, utau_pitch, utau_features = pitchloader.get_wav_features(
                     self.settings.utau_wav_path,
-                    tempo=ustx_tempo,
                     confidence_threshold=self.settings.confidence_threshold_u
                 )
                 self.progress_bar.step(10)
 
                 # Step 3: Extract Reference WAV features
                 self.update_status(_("Extracting pitch from Reference WAV..."))
-                ref_tick, ref_pitch, ref_features = pitchloader.get_wav_features(
+                ref_time, ref_pitch, ref_features = pitchloader.get_wav_features(
                     self.settings.ref_wav_path,
-                    tempo=ustx_tempo,
                     confidence_threshold=self.settings.confidence_threshold_r
                 )
                 self.progress_bar.step(20)
 
-                seqs_to_plot = [(_("Ref. WAV Pitch"), ref_tick, ref_pitch, 'b'),
-                                (_("USTX WAV Pitch"), utau_tick, utau_pitch, 'r')]
+                seqs_to_plot = [(_("Ref. WAV Pitch"), ref_time, ref_pitch, 'b'),
+                                (_("USTX WAV Pitch"), utau_time, utau_pitch, 'r')]
                 for (l, t, s, c) in seqs_to_plot:
-                    self.ax1.scatter(pitchloader.ticks_to_time(t, ustx_tempo),
-                                     s, label=l, color=c, lw=0, alpha=0.5, s=3)
+                    self.ax1.scatter(t, s, label=l, color=c, lw=0, alpha=0.5, s=3)
                 self.ax1.legend(fontsize='xx-small')
                 self.canvas.draw()
 
-                # Step 4: Align sequence time
+                # Step 4: Align all sequences to a common MIDI tick time base
                 # NOTICE: UTAU WAV is the reference, and Ref. WAV is the query
                 self.update_status(_("Aligning sequence time..."))
                 unified_tick, (time_aligned_ref_pitch, *_unused), (unified_utau_pitch, *_unused) = \
-                    pitchloader.align_sequence_time(
-                        query_time=ref_tick,
+                    pitchloader.align_sequence_tick(
+                        query_time=ref_time,
                         queries=(ref_pitch, *ref_features),
-                        reference_time=utau_tick,
+                        reference_time=utau_time,
                         references=(utau_pitch, *utau_features),
+                        tempo=ustx_tempo,
                         align_radius=self.settings.time_align_radius
                     )
                 self.progress_bar.step(20)

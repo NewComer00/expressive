@@ -59,6 +59,32 @@ Singer from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://gi
 ## 已知问题
 1. 目前尚不支持单轨道内`Tempo`的变化，全工程请使用同一个`Tempo`。未来版本将做出修复。
 
+## 算法原理
+```mermaid
+graph TD;
+    ustx_in[/"OpenUtau Project (USTX)"/]
+    refwav[/"Reference WAV"/]
+    utauwav[/"OpenUtau WAV"/]
+    ustx_in-.->|Export|utauwav
+
+    feat_ext["Features Extraction<br>Pitch & MFCC"]
+    refwav-->feat_ext
+    utauwav-->feat_ext
+
+    time_algn["Time Alignment<br>FastDTW"]
+    feat_ext-->time_algn
+    ustx_in--Tempo-->time_algn
+
+    pitch_algn["Pitch Alignment"]
+    time_algn-->pitch_algn
+
+    get_pdev["Get Pitch Deviation"]
+    pitch_algn-->get_pdev
+
+    utsx_out[/"OpenUtau Project Output"/]
+    get_pdev-->utsx_out
+```
+
 ## 部署步骤
 - **注意 1**：本项目仓库使用[Git LFS](https://git-lfs.com/)技术来存放`examples/`目录下的示例音频文件。在克隆项目前，请确保已安装相关支持，否则将无法访问这些文件。
 

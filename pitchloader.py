@@ -357,7 +357,7 @@ def sequence_interval_intersection(seqs):
             if min_val <= x <= max_val]
 
 
-def unify_sequence_time(seq_times, seq_vals):
+def unify_sequence_time(seq_times, seq_vals, to_ticks=False, tempo=120, ppqn=480):
     """Unify multiple sequences to a common time base.
 
     This function aligns multiple sequences to a common time base by interpolating values.
@@ -365,18 +365,31 @@ def unify_sequence_time(seq_times, seq_vals):
     Args:
         seq_times (list of array-like): List of time sequences. Shape: (n_sequences, n_time_points).
         seq_vals (list of array-like): List of value sequences. Shape: (n_sequences, n_time_points).
+        to_ticks (bool, optional): Whether to convert time to MIDI ticks. Defaults to False.
+        tempo (float, optional): Tempo in beats per minute (BPM). Defaults to 120.
+        ppqn (int, optional): Pulses per quarter note (MIDI resolution). Defaults to 480.
 
     Returns:
-        tuple: (unified_seq_time, unified_seqs_val), where:
-            - unified_seq_time (numpy.ndarray): Unified time base. Shape: (n_time_points).
-            - unified_seqs_val (tuple): Unified value sequences. Shape: (n_sequences, n_time_points).
+        tuple: (unified_time, unified_seqs), where:
+            - unified_time (numpy.ndarray): Unified time points. Shape: (n_time_points).
+            - unified_seqs (tuple): Unified sequences. Shape: (n_sequences, n_time_points).
     """
     unified_seq_time = np.array(
         sequence_interval_intersection(seq_times))
-    unified_seq_time = np.unique(np.round(unified_seq_time).astype(int))
-    unified_seqs_val = [interp1d(st, sv, fill_value="extrapolate")(unified_seq_time) \
-            for (st, sv) in zip(seq_times, seq_vals)]
-    return unified_seq_time, tuple(unified_seqs_val)
+    if not to_ticks:
+        unified_seq_time = np.unique(unified_seq_time)
+        unified_seqs_val = [interp1d(st, sv, fill_value="extrapolate")(unified_seq_time) \
+                for (st, sv) in zip(seq_times, seq_vals)]
+        return unified_seq_time, tuple(unified_seqs_val)
+
+    else:
+        unified_seq_ticks = time_to_ticks(unified_seq_time, tempo, ppqn)
+        unified_seq_ticks = np.unique(np.round(unified_seq_ticks).astype(int))
+
+        time_mapping = ticks_to_time(unified_seq_ticks, tempo, ppqn)
+        unified_seqs_val = [interp1d(st, sv, fill_value="extrapolate")(time_mapping) \
+                for (st, sv) in zip(seq_times, seq_vals)]
+        return unified_seq_ticks, tuple(unified_seqs_val)
 
 
 def gaussian_filter1d_with_nan(seq, sigma, **kwargs):
@@ -435,16 +448,13 @@ def extract_wav_mfcc(wav_path, n_feat=6, n_mfcc=13):
 
 
 # TODO: Deal with different tempo or ppqn within the same USTX file
-def get_wav_features(wav_path, tempo=120, ppqn=480,
-                       confidence_threshold=0.8, confidence_filter_size=9):
+def get_wav_features(wav_path, confidence_threshold=0.8, confidence_filter_size=9):
     """Extract features from a WAV file.
 
     This function extracts pitch and MFCC features from a WAV file, aligning them to a common time base.
 
     Args:
         wav_path (str): Path to the WAV file.
-        tempo (float, optional): Tempo in beats per minute (BPM). Defaults to 120.
-        ppqn (int, optional): Pulses per quarter note (MIDI resolution). Defaults to 480.
         confidence_threshold (float, optional): Confidence threshold for pitch detection. Defaults to 0.8.
         confidence_filter_size (int, optional): Size of the median filter for confidence. Defaults to 9.
 
@@ -463,45 +473,46 @@ def get_wav_features(wav_path, tempo=120, ppqn=480,
                    kernel_size=confidence_filter_size) < confidence_threshold
     (pitch := np.array(frequency))[mask] = np.nan
 
-    pitch_tick = time_to_ticks(time, tempo, ppqn)
-    feature_times += [pitch_tick]
+    pitch_time = time
+    feature_times += [pitch_time]
     feature_vals += [pitch]
 
     # Extract pitch dynamics trends
     pitch_features = extract_pitch_dynamics_trends(pitch)
-    feature_times += [pitch_tick] * len(pitch_features)
+    feature_times += [pitch_time] * len(pitch_features)
     feature_vals += list(pitch_features)
     
     # Extract MFCC features
     mfcc_time, mfcc = extract_wav_mfcc(wav_path)
-    mfcc_tick = time_to_ticks(mfcc_time, tempo, ppqn)
-    feature_times += [mfcc_tick] * len(mfcc)
+    feature_times += [mfcc_time] * len(mfcc)
     feature_vals += list(mfcc)
 
     # Unified time and features
-    wav_tick, (wav_pitch, *wav_features) = \
+    wav_time, (wav_pitch, *wav_features) = \
         unify_sequence_time(
             seq_times=feature_times, 
             seq_vals=feature_vals
         )
-    return wav_tick, wav_pitch, wav_features
+    return wav_time, wav_pitch, wav_features
 
 
-def align_sequence_time(query_time, queries, reference_time, references, align_radius=1):
-    """Align sequences to a common time base using dynamic time warping.
+def align_sequence_tick(query_time, queries, reference_time, references, tempo=120, ppqn=480, align_radius=1):
+    """Align sequences to a common MIDI tick time base.
 
-    This function aligns multiple sequences to a common time base using dynamic time warping.
+    This function aligns sequences to a common MIDI tick time base using dynamic time warping.
 
     Args:
         query_time (numpy.ndarray): Time values for the query sequences. Shape: (n_time_points).
         queries (tuple): Query sequences to align. Shape: (n_sequences, n_time_points).
         reference_time (numpy.ndarray): Time values for the reference sequences. Shape: (n_time_points).
         references (tuple): Reference sequences to align. Shape: (n_sequences, n_time_points).
+        tempo (float, optional): Tempo in beats per minute (BPM). Defaults to 120.
+        ppqn (int, optional): Pulses per quarter note (MIDI resolution). Defaults to 480.
         align_radius (int, optional): Radius for dynamic time warping. Defaults to 1.
 
     Returns:
-        tuple: (unified_time, aligned_queries, unified_references), where:
-            - unified_time (numpy.ndarray): Unified time base. Shape: (n_time_points).
+        tuple: (unified_tick, aligned_queries, unified_references), where:
+            - unified_tick (numpy.ndarray): Unified MIDI tick time base. Shape: (n_time_points).
             - aligned_queries (tuple): Aligned query sequences. Shape: (n_sequences, n_time_points).
             - unified_references (tuple): Unified reference sequences. Shape: (n_sequences, n_time_points).
     """
@@ -509,8 +520,9 @@ def align_sequence_time(query_time, queries, reference_time, references, align_r
     reference_times = [reference_time] * len(references)
     
     # Unify time and sequences
-    unified_time, seqs = unify_sequence_time(
-        (*query_times, *reference_times), (*queries, *references))
+    unified_tick, seqs = unify_sequence_time(
+        (*query_times, *reference_times), (*queries, *references),
+        to_ticks=True, tempo=tempo, ppqn=ppqn)
     unified_queries = list(seqs)[:len(queries)]
     unified_references = list(seqs)[len(queries):]
 
@@ -525,12 +537,12 @@ def align_sequence_time(query_time, queries, reference_time, references, align_r
     path = np.array(path)
     aligned_queries = []
     for q in unified_queries:
-        aligned_time = np.interp(path[:, 1], np.arange(len(unified_time)), unified_time)
+        aligned_tick = np.interp(path[:, 1], np.arange(len(unified_tick)), unified_tick)
         aligned_seq = np.interp(path[:, 0], np.arange(len(q)), q)
-        interp_seq = interp1d(aligned_time, aligned_seq, fill_value="extrapolate")
-        aligned_queries.append(interp_seq(unified_time))
+        interp_seq = interp1d(aligned_tick, aligned_seq, fill_value="extrapolate")
+        aligned_queries.append(interp_seq(unified_tick))
 
-    return unified_time, tuple(aligned_queries), tuple(unified_references)
+    return unified_tick, tuple(aligned_queries), tuple(unified_references)
 
 
 if __name__ == '__main__':
@@ -542,28 +554,27 @@ if __name__ == '__main__':
 
     # Extract pitch features from WAV files
     input_wav = "examples/Прекрасное Далеко/utau.wav"
-    utau_tick, utau_pitch, utau_features = get_wav_features(
+    utau_time, utau_pitch, utau_features = get_wav_features(
         wav_path=input_wav,
-        tempo=tempo,
         confidence_threshold=0.6
     )
 
     # Extract pitch features from reference WAV file
     reference_wav = "examples/Прекрасное Далеко/reference.wav"
-    ref_tick, ref_pitch, ref_features = get_wav_features(
+    ref_time, ref_pitch, ref_features = get_wav_features(
         wav_path=reference_wav,
-        tempo=tempo,
         confidence_threshold=0.8
     )
 
-    # Align all features to a common time base
+    # Align all sequences to a common MIDI tick time base
     # NOTICE: features from UTAU WAV are the reference, and those from Ref. WAV are the query
     unified_tick, (time_aligned_ref_pitch, *_), (unified_utau_pitch, *_) = \
-        align_sequence_time(
-            query_time=ref_tick,
+        align_sequence_tick(
+            query_time=ref_time,
             queries=(ref_pitch, *ref_features),
-            reference_time=utau_tick,
+            reference_time=utau_time,
             references=(utau_pitch, *utau_features),
+            tempo=tempo,
             align_radius=1
         )
 
