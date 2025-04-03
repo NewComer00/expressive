@@ -90,9 +90,9 @@ graph TD;
 
 - **注意 2**：此项目的Python依赖包数量较多，本地部署时建议使用虚拟环境。
 
-克隆本仓库的最新内容
+克隆本仓库`pitchloader`分支的最新内容
 ```sh
-git clone https://github.com/NewComer00/openutau-pitchloader.git --depth 1
+git clone -b pitchloader --single-branch https://github.com/NewComer00/openutau-pitchloader.git
 ```
 
 进入仓库所在目录
