@@ -17,3 +17,5 @@ platformdirs
 librosa
 matplotlib
 scikit-learn
+nicegui
+pywebview
