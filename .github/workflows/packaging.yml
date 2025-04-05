@@ -24,6 +24,7 @@ jobs:
         else
           echo "TAG_NAME=${GITHUB_SHA}" >> $GITHUB_ENV
         fi
+      shell: bash
 
     - name: Set up Python
       uses: actions/setup-python@v2
@@ -51,6 +52,7 @@ jobs:
       run: |
         # Use the version in the Inno Setup script
         sed -i "s/!define AppVersion \".*\"/!define AppVersion \"${{ env.TAG_NAME }}\"/" build/installer.iss
+      shell: bash
 
     - name: Create installer with Inno Setup
       run: |
