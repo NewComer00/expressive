@@ -1,3 +1,7 @@
+<p align="middle">
+  <img src="assets/splash/normal.png" width="50%" /> 
+</p>
+
 # Expressive
 
 针对 [OpenUtau](https://github.com/stakira/OpenUtau) 开发的表情参数导入工具，用于从现实歌手的人声中提取表情，并导入到工程的相应轨道上。
