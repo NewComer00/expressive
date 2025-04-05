@@ -1,10 +1,12 @@
 from itertools import accumulate
+from types import SimpleNamespace
 
 import librosa
 import numpy as np
 from scipy.stats import zscore
 
-from .base import ExpressionLoader, register_expression
+from .base import Args, ExpressionLoader, register_expression
+from utils.i18n import _
 from utils.seqtool import (
     unify_sequence_time,
     align_sequence_tick,
@@ -15,6 +17,11 @@ from utils.seqtool import (
 @register_expression
 class DynLoader(ExpressionLoader):
     expression_name = "dyn"
+    args = SimpleNamespace(
+        align_radius    = Args(name="align_radius",    type=int,   default=1,    help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),
+        smoothness      = Args(name="smoothness",      type=int,   default=2,    help=_("Smoothness of the expression curve")),
+        scaler          = Args(name="scaler",          type=float, default=2.0,  help=_("Scaling factor for the expression curve")),
+    )
 
     def get_expression(self, align_radius=1, smoothness=2, scaler=2.0):
         # Extract rms features from WAV files

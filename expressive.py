@@ -1,7 +1,7 @@
 from shutil import copy
 
 from utils.gpu import add_cuda11_to_path
-from expressions.base import createExpressionLoader
+from expressions.base import getExpressionLoader
 
 
 def process_expressions(
@@ -11,7 +11,7 @@ def process_expressions(
 
     for exp in expressions:
         exp_type = exp["expression"]
-        loader = createExpressionLoader(exp_type)(ref_wav, utau_wav, ustx_output)
+        loader = getExpressionLoader(exp_type)(ref_wav, utau_wav, ustx_output)
 
         if exp_type == "dyn":
             loader.get_expression(
@@ -36,26 +36,26 @@ def process_expressions(
 if __name__ == "__main__":
     add_cuda11_to_path()
 
-    utau_wav = "examples/Прекрасное Далеко/utau.wav"
-    ref_wav = "examples/Прекрасное Далеко/reference.wav"
-    ustx_input = "examples/Прекрасное Далеко/project.ustx"
-    ustx_output = "examples/Прекрасное Далеко/output.ustx"
+    utau_wav     = "examples/Прекрасное Далеко/utau.wav"
+    ref_wav      = "examples/Прекрасное Далеко/reference.wav"
+    ustx_input   = "examples/Прекрасное Далеко/project.ustx"
+    ustx_output  = "examples/Прекрасное Далеко/output.ustx"
     track_number = 1
-    expressions = [
+    expressions  = [
         {
-            "expression": "dyn",
+            "expression"  : "dyn",
             "align_radius": 1,
-            "smoothness": 2,
-            "scaler": 2.0,
+            "smoothness"  : 2,
+            "scaler"      : 2.0,
         },
         {
-            "expression": "pitd",
+            "expression"     : "pitd",
             "confidence_utau": 0.8,
-            "confidence_ref": 0.6,
-            "align_radius": 1,
-            "semitone_shift": None,
-            "smoothness": 2,
-            "scaler": 2.0,
+            "confidence_ref" : 0.6,
+            "align_radius"   : 1,
+            "semitone_shift" : None,
+            "smoothness"     : 2,
+            "scaler"         : 2.0,
         },
     ]
 

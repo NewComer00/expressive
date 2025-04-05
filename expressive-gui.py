@@ -1,3 +1,13 @@
+
+import os, argparse
+from utils.i18n import _, init_gettext
+parser = argparse.ArgumentParser(description='Choose application language.')
+parser.add_argument('--lang', default='en', help='Set language for localization (e.g. zh_CN, en)')
+args = parser.parse_args()
+init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales')
+, "app")
+
+
 import json
 import asyncio
 import collections.abc
@@ -7,6 +17,7 @@ from nicegui import ui, app
 
 from expressive import process_expressions
 from utils.gpu import add_cuda11_to_path
+from expressions.base import getExpressionLoader
 
 
 def dict_update(d, u):
@@ -22,26 +33,26 @@ def dict_update(d, u):
 def create_gui():
     # Initialize state
     state = {
-        "utau_wav": "",
-        "ref_wav": "",
-        "ustx_input": "",
-        "ustx_output": "",
+        "utau_wav"    : "",
+        "ref_wav"     : "",
+        "ustx_input"  : "",
+        "ustx_output" : "",
         "track_number": 1,
-        "expressions": {
+        "expressions" : {
             "dyn": {
-                "selected": False,
+                "selected"    : False,
                 "align_radius": 1,
-                "smoothness": 2,
-                "scaler": 2.0,
+                "smoothness"  : 2,
+                "scaler"      : 2.0,
             },
             "pitd": {
-                "selected": False,
+                "selected"       : False,
                 "confidence_utau": 0.8,
-                "confidence_ref": 0.6,
-                "align_radius": 1,
-                "semitone_shift": None,
-                "smoothness": 2,
-                "scaler": 2.0,
+                "confidence_ref" : 0.6,
+                "align_radius"   : 1,
+                "semitone_shift" : None,
+                "smoothness"     : 2,
+                "scaler"         : 2.0,
             },
         },
     }
@@ -56,9 +67,9 @@ def create_gui():
             try:
                 with open(file, "w+", encoding="utf-8-sig") as f:  # type: ignore
                     json.dump(state, f, indent=4)
-                ui.notify("Config exported successfully!", type="positive")
+                ui.notify(_("Config exported successfully!"), type="positive")
             except Exception as e:
-                ui.notify(f"Failed to export config: {str(e)}", type="negative")
+                ui.notify(_("Failed to export config") + f": {str(e)}", type="negative")
 
     async def import_config(state=state):
         file = await app.native.main_window.create_file_dialog(  # type: ignore
@@ -71,10 +82,10 @@ def create_gui():
                     cfg = json.load(f)
                     dict_update(state, cfg)
 
-                ui.notify("Config imported successfully!", type="positive")
+                ui.notify(_("Config imported successfully!"), type="positive")
                 ui.update()
             except Exception as e:
-                ui.notify(f"Failed to import config: {str(e)}", type="negative")
+                ui.notify(_("Failed to import config") + f": {str(e)}", type="negative")
 
     async def run_processing():
         # Prepare expressions list
@@ -97,7 +108,7 @@ def create_gui():
                     "confidence_ref": state["expressions"]["pitd"]["confidence_ref"],
                     "align_radius": state["expressions"]["pitd"]["align_radius"],
                     "semitone_shift": (
-                        state["expressions"]["pitd"]["semitone_shift"]
+                        int(state["expressions"]["pitd"]["semitone_shift"])
                         if state["expressions"]["pitd"]["semitone_shift"] is not None
                         else None
                     ),
@@ -123,9 +134,9 @@ def create_gui():
                         expressions,
                     ),
                 )
-                ui.notify("Processing completed successfully!", type="positive")
+                ui.notify(_("Processing completed successfully!"), type="positive")
             except Exception as e:
-                ui.notify(f"Error during processing: {str(e)}", type="negative")
+                ui.notify(_("Error during processing") + f": {str(e)}", type="negative")
             finally:
                 spinner_dialog.close()
                 process_button.enable()
@@ -157,7 +168,7 @@ def create_gui():
             or not state["ustx_input"]
             or not state["ustx_output"]
         ):
-            ui.notify("Please fill all required file paths", type="negative")
+            ui.notify(_("Please fill all required file paths"), type="negative")
             return
 
         if not any(
@@ -166,36 +177,22 @@ def create_gui():
                 state["expressions"]["pitd"]["selected"],
             ]
         ):
-            ui.notify("Please select at least one expression to apply", type="negative")
+            ui.notify(_("Please select at least one expression to apply"), type="negative")
             return
         asyncio.create_task(run_processing())
 
     # File inputs
     file_inputs = {}
+    general_args = getExpressionLoader(None).args
     with ui.card().classes("w-full"):
-        ui.label("File Paths").classes("text-xl font-bold")
-
-        with ui.row().classes("w-full"):
-            file_inputs["utau_wav"] = (
-                ui.input(
-                    label="UTAU WAV File",
-                    placeholder="Path to UTAU audio file",
-                    validation={"Input required": lambda v: bool(v)},
-                )
-                .bind_value(state, "utau_wav")
-                .classes("flex-grow")
-            )
-            ui.button(
-                icon="folder",
-                on_click=lambda: choose_file("utau_wav", ("WAV files (*.wav)",)),
-            ).classes("self-end")
+        ui.label(_("File Paths")).classes("text-xl font-bold")
 
         with ui.row().classes("w-full"):
             file_inputs["ref_wav"] = (
                 ui.input(
-                    label="Reference WAV File",
-                    placeholder="Path to reference audio file",
-                    validation={"Input required": lambda v: bool(v)},
+                    label=_("Reference WAV File"),
+                    placeholder=general_args.ref_path.help,
+                    validation={_("Input required"): lambda v: bool(v)},
                 )
                 .bind_value(state, "ref_wav")
                 .classes("flex-grow")
@@ -206,11 +203,26 @@ def create_gui():
             ).classes("self-end")
 
         with ui.row().classes("w-full"):
+            file_inputs["utau_wav"] = (
+                ui.input(
+                    label=_("UTAU WAV File"),
+                    placeholder=general_args.utau_path.help,
+                    validation={_("Input required"): lambda v: bool(v)},
+                )
+                .bind_value(state, "utau_wav")
+                .classes("flex-grow")
+            )
+            ui.button(
+                icon="folder",
+                on_click=lambda: choose_file("utau_wav", ("WAV files (*.wav)",)),
+            ).classes("self-end")
+
+        with ui.row().classes("w-full"):
             file_inputs["ustx_input"] = (
                 ui.input(
-                    label="Input USTX File",
-                    placeholder="Path to input USTX project file",
-                    validation={"Input required": lambda v: bool(v)},
+                    label=_("Input USTX File"),
+                    placeholder=general_args.ustx_path.help,
+                    validation={_("Input required"): lambda v: bool(v)},
                 )
                 .bind_value(state, "ustx_input")
                 .classes("flex-grow")
@@ -223,9 +235,9 @@ def create_gui():
         with ui.row().classes("w-full"):
             file_inputs["ustx_output"] = (
                 ui.input(
-                    label="Output USTX File",
-                    placeholder="Path to save processed USTX file",
-                    validation={"Input required": lambda v: bool(v)},
+                    label=_("Output USTX File"),
+                    placeholder=_("Path to save processed USTX file"),
+                    validation={_("Input required"): lambda v: bool(v)},
                 )
                 .bind_value(state, "ustx_output")
                 .classes("flex-grow")
@@ -237,82 +249,86 @@ def create_gui():
                 ),
             ).classes("self-end")
 
-        ui.number(label="Track Number", min=1, format="%d").bind_value(
+        ui.number(label=_("Track Number"), min=1, format="%d").bind_value(
             state, "track_number"
-        ).classes("w-full")
+        ).classes("w-full").tooltip(general_args.track_number.help)
 
     # Expression selection
     with ui.card().classes("w-full"):
-        ui.label("Expression Selection").classes("text-xl font-bold")
+        ui.label(_("Expression Selection")).classes("text-xl font-bold")
 
         with ui.row():
-            ui.checkbox("Dynamics (dyn)").bind_value(
+            ui.checkbox(_("Dynamics (dyn)")).bind_value(
                 state["expressions"]["dyn"], "selected"
             )
-            ui.checkbox("Pitch Deviation (pitd)").bind_value(
+            ui.checkbox(_("Pitch Deviation (pitd)")).bind_value(
                 state["expressions"]["pitd"], "selected"
             )
 
     # Dyn parameters
+    dyn_args = getExpressionLoader("dyn").args
     with ui.card().classes("w-full").bind_visibility_from(
         state["expressions"]["dyn"], "selected"
     ):
-        ui.label("Dynamics Expression Parameters").classes("text-lg font-bold")
+        ui.label(_("Dynamics Expression Parameters")).classes("text-lg font-bold")
 
         with ui.grid(columns=3).classes("w-full"):
-            ui.number(label="Align Radius", min=1, format="%d").bind_value(
+            ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
                 state["expressions"]["dyn"], "align_radius"
-            )
+            ).tooltip(dyn_args.align_radius.help)
 
-            ui.number(label="Smoothness", min=0, format="%d").bind_value(
+            ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
                 state["expressions"]["dyn"], "smoothness"
-            )
+            ).tooltip(dyn_args.smoothness.help)
 
-            ui.number(label="Scaler", min=0.0, step=0.1, format="%.1f").bind_value(
+            ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
                 state["expressions"]["dyn"], "scaler"
-            )
+            ).tooltip(dyn_args.scaler.help)
 
     # Pitd parameters
+    pitd_args = getExpressionLoader("pitd").args
     with ui.card().classes("w-full").bind_visibility_from(
         state["expressions"]["pitd"], "selected"
     ):
-        ui.label("Pitch Deviation Expression Parameters").classes("text-lg font-bold")
+        ui.label(_("Pitch Deviation Expression Parameters")).classes("text-lg font-bold")
 
         with ui.grid(columns=3).classes("w-full"):
             ui.number(
-                label="UTAU Confidence", min=0.0, max=1.0, step=0.1, format="%.1f"
-            ).bind_value(state["expressions"]["pitd"], "confidence_utau")
+                label=_("UTAU Confidence"), min=0.0, max=1.0, step=0.1, format="%.1f"
+            ).bind_value(state["expressions"]["pitd"], "confidence_utau"
+            ).tooltip(pitd_args.confidence_utau.help)
 
             ui.number(
-                label="Reference Confidence", min=0.0, max=1.0, step=0.1, format="%.1f"
-            ).bind_value(state["expressions"]["pitd"], "confidence_ref")
+                label=_("Reference Confidence"), min=0.0, max=1.0, step=0.1, format="%.1f"
+            ).bind_value(state["expressions"]["pitd"], "confidence_ref"
+            ).tooltip(pitd_args.confidence_ref.help)
 
-            ui.number(label="Align Radius", min=1, format="%d").bind_value(
+            ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
                 state["expressions"]["pitd"], "align_radius"
-            )
+            ).tooltip(pitd_args.align_radius.help)
 
-            ui.number(label="Semitone Shift", step=1, format="%d").bind_value(
+            ui.number(label=_("Semitone Shift"), step=1, format="%d").bind_value(
                 state["expressions"]["pitd"], "semitone_shift"
-            )
+            ).tooltip(pitd_args.semitone_shift.help)
 
-            ui.number(label="Smoothness", min=0, format="%d").bind_value(
+            ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
                 state["expressions"]["pitd"], "smoothness"
-            )
+            ).tooltip(pitd_args.smoothness.help)
 
-            ui.number(label="Scaler", min=0.0, step=0.1, format="%.1f").bind_value(
+            ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
                 state["expressions"]["pitd"], "scaler"
-            )
+            ).tooltip(pitd_args.scaler.help)
 
     # Add the config buttons above the Process button
     with ui.row().classes("w-full justify-between"):
         ui.button(
-            "Import Config",
+            _("Import Config"),
             on_click=import_config,
             color="secondary",
             icon="file_download",
         )
         ui.button(
-            "Export Config",
+            _("Export Config"),
             on_click=export_config,
             color="secondary",
             icon="file_upload",
@@ -323,7 +339,7 @@ def create_gui():
         with ui.dialog() as spinner_dialog, ui.card():
             ui.spinner(size="lg")
         process_button = ui.button(
-            "Process", on_click=process_files, icon="play_arrow"
+            _("Process"), on_click=process_files, icon="play_arrow"
         ).classes("flex-grow")
 
 

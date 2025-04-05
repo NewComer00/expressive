@@ -1,13 +1,31 @@
 import threading
+from types import SimpleNamespace
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
+from utils.i18n import _
 from utils.ustx import load_ustx, save_ustx, edit_ustx_expression_curve
 
 
-class ExpressionLoader:
+@dataclass
+class Args:
+    name: str
+    type: type
+    default: Any | None
+    help: str
+
+
+class ExpressionLoader():
     expression_name: str = ""
     ustx_lock = threading.Lock()
+    args = SimpleNamespace(
+        ref_path     = Args(name="ref_path",     type=str, default="", help=_("Path to the UTAU audio file")),
+        utau_path    = Args(name="utau_path",    type=str, default="", help=_("Path to the reference audio file")),
+        ustx_path    = Args(name="ustx_path",    type=str, default="", help=_("Path to the USTX project file to be processed")),
+        track_number = Args(name="track_number", type=int, default=1, help=_("Track number to apply expressions")),
+    )
 
     def __init__(self, ref_path: str, utau_path: str, ustx_path: str):
         self.expression_tick: list | np.ndarray = []
@@ -41,5 +59,10 @@ def register_expression(cls: type[ExpressionLoader]):
     EXPRESSION_LOADER_TABLE[cls.expression_name] = cls
 
 
-def createExpressionLoader(expression_name: str) -> type[ExpressionLoader]:
+def getExpressionLoader(expression_name: str | None) -> type[ExpressionLoader]:
+    if expression_name is None:
+        return ExpressionLoader
     return EXPRESSION_LOADER_TABLE[expression_name]
+
+def get_registered_expressions():
+    return EXPRESSION_LOADER_TABLE.keys()

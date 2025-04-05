@@ -83,7 +83,11 @@ python ./expressive-cli.py --help
 
 运行图形化用户界面（GUI）
 ```sh
-python ./expressive-gui.py
+# 中文界面
+python ./expressive-gui.py --lang zh_CN
+
+# English UI
+python ./expressive-gui.py --lang en
 ```
 
 ## 算法原理

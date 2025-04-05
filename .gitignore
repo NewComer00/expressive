@@ -1,5 +1,7 @@
 *PitchLoader Output.ustx
-test-output.ustx
+*output.ustx
 settings.json
+expressive_config.json
 __pycache__/
 *.pyc
+.nicegui/
