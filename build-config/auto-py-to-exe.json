@@ -78,8 +78,8 @@
    "value": "locales;locales/"
   },
   {
-   "optionDest": "collect_all",
-   "value": "expressions"
+   "optionDest": "hookspath",
+   "value": "hooks"
   }
  ],
  "nonPyinstallerOptions": {
