@@ -1,0 +1,63 @@
+name: Packaging and Installer Creation for Windows
+
+on:
+  push:
+    tags:
+      - '*'  # Trigger on tag push
+    branches:
+      - main  # You can also trigger it on a push to the main branch (optional)
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    # Step to get the tag or commit hash
+    - name: Get tag or commit hash
+      id: get_version
+      run: |
+        if [[ "${GITHUB_REF}" == "refs/tags/"* ]]; then
+          echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        else
+          echo "TAG_NAME=${GITHUB_SHA}" >> $GITHUB_ENV
+        fi
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install auto-py-to-exe
+      run: |
+        pip install auto-py-to-exe
+
+    - name: Build executable with auto-py-to-exe
+      run: |
+        auto-py-to-exe --no-ui --config build/auto-py-to-exe.json --output-dir dist/
+
+    - name: Install Inno Setup
+      run: |
+        choco install innosetup
+
+    - name: Modify Inno Setup script with version
+      run: |
+        # Use the version in the Inno Setup script
+        sed -i "s/!define AppVersion \".*\"/!define AppVersion \"${{ env.TAG_NAME }}\"/" build/installer.iss
+
+    - name: Create installer with Inno Setup
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" build/installer.iss
+
+    - name: Upload installer as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: Expressive-GUI-Installer
+        path: build/Expressive-GUI_${{ env.TAG_NAME }}_Installer.exe
