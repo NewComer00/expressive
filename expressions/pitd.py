@@ -186,16 +186,16 @@ def align_sequence_pitch(query, reference, semitone_shift=None, smoothness=0):
     if semitone_shift is None:
         base_pitch_wav = np.nanmedian(query)
         base_pitch_vocal = np.nanmedian(reference)
-        semitone_shift = np.round(hz_to_midi(base_pitch_vocal)) - np.round(
+        semitone_shift = int(np.round(hz_to_midi(base_pitch_vocal)) - np.round(
             hz_to_midi(base_pitch_wav)
-        )
+        ).astype(int))
+        print(f"Estimated Semitone-shift: {semitone_shift}")
 
     pitch_aligned_query = query * np.exp2(semitone_shift / 12)
 
     pitch_aligned_query = gaussian_filter1d_with_nan(
         pitch_aligned_query, sigma=smoothness
     )
-    print(f"Estimated Semitone-shift: {semitone_shift}")
 
     return pitch_aligned_query, semitone_shift
 

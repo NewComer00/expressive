@@ -21,8 +21,8 @@ class ExpressionLoader():
     expression_name: str = ""
     ustx_lock = threading.Lock()
     args = SimpleNamespace(
-        ref_path     = Args(name="ref_path",     type=str, default="", help=_("Path to the UTAU audio file")),
-        utau_path    = Args(name="utau_path",    type=str, default="", help=_("Path to the reference audio file")),
+        ref_path     = Args(name="ref_path",     type=str, default="", help=_("Path to the reference audio file")),
+        utau_path    = Args(name="utau_path",    type=str, default="", help=_("Path to the UTAU audio file")),
         ustx_path    = Args(name="ustx_path",    type=str, default="", help=_("Path to the USTX project file to be processed")),
         track_number = Args(name="track_number", type=int, default=1, help=_("Track number to apply expressions")),
     )

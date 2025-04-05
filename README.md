@@ -6,7 +6,7 @@
 
 
 <p align="middle">
-  <img src="https://github.com/user-attachments/assets/0c0b0942-b6ea-4022-a173-c926e9b3114e" width="100%" /> 
+  <img src="https://github.com/user-attachments/assets/26f96da4-6a23-438f-8291-1dcaaffe3617" width="100%" /> 
 </p>
 
 OpenUtau from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)  
@@ -15,7 +15,7 @@ Singer from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://gi
 ## 适用平台
 - Windows / Linux
 - OpenUtau
-- Python 3.8 - 3.10 *
+- Python == 3.10 *
 
 建议使用带有NVIDIA显卡的硬件平台，显卡驱动版本 >= 452.39
 
@@ -78,7 +78,11 @@ python ./expressive.py
 
 运行命令行用户交互界面（CLI）
 ```sh
+# show help
 python ./expressive-cli.py --help
+
+# exmaple
+python ./expressive-cli.py --utau_wav "examples/明天会更好/utau.wav" --ref_wav "examples/明天会更好/reference.wav" --ustx_input "examples/明天会更好/project.ustx" --ustx_output "examples/明天会更好/output.ustx" --track_number 1 --expression dyn --expression pitd --pitd.semitone_shift 0
 ```
 
 运行图形化用户界面（GUI）
@@ -93,16 +97,6 @@ python ./expressive-gui.py --lang en
 ## 算法原理
 ```mermaid
 graph TD;
-  subgraph DynLoader
-    feat_dyn["Features Extraction<br>RMS"]
-
-    time_dyn["Time Alignment<br>FastDTW"]
-    feat_dyn-->time_dyn
-
-    get_dyn["Get Dynamics"]
-    time_dyn-->get_dyn
-  end
-
   ustx_in[/"OpenUtau Project (USTX)"/]
   refwav[/"Reference WAV"/]
   utauwav[/"OpenUtau WAV"/]
@@ -126,4 +120,13 @@ graph TD;
 
     utsx_out[/"OpenUtau Project Output"/]
     get_pitd-->utsx_out
+  subgraph DynLoader
+    feat_dyn["Features Extraction<br>RMS"]
+
+    time_dyn["Time Alignment<br>FastDTW"]
+    feat_dyn-->time_dyn
+
+    get_dyn["Get Dynamics"]
+    time_dyn-->get_dyn
+  end
 ```

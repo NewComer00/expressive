@@ -116,11 +116,11 @@ msgstr "歌姬音频文件（WAV）"
 
 #: expressive-gui.py:223
 msgid "Input USTX File"
-msgstr "输入 USTX 文件"
+msgstr "输入 OpenUtau 工程文件（USTX）"
 
 #: expressive-gui.py:238
 msgid "Output USTX File"
-msgstr "输出 USTX 文件"
+msgstr "输出 OpenUtau 工程文件（USTX）"
 
 #: expressive-gui.py:239
 msgid "Path to save processed USTX file"
