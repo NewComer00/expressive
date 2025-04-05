@@ -48,5 +48,5 @@ jobs:
     - name: Upload installer as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Expressive-GUI-Installer-${{ env.TAG_NAME }}
+        name: Expressive-GUI-${{ env.TAG_NAME }}-Installer
         path: dist/Expressive-GUI-${{ env.TAG_NAME }}-Installer.exe
