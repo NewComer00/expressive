@@ -5,13 +5,13 @@ AppName=Expressive-GUI
 AppVersion={#AppVersion}
 DefaultDirName={pf}\Expressive-GUI
 DefaultGroupName=Expressive-GUI
-OutputDir=dist
+OutputDir=..\dist
 OutputBaseFilename=Expressive-GUI-{#AppVersion}-Installer
 Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "dist\Expressive-GUI\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+Source: "..\dist\Expressive-GUI\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
 [Icons]
 ; Start Menu Shortcuts
