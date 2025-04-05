@@ -1,18 +1,14 @@
+#define AppVersion GetEnv("TAG_NAME")
+
 [Setup]
 AppName=Expressive-GUI
-AppVersion={code:GetAppVersion}
+AppVersion={#AppVersion}
 DefaultDirName={pf}\Expressive-GUI
 DefaultGroupName=Expressive-GUI
 OutputDir=dist
 OutputBaseFilename=Expressive-GUI-{#AppVersion}-Installer
 Compression=lzma
 SolidCompression=yes
-
-[Code]
-function GetAppVersion: string;
-begin
-  Result := '{#AppVersion}';  // The version defined during GitHub Actions
-end;
 
 [Files]
 Source: "dist\Expressive-GUI\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs

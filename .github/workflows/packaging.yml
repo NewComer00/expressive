@@ -5,7 +5,7 @@ on:
     tags:
       - '*'  # Trigger on tag push
     branches:
-      - main  # You can also trigger it on a push to the main branch (optional)
+      - main  # Optional: trigger also on main branch commits
 
 jobs:
   build:
@@ -15,16 +15,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    # Step to get the tag or commit hash
     - name: Get tag or commit hash
-      id: get_version
+      shell: bash
       run: |
-        if [[ "${GITHUB_REF}" == "refs/tags/"* ]]; then
-          echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          echo "TAG_NAME=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
         else
           echo "TAG_NAME=${GITHUB_SHA}" >> $GITHUB_ENV
         fi
-      shell: bash
 
     - name: Set up Python
       uses: actions/setup-python@v2
@@ -35,28 +33,17 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-
-    - name: Install pyinstaller
-      run: |
         pip install pyinstaller
 
-    - name: Build executable with pyinstaller
+    - name: Build executable with PyInstaller
       run: |
         pyinstaller --noconfirm --onedir --console --distpath "dist" --icon "assets/icons/app.ico" --name "Expressive-GUI" --contents-directory "." --collect-data "crepe" --collect-data "nicegui" --add-data "examples;examples/" --add-data "locales;locales/" --additional-hooks-dir "hooks"  "expressive-gui.py"
 
     - name: Install Inno Setup
-      run: |
-        choco install innosetup
-
-    - name: Modify Inno Setup script with version
-      run: |
-        # Use the version in the Inno Setup script
-        sed -i "s/!define AppVersion \".*\"/!define AppVersion \"${{ env.TAG_NAME }}\"/" build/installer.iss
-      shell: bash
+      run: choco install innosetup -y
 
     - name: Create installer with Inno Setup
-      run: |
-        ISCC build/installer.iss
+      run: ISCC build/installer.iss
 
     - name: Upload installer as artifact
       uses: actions/upload-artifact@v4
