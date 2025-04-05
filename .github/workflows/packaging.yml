@@ -21,7 +21,7 @@ jobs:
         if [[ "$GITHUB_REF" == refs/tags/* ]]; then
           echo "TAG_NAME=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
         else
-          echo "TAG_NAME=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "TAG_NAME=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
         fi
 
     - name: Set up Python
@@ -48,5 +48,5 @@ jobs:
     - name: Upload installer as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Expressive-GUI-Installer
-        path: dist/Expressive-GUI-*-Installer.exe
+        name: Expressive-GUI-Installer-${{ env.TAG_NAME }}
+        path: dist/Expressive-GUI-${{ env.TAG_NAME }}-Installer.exe
