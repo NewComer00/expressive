@@ -36,13 +36,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Install auto-py-to-exe
+    - name: Install pyinstaller
       run: |
-        pip install auto-py-to-exe
+        pip install pyinstaller
 
-    - name: Build executable with auto-py-to-exe
+    - name: Build executable with pyinstaller
       run: |
-        auto-py-to-exe --no-ui --config build/auto-py-to-exe.json --output-dir dist/
+        pyinstaller --noconfirm --onedir --console --distpath "dist" --icon "assets/icons/app.ico" --name "Expressive-GUI" --contents-directory "." --collect-data "crepe" --collect-data "nicegui" --add-data "examples;examples/" --add-data "locales;locales/" --additional-hooks-dir "hooks"  "expressive-gui.py"
 
     - name: Install Inno Setup
       run: |
@@ -56,10 +56,10 @@ jobs:
 
     - name: Create installer with Inno Setup
       run: |
-        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" build/installer.iss
+        ISCC build/installer.iss
 
     - name: Upload installer as artifact
       uses: actions/upload-artifact@v4
       with:
         name: Expressive-GUI-Installer
-        path: build/Expressive-GUI_${{ env.TAG_NAME }}_Installer.exe
+        path: dist/Expressive-GUI_*_Installer.exe
