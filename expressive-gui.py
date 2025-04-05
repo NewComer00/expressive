@@ -1,4 +1,10 @@
+# For multiprocessing support in PyInstaller on Windows, following code is needed before using the argparse module
+# https://github.com/pyinstaller/pyinstaller/wiki/Recipe-Multiprocessing
+import multiprocessing
+multiprocessing.freeze_support()
 
+
+# For i18n support, argparse is required to set the language of gettext before importing any other modules
 import os, argparse
 from utils.i18n import _, init_gettext
 parser = argparse.ArgumentParser(description='Choose application language.')
@@ -8,6 +14,7 @@ init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales')
 , "app")
 
 
+# Application code starts here
 import json
 import asyncio
 import collections.abc
