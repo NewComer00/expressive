@@ -4,7 +4,7 @@
 
 # Expressive
 
-针对 [OpenUtau](https://github.com/stakira/OpenUtau) 开发的表情参数导入工具，用于从现实歌手的人声中提取表情，并导入到工程的相应轨道上。
+针对 [OpenUtau](https://github.com/stakira/OpenUtau) 开发的 [DiffSinger](https://github.com/openvpi/diffsinger) 表情参数导入工具，用于从现实歌手的人声中提取表情，并导入到工程的相应轨道上。
 
 当前版本支持`Dynamics`与`Pitch Deviation`表情参数导入。
 
@@ -18,7 +18,7 @@ Singer from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://gi
 
 ## 适用平台
 - Windows / Linux
-- OpenUtau
+- OpenUtau Beta（带有 DiffSinger 支持）
 - Python == 3.10 *
 
 建议使用带有NVIDIA显卡的硬件平台，显卡驱动版本 >= 452.39
@@ -33,7 +33,7 @@ Singer from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://gi
 </details>
 
 ## 使用场景
-- 目标：在OpenUtau中使用虚拟歌手翻唱歌曲时，已经做完带填词的无参轨道，现需要为其添加不同表情参数。该应用为解决此需求而生。
+- 目标：在 OpenUtau 中使用 DiffSinger 虚拟歌手翻唱歌曲时，已经做完带填词的无参轨道，现需要为其添加不同表情参数。该应用为解决此需求而生。
 
 - 输入：用户需要为该应用提供
     - 歌姬音声：OpenUtau 输出的虚拟歌手无参音声。曲速（`Tempo`）、分段尽量同参考人声相似。WAV 格式。
