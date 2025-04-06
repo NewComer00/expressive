@@ -115,7 +115,7 @@ def create_gui():
                     "confidence_ref": state["expressions"]["pitd"]["confidence_ref"],
                     "align_radius": state["expressions"]["pitd"]["align_radius"],
                     "semitone_shift": (
-                        int(state["expressions"]["pitd"]["semitone_shift"])
+                        state["expressions"]["pitd"]["semitone_shift"]
                         if state["expressions"]["pitd"]["semitone_shift"] is not None
                         else None
                     ),
@@ -281,15 +281,18 @@ def create_gui():
 
         with ui.grid(columns=3).classes("w-full"):
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
-                state["expressions"]["dyn"], "align_radius"
+                state["expressions"]["dyn"], "align_radius",
+                forward=lambda v: dyn_args.align_radius.type(v) if v is not None else None,
             ).tooltip(dyn_args.align_radius.help)
 
             ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
-                state["expressions"]["dyn"], "smoothness"
+                state["expressions"]["dyn"], "smoothness",
+                forward=lambda v: dyn_args.smoothness.type(v) if v is not None else None,
             ).tooltip(dyn_args.smoothness.help)
 
             ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
-                state["expressions"]["dyn"], "scaler"
+                state["expressions"]["dyn"], "scaler",
+                forward=lambda v: dyn_args.scaler.type(v) if v is not None else None,
             ).tooltip(dyn_args.scaler.help)
 
     # Pitd parameters
@@ -302,28 +305,34 @@ def create_gui():
         with ui.grid(columns=3).classes("w-full"):
             ui.number(
                 label=_("UTAU Confidence"), min=0.0, max=1.0, step=0.1, format="%.1f"
-            ).bind_value(state["expressions"]["pitd"], "confidence_utau"
+            ).bind_value(state["expressions"]["pitd"], "confidence_utau",
+                            forward=lambda v: pitd_args.confidence_utau.type(v) if v is not None else None,
             ).tooltip(pitd_args.confidence_utau.help)
 
             ui.number(
                 label=_("Reference Confidence"), min=0.0, max=1.0, step=0.1, format="%.1f"
-            ).bind_value(state["expressions"]["pitd"], "confidence_ref"
+            ).bind_value(state["expressions"]["pitd"], "confidence_ref",
+                            forward=lambda v: pitd_args.confidence_ref.type(v) if v is not None else None,
             ).tooltip(pitd_args.confidence_ref.help)
 
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
-                state["expressions"]["pitd"], "align_radius"
+                state["expressions"]["pitd"], "align_radius",
+                forward=lambda v: pitd_args.align_radius.type(v) if v is not None else None,
             ).tooltip(pitd_args.align_radius.help)
 
             ui.number(label=_("Semitone Shift"), step=1, format="%d").bind_value(
-                state["expressions"]["pitd"], "semitone_shift"
+                state["expressions"]["pitd"], "semitone_shift",
+                forward=lambda v: pitd_args.semitone_shift.type(v) if v is not None else None,
             ).tooltip(pitd_args.semitone_shift.help)
 
             ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
-                state["expressions"]["pitd"], "smoothness"
+                state["expressions"]["pitd"], "smoothness",
+                forward=lambda v: pitd_args.smoothness.type(v) if v is not None else None,
             ).tooltip(pitd_args.smoothness.help)
 
             ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
-                state["expressions"]["pitd"], "scaler"
+                state["expressions"]["pitd"], "scaler",
+                forward=lambda v: pitd_args.scaler.type(v) if v is not None else None,
             ).tooltip(pitd_args.scaler.help)
 
     # Add the config buttons above the Process button
