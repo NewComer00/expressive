@@ -257,7 +257,8 @@ def create_gui():
             ).classes("self-end")
 
         ui.number(label=_("Track Number"), min=1, format="%d").bind_value(
-            state, "track_number"
+            state, "track_number",
+            forward=lambda v: general_args.track_number.type(v) if v is not None else None,
         ).classes("w-full").tooltip(general_args.track_number.help)
 
     # Expression selection
