@@ -271,11 +271,11 @@ def extract_wav_frequency(file_path, use_cache=True):
 
 
 def extract_pitch_dynamics_trends(pitch, n_order=3):
-    # Extract dynamic features
-    pitch_grads = list(accumulate([pitch] * n_order, lambda x, _: np.gradient(x)))
-    pitch_grads = np.vstack(pitch_grads)
+    # Extract dynamic features (order 1 to order n)
+    pitch_grads = list(accumulate([pitch] * (n_order + 1), lambda x, _: np.gradient(x)))
+    pitch_grads = np.vstack(pitch_grads[1:])
 
-    # Extract trend features
-    pitch_trends = list(accumulate([pitch] * n_order, lambda x, _: np.cumsum(x)))
-    pitch_trends = np.vstack(pitch_trends)
+    # Extract trend features (order 1 to order n)
+    pitch_trends = list(accumulate([pitch] * (n_order + 1), lambda x, _: np.nancumsum(x)))
+    pitch_trends = np.vstack(pitch_trends[1:])
     return np.vstack([pitch_grads, pitch_trends])
