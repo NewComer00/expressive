@@ -1,7 +1,6 @@
 import os
 import csv
 from pathlib import Path
-from itertools import accumulate
 from types import SimpleNamespace
 
 import crepe
@@ -18,6 +17,7 @@ from utils.seqtool import (
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
+    seq_dynamics_trends,
 )
 from utils.cache import CACHE_DIR, calculate_file_hash
 
@@ -151,7 +151,7 @@ def get_wav_features(wav_path, confidence_threshold=0.8, confidence_filter_size=
     feature_vals += [pitch]
 
     # Extract pitch dynamics trends
-    pitch_features = extract_pitch_dynamics_trends(pitch)
+    pitch_features = seq_dynamics_trends(pitch)
     feature_times += [pitch_time] * len(pitch_features)
     feature_vals += list(pitch_features)
 
@@ -268,14 +268,3 @@ def extract_wav_frequency(file_path, use_cache=True):
             print(f"Saved to cache file `{cache_path}`")
 
     return time, frequency, confidence
-
-
-def extract_pitch_dynamics_trends(pitch, n_order=3):
-    # Extract dynamic features (order 1 to order n)
-    pitch_grads = list(accumulate([pitch] * (n_order + 1), lambda x, _: np.gradient(x)))
-    pitch_grads = np.vstack(pitch_grads[1:])
-
-    # Extract trend features (order 1 to order n)
-    pitch_trends = list(accumulate([pitch] * (n_order + 1), lambda x, _: np.nancumsum(x)))
-    pitch_trends = np.vstack(pitch_trends[1:])
-    return np.vstack([pitch_grads, pitch_trends])

@@ -1,4 +1,3 @@
-from itertools import accumulate
 from types import SimpleNamespace
 
 import librosa
@@ -11,6 +10,7 @@ from utils.seqtool import (
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
+    seq_dynamics_trends,
 )
 
 
@@ -57,15 +57,6 @@ def extract_wav_rms(wav_path):
     return rms_time, rms
 
 
-def extract_rms_dynamics_trends(rms, n_order=3):
-    rms_grads = list(accumulate([rms] * n_order, lambda x, _: np.gradient(x)))
-    rms_grads = np.vstack(rms_grads)
-
-    rms_trends = list(accumulate([rms] * n_order, lambda x, _: np.cumsum(x)))
-    rms_trends = np.vstack(rms_trends)
-    return np.vstack([rms_grads, rms_trends])
-
-
 def get_wav_features(wav_path):
     feature_times = []  # List of time sequences(list of lists)
     feature_vals = []  # List of feature sequences(list of lists)
@@ -76,7 +67,7 @@ def get_wav_features(wav_path):
     feature_vals += [rms]
 
     # Extract RMS dynamics and trends
-    rms_dynamics_trends = extract_rms_dynamics_trends(rms)
+    rms_dynamics_trends = seq_dynamics_trends(rms)
     feature_times += [rms_time] * len(rms_dynamics_trends)
     feature_vals += list(rms_dynamics_trends)
 

@@ -1,3 +1,5 @@
+from itertools import accumulate
+
 import numpy as np
 from fastdtw import fastdtw # type: ignore
 from scipy.stats import zscore
@@ -171,3 +173,22 @@ def align_sequence_tick(
         aligned_queries.append(interp_seq(unified_tick))
 
     return unified_tick, tuple(aligned_queries), tuple(unified_references)
+
+
+def seq_dynamics_trends(seq, n_order=3):
+    """Extract dynamic and trend features from a sequence.
+    This function computes the gradients and cumulative sums of a sequence.
+    Args:
+        seq (numpy.ndarray): Input sequence. Shape: (n_time_points,).
+        n_order (int, optional): Order of the features to extract. Defaults to 3.
+    Returns:
+        numpy.ndarray: Extracted features, including gradients and cumulative sums. Shape: (2 * n_order, n_time_points).
+    """
+    # Extract dynamic features (order 1 to order n)
+    seq_grads = list(accumulate([seq] * (n_order + 1), lambda x, _: np.gradient(x)))
+    seq_grads = np.vstack(seq_grads[1:])
+
+    # Extract trend features (order 1 to order n)
+    seq_trends = list(accumulate([seq] * (n_order + 1), lambda x, _: np.nancumsum(x)))
+    seq_trends = np.vstack(seq_trends[1:])
+    return np.vstack([seq_grads, seq_trends])
