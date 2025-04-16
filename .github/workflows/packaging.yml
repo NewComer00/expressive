@@ -42,7 +42,7 @@ jobs:
 
     - name: Build executable with PyInstaller
       run: |
-        pyinstaller --noconfirm --onedir --console --icon "assets/icons/app.ico" --name "Expressive-GUI" --contents-directory "." --collect-data "crepe" --collect-data "nicegui" --add-data "examples;examples/" --add-data "locales;locales/" --additional-hooks-dir "hooks"  "expressive-gui.py"
+        pyinstaller --noconfirm --onedir --console --icon "assets/icons/app.ico" --name "Expressive-GUI" --contents-directory "." --collect-data "crepe" --collect-data "nicegui" --add-data "examples;examples/" --add-data "assets;assets/" --add-data "locales;locales/" --add-data "README.md;./" --add-data "LICENSE;./" --additional-hooks-dir "hooks"  "expressive-gui.py"
 
     - name: Install Inno Setup
       run: choco install innosetup -y

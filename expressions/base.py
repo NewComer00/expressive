@@ -19,13 +19,18 @@ class Args:
 
 class ExpressionLoader():
     expression_name: str = ""
+    expression_info: str = ""
     ustx_lock = threading.Lock()
     args = SimpleNamespace(
-        ref_path     = Args(name="ref_path",     type=str, default="", help=_("Path to the reference audio file")),
-        utau_path    = Args(name="utau_path",    type=str, default="", help=_("Path to the UTAU audio file")),
-        ustx_path    = Args(name="ustx_path",    type=str, default="", help=_("Path to the USTX project file to be processed")),
-        track_number = Args(name="track_number", type=int, default=1, help=_("Track number to apply expressions")),
+        ref_path     = Args(name="ref_path"    , type=str, default="", help=_("Path to the reference audio file")),
+        utau_path    = Args(name="utau_path"   , type=str, default="", help=_("Path to the UTAU audio file")),
+        ustx_path    = Args(name="ustx_path"   , type=str, default="", help=_("Path to the USTX project file to be processed")),
+        track_number = Args(name="track_number", type=int, default=1 , help=_("Track number to apply expressions")),
     )
+
+    @classmethod
+    def get_args_dict(cls) -> dict[str, Args]:
+        return cls.args.__dict__
 
     def __init__(self, ref_path: str, utau_path: str, ustx_path: str):
         self.expression_tick: list | np.ndarray = []
@@ -52,7 +57,7 @@ class ExpressionLoader():
                 save_ustx(ustx_dict, self.ustx_path)
 
 
-EXPRESSION_LOADER_TABLE = {}
+EXPRESSION_LOADER_TABLE: dict[str, type[ExpressionLoader]] = {}
 
 
 def register_expression(cls: type[ExpressionLoader]):
@@ -62,7 +67,10 @@ def register_expression(cls: type[ExpressionLoader]):
 def getExpressionLoader(expression_name: str | None) -> type[ExpressionLoader]:
     if expression_name is None:
         return ExpressionLoader
+    if expression_name not in EXPRESSION_LOADER_TABLE:
+        raise ValueError(f"Expression '{expression_name}' is not registered or not supported.")
     return EXPRESSION_LOADER_TABLE[expression_name]
 
-def get_registered_expressions():
-    return EXPRESSION_LOADER_TABLE.keys()
+
+def get_registered_expressions() -> list[str]:
+    return list(EXPRESSION_LOADER_TABLE)

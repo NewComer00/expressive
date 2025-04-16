@@ -19,40 +19,29 @@ def main():
     parser.add_argument("-o", "--ustx_output",  type=str,                            required=True, help="Path to save the processed USTX file")
     parser.add_argument("-t", "--track_number", type=general_args.track_number.type, required=True, help=general_args.track_number.help)
 
-    # Expression selection
-    parser.add_argument("-e", "--expression", type=str, action="append", required=True, choices=["dyn", "pitd"], 
+    parser.add_argument("-e", "--expression", type=str, action="append", required=True, choices=get_registered_expressions(), 
                         help="Specify expressions to apply (e.g., --expression dyn --expression pitd)")
 
-    def group_expr_args(parser: argparse.ArgumentParser, name, args_ns):
-        group = parser.add_argument_group(f"{name.upper()} Expression")
-        for arg_name, arg in args_ns.__dict__.items():
-            group.add_argument(f"--{name}.{arg_name}", type=arg.type, default=arg.default, help=arg.help)
-        return group
-
-    def collect_expr_values(name, args_ns, parsed_args):
-        return {
-            "expression": name,
-            **{
-                arg.name: getattr(parsed_args, f"{name}.{arg.name}")
-                for arg in args_ns.__dict__.values()
-            }
-        }
-
+    # Expression-specific arguments
     expression_names = get_registered_expressions()
+    get_expression_args = lambda exp_name: getExpressionLoader(exp_name).get_args_dict()
 
-    # Add groups
-    arg_sources = {name: getExpressionLoader(name).args for name in expression_names}
-    for name, args_ns in arg_sources.items():
-        group_expr_args(parser, name, args_ns)
+    for exp_name in expression_names:
+        group = parser.add_argument_group(f"{exp_name.upper()} Expression")
+        for arg_name, arg in get_expression_args(exp_name).items():
+            group.add_argument(f"--{exp_name}.{arg_name}",
+                                type=arg.type, default=arg.default, help=arg.help)
 
-    # Parse
+    # Parse arguments
     args = parser.parse_args()
-
-    # Collect selected expressions
     expressions = [
-        collect_expr_values(name, arg_sources[name], args)
-        for name in expression_names
-        if name in args.expression
+        {
+            "expression": exp_name,
+            **{
+                arg.name: getattr(args, f"{exp_name}.{arg.name}")
+                for arg in get_expression_args(exp_name).values()
+            }
+        } for exp_name in expression_names if exp_name in args.expression
     ]
 
     # Process
@@ -60,6 +49,7 @@ def main():
         args.utau_wav, args.ref_wav, args.ustx_input,
         args.ustx_output, args.track_number, expressions
     )
+
 
 if __name__ == "__main__":
     add_cuda11_to_path()

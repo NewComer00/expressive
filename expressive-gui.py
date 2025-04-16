@@ -22,9 +22,10 @@ import collections.abc
 import webview
 from nicegui import ui, app
 
-from expressive import process_expressions
 from utils.gpu import add_cuda11_to_path
-from expressions.base import getExpressionLoader
+from utils.ui import blink_taskbar_window
+from expressive import process_expressions
+from expressions.base import getExpressionLoader, get_registered_expressions
 
 
 def dict_update(d, u):
@@ -40,29 +41,46 @@ def dict_update(d, u):
 def create_gui():
     # Initialize state
     state = {
-        "utau_wav"    : "",
-        "ref_wav"     : "",
-        "ustx_input"  : "",
+        **{
+            arg.name: arg.default
+            for arg in getExpressionLoader(None).get_args_dict().values()
+        },
         "ustx_output" : "",
-        "track_number": 1,
-        "expressions" : {
-            "dyn": {
-                "selected"    : False,
-                "align_radius": 1,
-                "smoothness"  : 2,
-                "scaler"      : 2.0,
-            },
-            "pitd": {
-                "selected"       : False,
-                "confidence_utau": 0.8,
-                "confidence_ref" : 0.6,
-                "align_radius"   : 1,
-                "semitone_shift" : None,
-                "smoothness"     : 2,
-                "scaler"         : 2.0,
-            },
+        "expressions": {
+            exp_name: {
+                "selected": False,
+                **{
+                    arg.name: arg.default
+                    for arg in getExpressionLoader(exp_name).get_args_dict().values()
+                },
+            } for exp_name in get_registered_expressions()
         },
     }
+
+    # state = {
+    #     "utau_wav"    : "",
+    #     "ref_wav"     : "",
+    #     "ustx_input"  : "",
+    #     "ustx_output" : "",
+    #     "track_number": 1,
+    #     "expressions" : {
+    #         "dyn": {
+    #             "selected"    : False,
+    #             "align_radius": 1,
+    #             "smoothness"  : 2,
+    #             "scaler"      : 2.0,
+    #         },
+    #         "pitd": {
+    #             "selected"       : False,
+    #             "confidence_utau": 0.8,
+    #             "confidence_ref" : 0.6,
+    #             "align_radius"   : 1,
+    #             "semitone_shift" : None,
+    #             "smoothness"     : 2,
+    #             "scaler"         : 2.0,
+    #         },
+    #     },
+    # }
 
     async def export_config(state=state):
         file = await app.native.main_window.create_file_dialog(  # type: ignore
@@ -96,33 +114,17 @@ def create_gui():
 
     async def run_processing():
         # Prepare expressions list
-        expressions = []
-        if state["expressions"]["dyn"]["selected"]:
-            expressions.append(
-                {
-                    "expression": "dyn",
-                    "align_radius": state["expressions"]["dyn"]["align_radius"],
-                    "smoothness": state["expressions"]["dyn"]["smoothness"],
-                    "scaler": state["expressions"]["dyn"]["scaler"],
+        expressions = [
+            {
+                "expression": exp_name,
+                ** {
+                    arg.name: state["expressions"][exp_name][arg.name]
+                    for arg in getExpressionLoader(exp_name).get_args_dict().values()
                 }
-            )
-
-        if state["expressions"]["pitd"]["selected"]:
-            expressions.append(
-                {
-                    "expression": "pitd",
-                    "confidence_utau": state["expressions"]["pitd"]["confidence_utau"],
-                    "confidence_ref": state["expressions"]["pitd"]["confidence_ref"],
-                    "align_radius": state["expressions"]["pitd"]["align_radius"],
-                    "semitone_shift": (
-                        state["expressions"]["pitd"]["semitone_shift"]
-                        if state["expressions"]["pitd"]["semitone_shift"] is not None
-                        else None
-                    ),
-                    "smoothness": state["expressions"]["pitd"]["smoothness"],
-                    "scaler": state["expressions"]["pitd"]["scaler"],
-                }
-            )
+            }
+            for exp_name in get_registered_expressions()
+            if state["expressions"][exp_name]["selected"]
+        ]
 
         with status_row:
             process_button.disable()
@@ -141,6 +143,7 @@ def create_gui():
                         expressions,
                     ),
                 )
+                blink_taskbar_window(app.config.title)
                 ui.notify(_("Processing completed successfully!"), type="positive")
             except Exception as e:
                 ui.notify(_("Error during processing") + f": {str(e)}", type="negative")
@@ -180,8 +183,8 @@ def create_gui():
 
         if not any(
             [
-                state["expressions"]["dyn"]["selected"],
-                state["expressions"]["pitd"]["selected"],
+                state["expressions"][exp_name]["selected"]
+                for exp_name in get_registered_expressions()
             ]
         ):
             ui.notify(_("Please select at least one expression to apply"), type="negative")
@@ -266,19 +269,19 @@ def create_gui():
         ui.label(_("Expression Selection")).classes("text-xl font-bold")
 
         with ui.row():
-            ui.checkbox(_("Dynamics (dyn)")).bind_value(
-                state["expressions"]["dyn"], "selected"
-            )
-            ui.checkbox(_("Pitch Deviation (pitd)")).bind_value(
-                state["expressions"]["pitd"], "selected"
-            )
+            for exp_name in get_registered_expressions():
+                exp_info = getExpressionLoader(exp_name).expression_info
+                ui.checkbox(exp_info).bind_value(
+                    state["expressions"][exp_name], "selected"
+                )
 
     # Dyn parameters
     dyn_args = getExpressionLoader("dyn").args
+    dyn_info = getExpressionLoader("dyn").expression_info
     with ui.card().classes("w-full").bind_visibility_from(
         state["expressions"]["dyn"], "selected"
     ):
-        ui.label(_("Dynamics Expression Parameters")).classes("text-lg font-bold")
+        ui.label(dyn_info).classes("text-lg font-bold")
 
         with ui.grid(columns=3).classes("w-full"):
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
@@ -298,10 +301,11 @@ def create_gui():
 
     # Pitd parameters
     pitd_args = getExpressionLoader("pitd").args
+    pitd_info = getExpressionLoader("pitd").expression_info
     with ui.card().classes("w-full").bind_visibility_from(
         state["expressions"]["pitd"], "selected"
     ):
-        ui.label(_("Pitch Deviation Expression Parameters")).classes("text-lg font-bold")
+        ui.label(pitd_info).classes("text-lg font-bold")
 
         with ui.grid(columns=3).classes("w-full"):
             ui.number(
@@ -335,6 +339,35 @@ def create_gui():
                 state["expressions"]["pitd"], "scaler",
                 forward=lambda v: pitd_args.scaler.type(v) if v is not None else None,
             ).tooltip(pitd_args.scaler.help)
+
+    # Tenc parameters
+    tenc_args = getExpressionLoader("tenc").args
+    tenc_info = getExpressionLoader("tenc").expression_info
+    with ui.card().classes("w-full").bind_visibility_from(
+        state["expressions"]["tenc"], "selected"
+    ):
+        ui.label(tenc_info).classes("text-lg font-bold")
+
+        with ui.grid(columns=3).classes("w-full"):
+            ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
+                state["expressions"]["tenc"], "align_radius",
+                forward=lambda v: tenc_args.align_radius.type(v) if v is not None else None,
+            ).tooltip(tenc_args.align_radius.help)
+
+            ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
+                state["expressions"]["tenc"], "smoothness",
+                forward=lambda v: tenc_args.smoothness.type(v) if v is not None else None,
+            ).tooltip(tenc_args.smoothness.help)
+
+            ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
+                state["expressions"]["tenc"], "scaler",
+                forward=lambda v: tenc_args.scaler.type(v) if v is not None else None,
+            ).tooltip(tenc_args.scaler.help)
+
+            ui.number(label=_("Bias"), format="%d").bind_value(
+                state["expressions"]["tenc"], "bias",
+                forward=lambda v: tenc_args.bias.type(v) if v is not None else None,
+            ).tooltip(tenc_args.bias.help)
 
     # Add the config buttons above the Process button
     with ui.row().classes("w-full justify-between"):

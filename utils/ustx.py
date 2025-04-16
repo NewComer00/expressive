@@ -1,3 +1,4 @@
+from math import e
 import oyaml
 import numpy as np
 from yamlcore import CoreLoader
@@ -37,7 +38,7 @@ def save_ustx(ustx_dict, ustx_path):
 def edit_ustx_expression_curve(
     ustx_dict, ustx_track_number, expression, tick_seq, exp_seq
 ):
-    if expression in ["dyn", "pitd"]:
+    if expression in ["dyn", "pitd", "tenc"]:
         track_idx = ustx_track_number - 1  # track index starts from 0
         track = ustx_dict["voice_parts"][track_idx]
         if "curves" not in track.keys():
@@ -56,3 +57,6 @@ def edit_ustx_expression_curve(
         mask = ~np.isnan(exp_seq)
         exp["xs"] = tick_seq[mask].tolist()
         exp["ys"] = np.round(exp_seq[mask]).astype(int).tolist()
+
+    else:
+        raise ValueError(f"Unsupported expression type: {expression}")

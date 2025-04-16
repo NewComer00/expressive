@@ -1,7 +1,11 @@
-*PitchLoader Output.ustx
-*output.ustx
+*~
+.vscode/
+__pycache__/
+.nicegui/
+dist/
+*.pyc
+*PitchLoader Output*.ustx
+*output*.ustx
 settings.json
 expressive_config.json
-__pycache__/
-*.pyc
-.nicegui/
+Expressive-GUI.spec

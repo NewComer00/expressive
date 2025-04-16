@@ -19,3 +19,4 @@ matplotlib
 scikit-learn
 nicegui
 pywebview
+pywin32; platform_system=="Windows"

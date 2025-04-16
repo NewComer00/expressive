@@ -25,23 +25,24 @@ from utils.cache import CACHE_DIR, calculate_file_hash
 @register_expression
 class PitdLoader(ExpressionLoader):
     expression_name = "pitd"
+    expression_info = _("Pitch Deviation (curve)")
     args = SimpleNamespace(
-        confidence_utau = Args(name="confidence_utau", type=float, default=0.8,  help=_("Confidence threshold for filtering uncertain pitch values in UTAU WAV")),
-        confidence_ref  = Args(name="confidence_ref",  type=float, default=0.6,  help=_("Confidence threshold for filtering uncertain pitch values in reference WAV")),
-        align_radius    = Args(name="align_radius",    type=int,   default=1,    help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),
-        semitone_shift  = Args(name="semitone_shift",  type=int,   default=None, help=_("Semitone shift between the UTAU and reference WAV; if the USTX WAV is an octave higher than the reference WAV, set to 12, otherwise -12; leave it empty to enable automatic shift estimation")),
-        smoothness      = Args(name="smoothness",      type=int,   default=2,    help=_("Smoothness of the expression curve")),
-        scaler          = Args(name="scaler",          type=float, default=2.0,  help=_("Scaling factor for the expression curve")),
+        confidence_utau = Args(name="confidence_utau", type=float, default=0.8 , help=_("Confidence threshold for filtering uncertain pitch values in UTAU WAV")),
+        confidence_ref  = Args(name="confidence_ref" , type=float, default=0.6 , help=_("Confidence threshold for filtering uncertain pitch values in reference WAV")),
+        align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),
+        semitone_shift  = Args(name="semitone_shift" , type=int  , default=None, help=_("Semitone shift between the UTAU and reference WAV; if the USTX WAV is an octave higher than the reference WAV, set to 12, otherwise -12; leave it empty to enable automatic shift estimation")),
+        smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_("Smoothness of the expression curve")),
+        scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_("Scaling factor for the expression curve")),
     )
 
     def get_expression(
         self,
-        confidence_utau=0.8,
-        confidence_ref=0.6,
-        align_radius=1,
-        semitone_shift=None,
-        smoothness=2,
-        scaler=2.0,
+        confidence_utau = args.confidence_utau.default,
+        confidence_ref  = args.confidence_ref .default,
+        align_radius    = args.align_radius   .default,
+        semitone_shift  = args.semitone_shift .default,
+        smoothness      = args.smoothness     .default,
+        scaler          = args.scaler         .default,
     ):
         # Extract pitch features from WAV files
         utau_time, utau_pitch, utau_features = get_wav_features(

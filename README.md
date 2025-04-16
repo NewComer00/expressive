@@ -6,7 +6,7 @@
 
 针对 [OpenUtau](https://github.com/stakira/OpenUtau) 开发的 [DiffSinger](https://github.com/openvpi/diffsinger) 表情参数导入工具，用于从现实歌手的人声中提取表情，并导入到工程的相应轨道上。
 
-当前版本支持`Dynamics`与`Pitch Deviation`表情参数导入。
+当前版本支持`Dynamics (curve)`、`Pitch Deviation (curve)`与`Tension (curve)`表情参数导入。
 
 
 <p align="middle">
@@ -48,9 +48,9 @@ Singer from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://gi
 - [x] Linux 适配
 - [x] NVIDIA GPU 加速
 - [x] 导入 / 导出参数配置
-- [x] `Pitch Deviation`表情参数生成
-- [x] `Dynamics`表情参数生成
-- [ ] `Tension`表情参数生成
+- [x] `Pitch Deviation (curve)`表情参数生成
+- [x] `Dynamics (curve)`表情参数生成
+- [x] `Tension (curve)`表情参数生成
 
 ## 已知问题
 1. 目前尚不支持单轨道内`Tempo`的变化，全工程请使用同一个`Tempo`。未来版本将做出修复。
@@ -86,7 +86,7 @@ python ./expressive.py
 python ./expressive-cli.py --help
 
 # exmaple
-python ./expressive-cli.py --utau_wav "examples/明天会更好/utau.wav" --ref_wav "examples/明天会更好/reference.wav" --ustx_input "examples/明天会更好/project.ustx" --ustx_output "examples/明天会更好/output.ustx" --track_number 1 --expression dyn --expression pitd --pitd.semitone_shift 0
+python ./expressive-cli.py --utau_wav "examples/明天会更好/utau.wav" --ref_wav "examples/明天会更好/reference.wav" --ustx_input "examples/明天会更好/project.ustx" --ustx_output "examples/明天会更好/output.ustx" --track_number 1 --expression dyn --expression pitd --pitd.semitone_shift 0 --expression tenc
 ```
 
 运行图形化用户界面（GUI）
@@ -124,6 +124,7 @@ graph TD;
 
     utsx_out[/"OpenUtau Project Output"/]
     get_pitd-->utsx_out
+
   subgraph DynLoader
     feat_dyn["Features Extraction<br>RMS"]
 
@@ -132,5 +133,15 @@ graph TD;
 
     get_dyn["Get Dynamics"]
     time_dyn-->get_dyn
+  end
+
+  subgraph TencLoader
+    feat_tenc["Features Extraction<br>RMS"]
+
+    time_tenc["Time Alignment<br>FastDTW"]
+    feat_tenc-->time_tenc
+
+    get_tenc["Get Tension"]
+    time_tenc-->get_tenc
   end
 ```

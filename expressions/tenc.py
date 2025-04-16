@@ -14,13 +14,14 @@ from utils.seqtool import (
 
 
 @register_expression
-class DynLoader(ExpressionLoader):
-    expression_name = "dyn"
-    expression_info = _("Dynamics (curve)")
+class TencLoader(ExpressionLoader):
+    expression_name = "tenc"
+    expression_info = _("Tension (curve)")
     args = SimpleNamespace(
         align_radius    = Args(name="align_radius", type=int  , default=1  , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),
-        smoothness      = Args(name="smoothness"  , type=int  , default=2  , help=_("Smoothness of the expression curve")),
-        scaler          = Args(name="scaler"      , type=float, default=1.5, help=_("Scaling factor for the expression curve")),
+        smoothness      = Args(name="smoothness"  , type=int  , default=6  , help=_("Smoothness of the expression curve")),
+        scaler          = Args(name="scaler"      , type=float, default=1.0, help=_("Scaling factor for the expression curve")),
+        bias            = Args(name="bias"        , type=int  , default=10  , help=_("Bias for the expression curve")),
     )
 
     def get_expression(
@@ -28,8 +29,9 @@ class DynLoader(ExpressionLoader):
         align_radius = args.align_radius.default,
         smoothness   = args.smoothness  .default,
         scaler       = args.scaler      .default,
+        bias         = args.bias        .default,
     ):
-        # Extract rms features from WAV files
+        # Extract features from WAV files
         utau_time, utau_rms, utau_features = get_wav_features(
             wav_path=self.utau_path,
         )
@@ -39,7 +41,7 @@ class DynLoader(ExpressionLoader):
 
         # Align all sequences to a common MIDI tick time base
         # NOTICE: features from UTAU WAV are the reference, and those from Ref. WAV are the query
-        dyn_tick, (time_aligned_ref_rms, *_), *_ = align_sequence_tick(
+        tenc_tick, (time_aligned_ref_rms, *_), *_ = align_sequence_tick(
             query_time=ref_time,
             queries=(ref_rms, *ref_features),
             reference_time=utau_time,
@@ -48,9 +50,9 @@ class DynLoader(ExpressionLoader):
             align_radius=align_radius,
         )
 
-        dyn_val = get_experssion_dynamics(time_aligned_ref_rms, smoothness, scaler)
+        tenc_val = get_experssion_tension(time_aligned_ref_rms, smoothness, scaler, bias)
 
-        self.expression_tick, self.expression_val = dyn_tick, dyn_val
+        self.expression_tick, self.expression_val = tenc_tick, tenc_val
         return self.expression_tick, self.expression_val
 
 
@@ -66,7 +68,7 @@ def get_wav_features(wav_path):
     feature_times = []  # List of time sequences(list of lists)
     feature_vals = []  # List of feature sequences(list of lists)
 
-    # Extract RMS feature
+    # Extract RMS
     rms_time, rms = extract_wav_rms(wav_path)
     feature_times += [rms_time]
     feature_vals += [rms]
@@ -83,10 +85,10 @@ def get_wav_features(wav_path):
     return wav_time, wav_rms, wav_features
 
 
-def get_experssion_dynamics(time_aligned_rms, smoothness=2, scaler=1.0):
+def get_experssion_tension(time_aligned_rms, smoothness=2, scaler=1.0, bias=0):
     base_scaler = 10.0
-    smoothed_dyn = gaussian_filter1d_with_nan(
+    smoothed_tenc = gaussian_filter1d_with_nan(
         base_scaler * zscore(time_aligned_rms),
         sigma=smoothness,
     )
-    return scaler * smoothed_dyn
+    return scaler * smoothed_tenc + bias

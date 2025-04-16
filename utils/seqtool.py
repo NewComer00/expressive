@@ -192,3 +192,17 @@ def seq_dynamics_trends(seq, n_order=3):
     seq_trends = list(accumulate([seq] * (n_order + 1), lambda x, _: np.nancumsum(x)))
     seq_trends = np.vstack(seq_trends[1:])
     return np.vstack([seq_grads, seq_trends])
+
+
+def seq_rcr(seq):
+    """Compute the relative change rate (RCR) of a sequence.
+    This function calculates the relative change rate of a sequence, which is useful for analyzing dynamics.
+    Args:
+        seq (numpy.ndarray): Input sequence. Shape: (n_time_points,).
+    Returns:
+        numpy.ndarray: Relative change rate of the sequence. Shape: (n_time_points,).
+    """
+    epsilon = 1e-6
+    rcr_raw = np.abs(np.diff(seq)) / (seq[:-1] + epsilon)
+    rcr = np.insert(rcr_raw, 0, rcr_raw[0])
+    return rcr

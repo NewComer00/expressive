@@ -75,7 +75,19 @@
   },
   {
    "optionDest": "datas",
+   "value": "assets;assets/"
+  },
+  {
+   "optionDest": "datas",
    "value": "locales;locales/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "README.md;./"
+  },
+  {
+   "optionDest": "datas",
+   "value": "LICENSE;./"
   },
   {
    "optionDest": "hookspath",

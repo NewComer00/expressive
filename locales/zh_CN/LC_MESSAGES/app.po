@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Expressive v0.2.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-05 01:03+0800\n"
+"POT-Creation-Date: 2025-04-16 18:29+0800\n"
 "PO-Revision-Date: 2025-03-18 16:23+0800\n"
 "Last-Translator:  NewComer00\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -17,46 +17,163 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: expressions/base.py:24
-msgid "Path to the UTAU audio file"
-msgstr "歌姬音频文件路径"
+#: expressive-gui.py:95
+msgid "Config exported successfully!"
+msgstr "配置导出成功！"
+
+#: expressive-gui.py:97
+msgid "Failed to export config"
+msgstr "配置导出失败"
+
+#: expressive-gui.py:110
+msgid "Config imported successfully!"
+msgstr "配置导入成功！"
+
+#: expressive-gui.py:113
+msgid "Failed to import config"
+msgstr "配置导入失败"
+
+#: expressive-gui.py:147
+msgid "Processing completed successfully!"
+msgstr "处理完成！"
+
+#: expressive-gui.py:149
+msgid "Error during processing"
+msgstr "处理时发生错误"
+
+#: expressive-gui.py:181
+msgid "Please fill all required file paths"
+msgstr "请填写所有必填文件路径"
+
+#: expressive-gui.py:190
+msgid "Please select at least one expression to apply"
+msgstr "请至少选择一个表情"
+
+#: expressive-gui.py:198
+msgid "File Paths"
+msgstr "文件路径"
+
+#: expressive-gui.py:203
+msgid "Reference WAV File"
+msgstr "参考音频文件（WAV）"
+
+#: expressive-gui.py:205 expressive-gui.py:220 expressive-gui.py:235
+#: expressive-gui.py:250
+msgid "Input required"
+msgstr "需要填写内容"
+
+#: expressive-gui.py:218
+msgid "UTAU WAV File"
+msgstr "歌姬音频文件（WAV）"
+
+#: expressive-gui.py:233
+msgid "Input USTX File"
+msgstr "输入 OpenUtau 工程文件（USTX）"
+
+#: expressive-gui.py:248
+msgid "Output USTX File"
+msgstr "输出 OpenUtau 工程文件（USTX）"
+
+#: expressive-gui.py:249
+msgid "Path to save processed USTX file"
+msgstr "用于保存处理后 USTX 文件的路径"
+
+#: expressive-gui.py:262
+msgid "Track Number"
+msgstr "轨道编号"
+
+#: expressive-gui.py:269
+msgid "Expression Selection"
+msgstr "表情参数"
+
+#: expressive-gui.py:287 expressive-gui.py:323 expressive-gui.py:352
+msgid "Align Radius"
+msgstr "对齐半径"
+
+#: expressive-gui.py:292 expressive-gui.py:333 expressive-gui.py:357
+msgid "Smoothness"
+msgstr "平滑度"
+
+#: expressive-gui.py:297 expressive-gui.py:338 expressive-gui.py:362
+msgid "Scaler"
+msgstr "缩放因子"
+
+#: expressive-gui.py:312
+msgid "UTAU Confidence"
+msgstr "歌姬音频置信度"
+
+#: expressive-gui.py:318
+msgid "Reference Confidence"
+msgstr "参考音频置信度"
+
+#: expressive-gui.py:328
+msgid "Semitone Shift"
+msgstr "半音偏移"
+
+#: expressive-gui.py:367
+msgid "Bias"
+msgstr "偏置"
+
+#: expressive-gui.py:375
+msgid "Import Config"
+msgstr "导入配置"
+
+#: expressive-gui.py:381
+msgid "Export Config"
+msgstr "导出配置"
+
+#: expressive-gui.py:392
+msgid "Process"
+msgstr "开始处理"
 
 #: expressions/base.py:25
 msgid "Path to the reference audio file"
 msgstr "参考音频文件路径"
 
 #: expressions/base.py:26
+msgid "Path to the UTAU audio file"
+msgstr "歌姬音频文件路径"
+
+#: expressions/base.py:27
 msgid "Path to the USTX project file to be processed"
 msgstr "要处理的 USTX 项目文件路径"
 
-#: expressions/base.py:27
+#: expressions/base.py:28
 msgid "Track number to apply expressions"
 msgstr "要导入表情参数的音轨编号"
 
-#: expressions/dyn.py:21 expressions/pitd.py:31
+#: expressions/dyn.py:19
+msgid "Dynamics (curve)"
+msgstr "动态曲线 Dynamics (curve)"
+
+#: expressions/dyn.py:21 expressions/pitd.py:32 expressions/tenc.py:21
 msgid ""
 "Radius for the FastDTW algorithm; larger radius allows for more flexible "
 "alignment but increases computation time"
 msgstr "时间序列的对齐半径；值越小对齐越严格，反之越灵活，但计算时间也越长"
 
-#: expressions/dyn.py:22 expressions/pitd.py:33
+#: expressions/dyn.py:22 expressions/pitd.py:34 expressions/tenc.py:22
 msgid "Smoothness of the expression curve"
 msgstr "表情曲线的平滑度；值越大越平滑"
 
-#: expressions/dyn.py:23 expressions/pitd.py:34
+#: expressions/dyn.py:23 expressions/pitd.py:35 expressions/tenc.py:23
 msgid "Scaling factor for the expression curve"
 msgstr "表情曲线的缩放因子；值越大，曲线的变化幅度越大"
 
-#: expressions/pitd.py:29
+#: expressions/pitd.py:28
+msgid "Pitch Deviation (curve)"
+msgstr "音高偏差曲线 Pitch Deviation (curve)"
+
+#: expressions/pitd.py:30
 msgid "Confidence threshold for filtering uncertain pitch values in UTAU WAV"
 msgstr "提取歌姬音频的音高时，只有大于置信度阈值的音高会被采纳"
 
-#: expressions/pitd.py:30
+#: expressions/pitd.py:31
 msgid ""
 "Confidence threshold for filtering uncertain pitch values in reference WAV"
 msgstr "提取参考音频的音高时，只有大于置信度阈值的音高会被采纳"
 
-#: expressions/pitd.py:32
+#: expressions/pitd.py:33
 msgid ""
 "Semitone shift between the UTAU and reference WAV; if the USTX WAV is an "
 "octave higher than the reference WAV, set to 12, otherwise -12; leave it "
@@ -65,123 +182,10 @@ msgstr ""
 "歌姬音频与参考音频之间的半音偏移；若歌姬比参考高一个八度则设为 12，低一个八度"
 "则设为 -12；若音高一致则设为 0；此处留空则启用自动估算"
 
-#: expressive-gui.py:70
-msgid "Config exported successfully!"
-msgstr "配置导出成功！"
+#: expressions/tenc.py:19
+msgid "Tension (curve)"
+msgstr "张力曲线 Tension (curve)"
 
-#: expressive-gui.py:72
-msgid "Failed to export config"
-msgstr "配置导出失败"
-
-#: expressive-gui.py:85
-msgid "Config imported successfully!"
-msgstr "配置导入成功！"
-
-#: expressive-gui.py:88
-msgid "Failed to import config"
-msgstr "配置导入失败"
-
-#: expressive-gui.py:137
-msgid "Processing completed successfully!"
-msgstr "处理完成！"
-
-#: expressive-gui.py:139
-msgid "Error during processing"
-msgstr "处理时发生错误"
-
-#: expressive-gui.py:171
-msgid "Please fill all required file paths"
-msgstr "请填写所有必填文件路径"
-
-#: expressive-gui.py:180
-msgid "Please select at least one expression to apply"
-msgstr "请至少选择一个表情"
-
-#: expressive-gui.py:188
-msgid "File Paths"
-msgstr "文件路径"
-
-#: expressive-gui.py:193
-msgid "Reference WAV File"
-msgstr "参考音频文件（WAV）"
-
-#: expressive-gui.py:195 expressive-gui.py:210 expressive-gui.py:225
-#: expressive-gui.py:240
-msgid "Input required"
-msgstr "需要填写内容"
-
-#: expressive-gui.py:208
-msgid "UTAU WAV File"
-msgstr "歌姬音频文件（WAV）"
-
-#: expressive-gui.py:223
-msgid "Input USTX File"
-msgstr "输入 OpenUtau 工程文件（USTX）"
-
-#: expressive-gui.py:238
-msgid "Output USTX File"
-msgstr "输出 OpenUtau 工程文件（USTX）"
-
-#: expressive-gui.py:239
-msgid "Path to save processed USTX file"
-msgstr "用于保存处理后 USTX 文件的路径"
-
-#: expressive-gui.py:252
-msgid "Track Number"
-msgstr "轨道编号"
-
-#: expressive-gui.py:258
-msgid "Expression Selection"
-msgstr "要添加的表情参数"
-
-#: expressive-gui.py:261
-msgid "Dynamics (dyn)"
-msgstr "动态 Dynamics（dyn）"
-
-#: expressive-gui.py:264
-msgid "Pitch Deviation (pitd)"
-msgstr "音高偏差 Pitch Deviation（pitd）"
-
-#: expressive-gui.py:273
-msgid "Dynamics Expression Parameters"
-msgstr "动态 Dynamics 表情参数"
-
-#: expressive-gui.py:276 expressive-gui.py:306
-msgid "Align Radius"
-msgstr "对齐半径"
-
-#: expressive-gui.py:280 expressive-gui.py:314
-msgid "Smoothness"
-msgstr "平滑度"
-
-#: expressive-gui.py:284 expressive-gui.py:318
-msgid "Scaler"
-msgstr "缩放因子"
-
-#: expressive-gui.py:293
-msgid "Pitch Deviation Expression Parameters"
-msgstr "音高偏差 Pitch Deviation 表情参数"
-
-#: expressive-gui.py:297
-msgid "UTAU Confidence"
-msgstr "歌姬音频置信度"
-
-#: expressive-gui.py:302
-msgid "Reference Confidence"
-msgstr "参考音频置信度"
-
-#: expressive-gui.py:310
-msgid "Semitone Shift"
-msgstr "半音偏移"
-
-#: expressive-gui.py:325
-msgid "Import Config"
-msgstr "导入配置"
-
-#: expressive-gui.py:331
-msgid "Export Config"
-msgstr "导出配置"
-
-#: expressive-gui.py:342
-msgid "Process"
-msgstr "开始处理"
+#: expressions/tenc.py:24
+msgid "Bias for the expression curve"
+msgstr "表情曲线的偏置；值越大，曲线的起始点越高"
