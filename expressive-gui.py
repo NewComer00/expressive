@@ -15,9 +15,10 @@ init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales')
 
 
 # Application code starts here
+import sys
 import json
 import asyncio
-import collections.abc
+from collections.abc import Mapping
 
 import webview
 from nicegui import ui, app
@@ -28,14 +29,30 @@ from expressive import process_expressions
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
-def dict_update(d, u):
-    # https://stackoverflow.com/a/3233356
+def dict_update(d: dict, u: Mapping):
+    """Recursively update a dictionary with another dictionary.
+    This function updates the dictionary `d` with the values from the dictionary `u`.
+    See: https://stackoverflow.com/a/3233356
+    """
     for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
+        if isinstance(v, Mapping):
             d[k] = dict_update(d.get(k, {}), v)
         else:
             d[k] = v
     return d
+
+
+@app.on_connect
+def close_splash():
+    """Close the splash screen when the app is connected if this script is frozen.
+    This is a workaround for PyInstaller, which doesn't support splash screen in the main thread
+    
+    See: https://github.com/zauberzeug/nicegui/discussions/3536
+         https://stackoverflow.com/questions/71057636/how-can-i-solve-no-module-named-pyi-splash-after-using-pyinstaller
+    """
+    if getattr(sys, 'frozen', False):
+        import pyi_splash # type: ignore
+        pyi_splash.close()
 
 
 def create_gui():

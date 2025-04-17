@@ -3,6 +3,9 @@
 __pycache__/
 .nicegui/
 dist/
+build/*
+!build/installer.iss
+!build/auto-py-to-exe.json
 *.pyc
 *PitchLoader Output*.ustx
 *output*.ustx
