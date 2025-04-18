@@ -55,6 +55,24 @@ def sequence_interval_intersection(seqs):
     return [x for x in np.unique(np.concatenate(seqs)) if min_val <= x <= max_val]
 
 
+def sequence_interval_union(seqs):
+    """Find the union of multiple sequences.
+
+    This function finds the union of multiple sequences, returning a sorted list of unique values.
+
+    Args:
+        seqs (list of list): List of sequences to unite.
+
+    Returns:
+        list: Sorted list of unique values in the union.
+
+    Example:
+        seqs = [[0, 1, 2, 3], [1., 1.1, 2., 4., 5.]]
+        result = [0., 1., 1.1, 2., 3., 4., 5.]
+    """
+    return np.unique(np.concatenate(seqs)).tolist()
+
+
 def unify_sequence_time(seq_times, seq_vals, to_ticks=False, tempo=120, ppqn=480):
     """Unify multiple sequences to a common time base.
 
