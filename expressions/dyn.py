@@ -29,6 +29,8 @@ class DynLoader(ExpressionLoader):
         smoothness   = args.smoothness  .default,
         scaler       = args.scaler      .default,
     ):
+        self.logger.info(_("Extracting expression..."))
+
         # Extract rms features from WAV files
         utau_time, utau_rms, utau_features = get_wav_features(
             wav_path=self.utau_path,
@@ -39,7 +41,7 @@ class DynLoader(ExpressionLoader):
 
         # Align all sequences to a common MIDI tick time base
         # NOTICE: features from UTAU WAV are the reference, and those from Ref. WAV are the query
-        dyn_tick, (time_aligned_ref_rms, *_), *_ = align_sequence_tick(
+        dyn_tick, (time_aligned_ref_rms, *_unused), *_unused = align_sequence_tick(
             query_time=ref_time,
             queries=(ref_rms, *ref_features),
             reference_time=utau_time,
@@ -51,6 +53,7 @@ class DynLoader(ExpressionLoader):
         dyn_val = get_experssion_dynamics(time_aligned_ref_rms, smoothness, scaler)
 
         self.expression_tick, self.expression_val = dyn_tick, dyn_val
+        self.logger.info(_("Expression extraction complete."))
         return self.expression_tick, self.expression_val
 
 

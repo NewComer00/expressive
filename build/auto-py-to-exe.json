@@ -15,7 +15,7 @@
   },
   {
    "optionDest": "console",
-   "value": true
+   "value": false
   },
   {
    "optionDest": "icon_file",
@@ -95,7 +95,7 @@
   },
   {
    "optionDest": "hookspath",
-   "value": "hooks"
+   "value": "build/hooks"
   }
  ],
  "nonPyinstallerOptions": {

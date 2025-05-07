@@ -1,8 +1,56 @@
+import logging
 import argparse
+import tempfile
+from datetime import datetime
+from contextlib import contextmanager
+from os.path import splitext, basename
 
-from utils.gpu import add_cuda11_to_path
+
+from utils.gpu import add_cuda_to_path
 from expressive import process_expressions
 from expressions.base import getExpressionLoader, get_registered_expressions
+
+
+@contextmanager
+def setup_loggers():
+    log_file = tempfile.NamedTemporaryFile(
+        delete=False,
+        prefix=f"expressive_cli_{datetime.now().strftime('%Y%m%d_%H%M%S')}_",
+        suffix=".log",
+    )
+    log_path = log_file.name
+    log_file.close()  # Close immediately; we'll reopen via FileHandler
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Set up file handler
+    file_handler = logging.FileHandler(log_path, encoding="utf-8-sig")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    # Set up stdout handler
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+
+    # Main application logger
+    logger_app = logging.getLogger(splitext(basename(__file__))[0])
+    logger_app.setLevel(logging.DEBUG)
+    logger_app.addHandler(file_handler)
+    logger_app.addHandler(stream_handler)
+
+    # Expression loader logger
+    logger_exp = logging.getLogger(getExpressionLoader(None).__name__)
+    logger_exp.setLevel(logging.DEBUG)
+    logger_exp.addHandler(file_handler)
+
+    try:
+        yield logger_app, logger_exp, log_path
+    finally:
+        logger_app.info(f"Logs saved to {log_path}")
+        for logger in [logger_app, logger_exp]:
+            for handler in logger.handlers[:]:
+                handler.close()
+                logger.removeHandler(handler)
 
 
 def main():
@@ -44,13 +92,21 @@ def main():
         } for exp_name in expression_names if exp_name in args.expression
     ]
 
-    # Process
-    process_expressions(
-        args.utau_wav, args.ref_wav, args.ustx_input,
-        args.ustx_output, args.track_number, expressions
-    )
+    # Process expressions
+    with setup_loggers() as (logger_app, _, _):
+        logger_app.info("Starting Expressive CLI...")
+        try:
+            process_expressions(
+                args.utau_wav, args.ref_wav, args.ustx_input,
+                args.ustx_output, args.track_number, expressions
+            )
+        except Exception as e:
+            logger_app.error(f"Error occurred during processing: {e}")
+            raise
+        else:
+            logger_app.info("Processing completed successfully!")
 
 
 if __name__ == "__main__":
-    add_cuda11_to_path()
+    add_cuda_to_path()
     main()

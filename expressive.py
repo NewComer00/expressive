@@ -1,6 +1,6 @@
 from shutil import copy
 
-from utils.gpu import add_cuda11_to_path
+from utils.gpu import add_cuda_to_path
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
@@ -30,7 +30,7 @@ def process_expressions(
 
 
 if __name__ == "__main__":
-    add_cuda11_to_path()
+    add_cuda_to_path()
 
     utau_wav = "examples/Прекрасное Далеко/utau.wav"
     ref_wav = "examples/Прекрасное Далеко/reference.wav"

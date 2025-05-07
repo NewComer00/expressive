@@ -11,8 +11,8 @@ import nvidia.cufft
 import nvidia.curand
 
 
-def add_cuda11_to_path():
-    """Add CUDA 11 to library searching path."""
+def add_cuda_to_path():
+    """Add CUDA to library searching path."""
     for package in [nvidia.cuda_nvcc, nvidia.cuda_runtime, nvidia.cudnn, nvidia.cublas,
                     nvidia.cusolver, nvidia.cusparse, nvidia.cufft, nvidia.curand]:
         lib_path = Path(package.__path__[0]) / "bin"

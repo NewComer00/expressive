@@ -31,6 +31,8 @@ class TencLoader(ExpressionLoader):
         scaler       = args.scaler      .default,
         bias         = args.bias        .default,
     ):
+        self.logger.info(_("Extracting expression..."))
+
         # Extract features from WAV files
         utau_time, utau_rms, utau_features = get_wav_features(
             wav_path=self.utau_path,
@@ -41,7 +43,7 @@ class TencLoader(ExpressionLoader):
 
         # Align all sequences to a common MIDI tick time base
         # NOTICE: features from UTAU WAV are the reference, and those from Ref. WAV are the query
-        tenc_tick, (time_aligned_ref_rms, *_), *_ = align_sequence_tick(
+        tenc_tick, (time_aligned_ref_rms, *_unused), *_unused = align_sequence_tick(
             query_time=ref_time,
             queries=(ref_rms, *ref_features),
             reference_time=utau_time,
@@ -53,6 +55,7 @@ class TencLoader(ExpressionLoader):
         tenc_val = get_experssion_tension(time_aligned_ref_rms, smoothness, scaler, bias)
 
         self.expression_tick, self.expression_val = tenc_tick, tenc_val
+        self.logger.info(_("Expression extraction complete."))
         return self.expression_tick, self.expression_val
 
 

@@ -19,6 +19,7 @@ from utils.seqtool import (
     gaussian_filter1d_with_nan,
     seq_dynamics_trends,
 )
+from utils.log import StreamToLogger
 from utils.cache import CACHE_DIR, calculate_file_hash
 
 
@@ -44,19 +45,23 @@ class PitdLoader(ExpressionLoader):
         smoothness      = args.smoothness     .default,
         scaler          = args.scaler         .default,
     ):
+        self.logger.info(_("Extracting expression..."))
+
         # Extract pitch features from WAV files
-        utau_time, utau_pitch, utau_features = get_wav_features(
-            wav_path=self.utau_path, confidence_threshold=confidence_utau
-        )
+        with StreamToLogger(self.logger, tee=True):
+            utau_time, utau_pitch, utau_features = get_wav_features(
+                wav_path=self.utau_path, confidence_threshold=confidence_utau
+            )
 
         # Extract pitch features from reference WAV file
-        ref_time, ref_pitch, ref_features = get_wav_features(
-            wav_path=self.ref_path, confidence_threshold=confidence_ref
-        )
+        with StreamToLogger(self.logger, tee=True):
+            ref_time, ref_pitch, ref_features = get_wav_features(
+                wav_path=self.ref_path, confidence_threshold=confidence_ref
+            )
 
         # Align all sequences to a common MIDI tick time base
         # NOTICE: features from UTAU WAV are the reference, and those from Ref. WAV are the query
-        pitd_tick, (time_aligned_ref_pitch, *_), (unified_utau_pitch, *_) = (
+        pitd_tick, (time_aligned_ref_pitch, *_unused), (unified_utau_pitch, *_unused) = (
             align_sequence_tick(
                 query_time=ref_time,
                 queries=(ref_pitch, *ref_features),
@@ -68,12 +73,13 @@ class PitdLoader(ExpressionLoader):
         )
 
         # Align pitch sequences in pitch axis
-        time_pitch_aligned_ref_pitch, _ = align_sequence_pitch(
-            time_aligned_ref_pitch,
-            unified_utau_pitch,
-            semitone_shift=semitone_shift,
-            smoothness=smoothness,
-        )
+        with StreamToLogger(self.logger, tee=True):
+            time_pitch_aligned_ref_pitch, _unused = align_sequence_pitch(
+                time_aligned_ref_pitch,
+                unified_utau_pitch,
+                semitone_shift=semitone_shift,
+                smoothness=smoothness,
+            )
 
         # Calculate pitch delta for USTX pitch editing
         pitd_val = get_pitch_delta(
@@ -83,6 +89,7 @@ class PitdLoader(ExpressionLoader):
         )
 
         self.expression_tick, self.expression_val = pitd_tick, pitd_val
+        self.logger.info(_("Expression extraction complete."))
         return self.expression_tick, self.expression_val
 
 
@@ -190,7 +197,7 @@ def align_sequence_pitch(query, reference, semitone_shift=None, smoothness=0):
         semitone_shift = int(np.round(hz_to_midi(base_pitch_vocal)) - np.round(
             hz_to_midi(base_pitch_wav)
         ).astype(int))
-        print(f"Estimated Semitone-shift: {semitone_shift}")
+        print(_("Estimated Semitone-shift: {}").format(semitone_shift))
 
     pitch_aligned_query = query * np.exp2(semitone_shift / 12)
 
@@ -245,7 +252,7 @@ def extract_wav_frequency(file_path, use_cache=True):
 
         cache_path = cache_dir / f"{wav_hash}.csv"
         if cache_path.is_file():
-            print(f"Using cache file `{cache_path}`")
+            print(_("Loading F0 data from cache file: '{}'").format(cache_path))
             with open(cache_path, "r", newline="") as file:
                 reader = csv.reader(file)
                 next(reader)  # Skip header
@@ -257,7 +264,7 @@ def extract_wav_frequency(file_path, use_cache=True):
     # If cache is unavailable
     if not all([time, frequency, confidence]):
         sr, audio = wavfile.read(file_path)
-        time, frequency, confidence, _ = crepe.predict(audio, sr, viterbi=True)
+        time, frequency, confidence, _unused = crepe.predict(audio, sr, viterbi=True)
 
         # Save data to cache
         if use_cache:
@@ -266,6 +273,6 @@ def extract_wav_frequency(file_path, use_cache=True):
                 writer.writerow(["Time (s)", "Frequency (Hz)", "Confidence"])
                 for t, f, c in zip(time, frequency, confidence):
                     writer.writerow([t, f, c])
-            print(f"Saved to cache file `{cache_path}`")
+            print(_("F0 data saved to cache file: '{}'").format(cache_path))
 
     return time, frequency, confidence

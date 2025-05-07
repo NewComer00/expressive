@@ -6,6 +6,7 @@ dist/
 build/*
 !build/installer.iss
 !build/auto-py-to-exe.json
+!build/hooks/
 *.pyc
 *PitchLoader Output*.ustx
 *output*.ustx

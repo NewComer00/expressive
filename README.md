@@ -85,7 +85,7 @@ python ./expressive.py
 # show help
 python ./expressive-cli.py --help
 
-# exmaple
+# example
 python ./expressive-cli.py --utau_wav "examples/明天会更好/utau.wav" --ref_wav "examples/明天会更好/reference.wav" --ustx_input "examples/明天会更好/project.ustx" --ustx_output "examples/明天会更好/output.ustx" --track_number 1 --expression dyn --expression pitd --pitd.semitone_shift 0 --expression tenc
 ```
 

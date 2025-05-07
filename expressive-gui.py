@@ -10,23 +10,39 @@ from utils.i18n import _, init_gettext
 parser = argparse.ArgumentParser(description='Choose application language.')
 parser.add_argument('--lang', default='en', help='Set language for localization (e.g. zh_CN, en)')
 args = parser.parse_args()
-init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales')
-, "app")
+init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales'), "app")
 
 
 # Application code starts here
 import sys
 import json
+import logging
 import asyncio
 from collections.abc import Mapping
+from os.path import splitext, basename
 
 import webview
 from nicegui import ui, app
 
-from utils.gpu import add_cuda11_to_path
+from utils.gpu import add_cuda_to_path
 from utils.ui import blink_taskbar_window
 from expressive import process_expressions
 from expressions.base import getExpressionLoader, get_registered_expressions
+
+
+class LogElementHandler(logging.Handler):
+    """A logging handler that emits messages to a log element."""
+
+    def __init__(self, element: ui.log, level: int = logging.NOTSET) -> None:
+        self.element = element
+        super().__init__(level)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            msg = self.format(record)
+            self.element.push(msg)
+        except Exception:
+            self.handleError(record)
 
 
 def dict_update(d: dict, u: Mapping):
@@ -146,6 +162,7 @@ def create_gui():
         with status_row:
             process_button.disable()
             spinner_dialog.open()
+            log_element.clear()
             try:
                 # Run in executor since process_expressions is likely synchronous
                 loop = asyncio.get_event_loop()
@@ -161,8 +178,10 @@ def create_gui():
                     ),
                 )
                 blink_taskbar_window(app.config.title)
+                logger_app.info(_("Processing completed successfully!"))
                 ui.notify(_("Processing completed successfully!"), type="positive")
             except Exception as e:
+                logger_app.exception(_("Error during processing") + f": {str(e)}")
                 ui.notify(_("Error during processing") + f": {str(e)}", type="negative")
             finally:
                 spinner_dialog.close()
@@ -207,6 +226,34 @@ def create_gui():
             ui.notify(_("Please select at least one expression to apply"), type="negative")
             return
         asyncio.create_task(run_processing())
+
+    def setup_loggers(log_element: ui.log):
+        """Configure application and expression loggers to write to the log_element."""
+        def configure_logger(name: str, formatter: logging.Formatter):
+            logger = logging.getLogger(name)
+            logger.setLevel(logging.DEBUG)
+            handler = LogElementHandler(log_element)
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            return logger, handler
+
+        formatter_app = logging.Formatter(
+            "%(asctime)s %(levelname)s [%(name)s]: %(message)s", datefmt="%H:%M:%S"
+        )
+        formatter_exp = logging.Formatter(
+            "%(asctime)s %(levelname)s [%(expression)s]: %(message)s", datefmt="%H:%M:%S"
+        )
+
+        logger_app, handler_app = configure_logger(splitext(basename(__file__))[0], formatter_app)
+        logger_exp, handler_exp = configure_logger(getExpressionLoader(None).__name__, formatter_exp)
+
+        # Clean up on disconnect
+        ui.context.client.on_disconnect(lambda: (
+            logger_app.removeHandler(handler_app),
+            logger_exp.removeHandler(handler_exp)
+        ))
+
+        return logger_app, logger_exp
 
     # File inputs
     file_inputs = {}
@@ -401,18 +448,45 @@ def create_gui():
             icon="file_upload",
         )
 
-    # Process button and progress indicator
+    # Process button, spinner, and log element
     with ui.row().classes("w-full") as status_row:
         with ui.dialog() as spinner_dialog, ui.card():
             ui.spinner(size="lg")
         process_button = ui.button(
             _("Process"), on_click=process_files, icon="play_arrow"
         ).classes("flex-grow")
+        with ui.element().classes("relative w-full h-40"):
+            log_element = ui.log().classes("w-full h-full select-text cursor-text")
+
+            # Log auto scrolling on update
+            log_element.on('update:model-value', js_handler=f"""
+                (value) => {{
+                    const logEl = document.getElementById("c{log_element.id}");
+                    if (logEl) {{
+                        logEl.scrollTop = logEl.scrollHeight;
+                    }}
+                }}
+            """)
+
+            # Clipboard button
+            ui.button("📋").props("flat dense").classes(
+                "absolute top-0 right-5 m-1 text-sm px-1 py-0.5 opacity-70 hover:opacity-100"
+            ).on("click", js_handler=f"""
+                () => {{
+                    const logEl = document.getElementById("c{log_element.id}");
+                    if (logEl) {{
+                        const text = [...logEl.children].map(el => el.textContent).join("\\n");
+                        navigator.clipboard.writeText(text);
+                    }}
+                }}
+            """)
+
+            logger_app, logger_exp = setup_loggers(log_element)
 
 
 # Run the app
 if __name__ in {"__main__", "__mp_main__"}:
-    add_cuda11_to_path()
+    add_cuda_to_path()
     create_gui()
     ui.run(
         title="Expressive GUI",
