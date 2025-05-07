@@ -74,12 +74,12 @@ def close_splash():
 def create_gui():
     # Initialize state
     state = {
-        **{
-            arg.name: arg.default
-            for arg in getExpressionLoader(None).get_args_dict().values()
-        },
+        "utau_wav"    : "",
+        "ref_wav"     : "",
+        "ustx_input"  : "",
         "ustx_output" : "",
-        "expressions": {
+        "track_number": 1,
+        "expressions" : {
             exp_name: {
                 "selected": False,
                 **{
