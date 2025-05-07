@@ -1,8 +1,7 @@
-#define AppName "Expressive-GUI"
 #define AppVersion GetEnv("TAG_NAME")
 
 [Setup]
-AppName={#AppName}
+AppName=Expressive-GUI
 AppVersion={#AppVersion}
 DefaultDirName={autopf}\Expressive-GUI
 DefaultGroupName=Expressive-GUI
