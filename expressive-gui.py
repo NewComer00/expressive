@@ -459,14 +459,21 @@ def create_gui():
             log_element = ui.log().classes("w-full h-full select-text cursor-text")
 
             # Log auto scrolling on update
-            log_element.on('update:model-value', js_handler=f"""
-                (value) => {{
-                    const logEl = document.getElementById("c{log_element.id}");
-                    if (logEl) {{
+            # Embed the script in the head of the HTML document
+            # since the id of the log element is static during the app's lifetime
+            ui.add_head_html(f'''
+            <script>
+            document.addEventListener('DOMContentLoaded', function () {{
+                const logEl = document.getElementById('c{log_element.id}');
+                if (logEl) {{
+                    const observer = new MutationObserver(() => {{
                         logEl.scrollTop = logEl.scrollHeight;
-                    }}
+                    }});
+                    observer.observe(logEl, {{ childList: true }});
                 }}
-            """)
+            }});
+            </script>
+            ''')
 
             # Clipboard button
             ui.button("📋").props("flat dense").classes(
