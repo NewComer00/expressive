@@ -12,6 +12,7 @@ SolidCompression=yes
 LZMAUseSeparateProcess=yes
 LZMANumBlockThreads=8
 SetupIconFile=..\assets\icons\app.ico
+PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=commandline dialog
 
 [Files]
