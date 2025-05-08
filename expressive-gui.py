@@ -522,9 +522,16 @@ def create_gui():
 if __name__ in {"__main__", "__mp_main__"}:
     add_cuda_to_path()
     create_gui()
-    ui.run(
-        title="Expressive GUI",
-        native=True,
-        reload=False,
-        window_size=(600, 640),
-    )
+    try:
+        ui.run(
+            title="Expressive GUI",
+            native=True,
+            reload=False,
+            window_size=(600, 640),
+        )
+    except KeyboardInterrupt:
+        if getattr(sys, 'frozen', False):
+            # Suppress KeyboardInterrupt error on exit
+            pass
+        else:
+            raise
