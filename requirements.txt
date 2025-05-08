@@ -20,3 +20,4 @@ scikit-learn
 nicegui
 pywebview
 pywin32; platform_system=="Windows"
+py-window-styles; platform_system=="Windows"

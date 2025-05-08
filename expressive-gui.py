@@ -25,8 +25,8 @@ import webview
 from nicegui import ui, app
 
 from utils.gpu import add_cuda_to_path
-from utils.ui import blink_taskbar_window
 from expressive import process_expressions
+from utils.ui import blink_taskbar_window, change_window_style
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
@@ -114,6 +114,14 @@ def create_gui():
     #         },
     #     },
     # }
+
+    def on_color_scheme_changed(event):
+        """Change the window style based on the color scheme."""
+        color_scheme = event.args
+        if color_scheme == 'dark':
+            change_window_style(app.config.title, 'mica')
+        else:
+            change_window_style(app.config.title, 'light')
 
     async def export_config(state=state):
         file = await app.native.main_window.create_file_dialog(  # type: ignore
@@ -254,6 +262,25 @@ def create_gui():
         ))
 
         return logger_app, logger_exp
+
+    # Set up the UI dark mode
+    ui.dark_mode(None)
+    ui.add_head_html('''
+    <script>
+        // Emit an event when the color scheme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            const colorScheme = event.matches ? "dark" : "light"; 
+            emitEvent('color-scheme-changed', colorScheme);
+        });
+
+        // Initial check
+        window.onload = function() {
+            const colorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light";
+            emitEvent('color-scheme-changed', colorScheme);
+        };
+    </script>
+    ''')
+    ui.on('color-scheme-changed', lambda e: on_color_scheme_changed(e))
 
     # File inputs
     file_inputs = {}
@@ -497,7 +524,6 @@ if __name__ in {"__main__", "__mp_main__"}:
     create_gui()
     ui.run(
         title="Expressive GUI",
-        dark=None,
         native=True,
         reload=False,
         window_size=(600, 640),
