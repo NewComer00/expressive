@@ -1,15 +1,10 @@
-# For multiprocessing support in PyInstaller on Windows, following code is needed before using the argparse module
-# https://github.com/pyinstaller/pyinstaller/wiki/Recipe-Multiprocessing
-import multiprocessing
-multiprocessing.freeze_support()
-
-
 # For i18n support, argparse is required to set the language of gettext before importing any other modules
 import os, argparse
 from utils.i18n import _, init_gettext
 parser = argparse.ArgumentParser(description='Choose application language.')
 parser.add_argument('--lang', default='en', help='Set language for localization (e.g. zh_CN, en)')
-args = parser.parse_args()
+# Parse only the known arguments for frozen script with multiprocessing 
+args, unknown = parser.parse_known_args()
 init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales'), "app")
 
 
@@ -24,9 +19,14 @@ from os.path import splitext, basename
 import webview
 from nicegui import ui, app
 
+from utils.ui import (
+    blink_taskbar_window,
+    change_window_style,
+    NiceguiNativeDropArea,
+    webview_active_window,
+)
 from utils.gpu import add_cuda_to_path
 from expressive import process_expressions
-from utils.ui import blink_taskbar_window, change_window_style
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
@@ -214,6 +214,36 @@ def create_gui():
             state[field] = file
             file_inputs[field].set_value(state[field])
 
+    def on_drag(event, input_ids: list[str]):
+        target_id = event['target'].get('id')
+        if target_id not in input_ids:
+            return
+        if event['type'] == 'dragenter':
+            webview_active_window().evaluate_js(f'''
+                document.getElementById("{target_id}").focus();
+            ''')
+        elif event['type'] == 'dragleave':
+            webview_active_window().evaluate_js(f'''
+                document.getElementById("{target_id}").blur();
+            ''')
+
+    def on_drop(event, input_ids: list[str]):
+        target_id = event['target'].get('id')
+        if target_id not in input_ids:
+            return
+        files = event['dataTransfer']['files']
+        if not files:
+            return
+        fpath = files[0]["pywebviewFullPath"]
+        # Fill the input field and trigger the NiceGUI binding propagation
+        webview_active_window().evaluate_js(f"""
+            const el = document.getElementById("{target_id}");
+            if (el) {{
+                el.value = {json.dumps(fpath)};
+                el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+            }}
+        """)
+
     async def process_files():
         # Validate inputs
         if (
@@ -288,67 +318,78 @@ def create_gui():
     with ui.card().classes("w-full"):
         ui.label(_("File Paths")).classes("text-xl font-bold")
 
-        with ui.row().classes("w-full"):
-            file_inputs["ref_wav"] = (
-                ui.input(
-                    label=_("Reference WAV File"),
-                    placeholder=general_args.ref_path.help,
-                    validation={_("Input required"): lambda v: bool(v)},
-                )
-                .bind_value(state, "ref_wav")
-                .classes("flex-grow")
-            )
-            ui.button(
-                icon="folder",
-                on_click=lambda: choose_file("ref_wav", ("WAV files (*.wav)",)),
-            ).classes("self-end")
+        on_drag_impl = lambda e: on_drag(e,
+            [ f'c{v.id}' for v in file_inputs.values() ])
+        on_drop_impl = lambda e: on_drop(e,
+            [ f'c{v.id}' for v in file_inputs.values() ])
+        with NiceguiNativeDropArea(
+            on_dragenter = on_drag_impl,
+            on_dragleave = on_drag_impl,
+            on_dragover  = on_drag_impl,
+            on_drop      = on_drop_impl,
+        ).classes('w-full'):
 
-        with ui.row().classes("w-full"):
-            file_inputs["utau_wav"] = (
-                ui.input(
-                    label=_("UTAU WAV File"),
-                    placeholder=general_args.utau_path.help,
-                    validation={_("Input required"): lambda v: bool(v)},
+            with ui.row().classes("w-full"):
+                file_inputs["ref_wav"] = (
+                    ui.input(
+                        label=_("Reference WAV File"),
+                        placeholder=general_args.ref_path.help,
+                        validation={_("Input required"): lambda v: bool(v)},
+                    )
+                    .bind_value(state, "ref_wav")
+                    .classes("flex-grow")
                 )
-                .bind_value(state, "utau_wav")
-                .classes("flex-grow")
-            )
-            ui.button(
-                icon="folder",
-                on_click=lambda: choose_file("utau_wav", ("WAV files (*.wav)",)),
-            ).classes("self-end")
+                ui.button(
+                    icon="folder",
+                    on_click=lambda: choose_file("ref_wav", ("WAV files (*.wav)",)),
+                ).classes("self-end")
 
-        with ui.row().classes("w-full"):
-            file_inputs["ustx_input"] = (
-                ui.input(
-                    label=_("Input USTX File"),
-                    placeholder=general_args.ustx_path.help,
-                    validation={_("Input required"): lambda v: bool(v)},
+            with ui.row().classes("w-full"):
+                file_inputs["utau_wav"] = (
+                    ui.input(
+                        label=_("UTAU WAV File"),
+                        placeholder=general_args.utau_path.help,
+                        validation={_("Input required"): lambda v: bool(v)},
+                    )
+                    .bind_value(state, "utau_wav")
+                    .classes("flex-grow")
                 )
-                .bind_value(state, "ustx_input")
-                .classes("flex-grow")
-            )
-            ui.button(
-                icon="folder",
-                on_click=lambda: choose_file("ustx_input", ("USTX files (*.ustx)",)),
-            ).classes("self-end")
+                ui.button(
+                    icon="folder",
+                    on_click=lambda: choose_file("utau_wav", ("WAV files (*.wav)",)),
+                ).classes("self-end")
 
-        with ui.row().classes("w-full"):
-            file_inputs["ustx_output"] = (
-                ui.input(
-                    label=_("Output USTX File"),
-                    placeholder=_("Path to save processed USTX file"),
-                    validation={_("Input required"): lambda v: bool(v)},
+            with ui.row().classes("w-full"):
+                file_inputs["ustx_input"] = (
+                    ui.input(
+                        label=_("Input USTX File"),
+                        placeholder=general_args.ustx_path.help,
+                        validation={_("Input required"): lambda v: bool(v)},
+                    )
+                    .bind_value(state, "ustx_input")
+                    .classes("flex-grow")
                 )
-                .bind_value(state, "ustx_output")
-                .classes("flex-grow")
-            )
-            ui.button(
-                icon="save",
-                on_click=lambda: save_file(
-                    "ustx_output", ("USTX files (*.ustx)",), "output"
-                ),
-            ).classes("self-end")
+                ui.button(
+                    icon="folder",
+                    on_click=lambda: choose_file("ustx_input", ("USTX files (*.ustx)",)),
+                ).classes("self-end")
+
+            with ui.row().classes("w-full"):
+                file_inputs["ustx_output"] = (
+                    ui.input(
+                        label=_("Output USTX File"),
+                        placeholder=_("Path to save processed USTX file"),
+                        validation={_("Input required"): lambda v: bool(v)},
+                    )
+                    .bind_value(state, "ustx_output")
+                    .classes("flex-grow")
+                )
+                ui.button(
+                    icon="save",
+                    on_click=lambda: save_file(
+                        "ustx_output", ("USTX files (*.ustx)",), "output"
+                    ),
+                ).classes("self-end")
 
         ui.number(label=_("Track Number"), min=1, format="%d").bind_value(
             state, "track_number",
@@ -522,6 +563,12 @@ def create_gui():
 if __name__ in {"__main__", "__mp_main__"}:
     add_cuda_to_path()
     create_gui()
+
+    # For multiprocessing support in PyInstaller on Windows before calling ui.run()
+    # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-Multiprocessing
+    import multiprocessing
+    multiprocessing.freeze_support()
+
     try:
         ui.run(
             title="Expressive GUI",
