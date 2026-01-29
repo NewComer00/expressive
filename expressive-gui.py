@@ -125,13 +125,13 @@ def create_gui():
 
     async def export_config(state=state):
         file = await app.native.main_window.create_file_dialog(  # type: ignore
-            dialog_type=webview.SAVE_DIALOG,
+            dialog_type=webview.FileDialog.SAVE,
             file_types=("JSON files (*.json)",),
             save_filename="expressive_config",
         )
         if file and len(file) > 0:
             try:
-                with open(file, "w+", encoding="utf-8-sig") as f:  # type: ignore
+                with open(file[0], "w+", encoding="utf-8-sig") as f:  # type: ignore
                     json.dump(state, f, indent=4)
                 ui.notify(_("Config exported successfully!"), type="positive")
             except Exception as e:
@@ -139,7 +139,7 @@ def create_gui():
 
     async def import_config(state=state):
         file = await app.native.main_window.create_file_dialog(  # type: ignore
-            dialog_type=webview.OPEN_DIALOG,
+            dialog_type=webview.FileDialog.OPEN,
             file_types=("JSON files (*.json)",),
         )
         if file and len(file) > 0:
@@ -197,7 +197,7 @@ def create_gui():
 
     async def choose_file(field, ftypes):
         file = await app.native.main_window.create_file_dialog(  # type: ignore
-            dialog_type=webview.OPEN_DIALOG,
+            dialog_type=webview.FileDialog.OPEN,
             file_types=ftypes,
         )
         if file is not None and len(file) > 0:
@@ -206,12 +206,12 @@ def create_gui():
 
     async def save_file(field, ftypes, fname):
         file = await app.native.main_window.create_file_dialog(  # type: ignore
-            dialog_type=webview.SAVE_DIALOG,
+            dialog_type=webview.FileDialog.SAVE,
             file_types=ftypes,
             save_filename=fname,
         )
         if file is not None and len(file) > 0:
-            state[field] = file
+            state[field] = file[0]
             file_inputs[field].set_value(state[field])
 
     def on_drag(event, input_ids: list[str]):

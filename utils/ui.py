@@ -136,8 +136,9 @@ class NiceguiNativeDropArea(ui.element):
             app.native.window_args['js_api'] = JS_API()
 
         js_api = app.native.window_args['js_api']
-        if isinstance(js_api, JS_API):
-            js_api.register_bind(self._html_id, self._bind)
+        register = getattr(js_api, 'register_bind', None)
+        if callable(register):
+            register(self._html_id, self._bind)
         else:
             raise RuntimeError("Conflicting js_api already assigned to app.native.window_args['js_api'].")
 
