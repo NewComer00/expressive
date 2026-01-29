@@ -21,8 +21,8 @@ The current version supports importing the following expression parameters:
   <img src="https://github.com/user-attachments/assets/cd4c3f0f-4ac2-4d59-910d-4dec2d786b4f" width="100%" /> 
 </p>
 
-> *OpenUtau version used from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
-> *Singer model from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
+> - *OpenUtau version used from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
+> - *Singer model from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
 
 ## ✅ Supported Platforms
 
@@ -30,14 +30,12 @@ The current version supports importing the following expression parameters:
 * OpenUtau Beta (supports DiffSinger)
 * Python 3.10 \*
 
-Supports NVIDIA GPU acceleration. Requires a GPU driver compatible with [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/).
+If your system has an NVIDIA GPU driver that supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) or later (i.e., driver version >= 450), this application will automatically enable GPU acceleration to improve processing speed.
 
 <details>
   <summary>Click to expand platform details</summary>
 
-* \* This project uses [CREPE](https://github.com/marl/crepe) as the pitch extractor, which depends on TensorFlow.
-
-  * On Windows, the last TensorFlow version supporting GPU acceleration is 2.10, and [PyPI](https://pypi.org/project/tensorflow/2.10.1/#files) offers only limited `.whl` file variants.
+* \* This project uses [CREPE](https://github.com/marl/crepe) \*\* as the pitch extractor, which depends on TensorFlow. On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
 * \*\* In the future, it may switch to a PyTorch-based alternative like [PESTO](https://github.com/SonyCSLParis/pesto) to improve compatibility.
 
 </details>
@@ -140,6 +138,8 @@ python ./expressive-cli.py \
   --expression tenc
 ```
 
+The output project file will be saved to `examples/明天会更好/output.ustx`.
+
 ### Graphical User Interface (GUI)
 
 Launch in Chinese:
@@ -157,7 +157,7 @@ python ./expressive-gui.py --lang en
 ## 🔬 Algorithm Workflow
 
 ```mermaid
-graph TD;
+graph TB;
   ustx_in[/"OpenUtau Project (USTX)"/]
   refwav[/"Reference WAV"/]
   utauwav[/"OpenUtau WAV"/]
@@ -167,6 +167,7 @@ graph TD;
   ustx_in-->|Tempo|time_pitd
 
   subgraph PitdLoader
+    direction TB
     feat_pitd["Features Extraction<br>Pitch & MFCC"]
 
     time_pitd["Time Alignment<br>FastDTW"]
@@ -179,10 +180,11 @@ graph TD;
     pitch_algn-->get_pitd
   end
 
-    utsx_out[/"OpenUtau Project Output"/]
-    get_pitd-->utsx_out
+  utsx_out[/"OpenUtau Project Output"/]
+  get_pitd-->utsx_out
 
   subgraph DynLoader
+    direction TB
     feat_dyn["Features Extraction<br>RMS"]
 
     time_dyn["Time Alignment<br>FastDTW"]
@@ -193,6 +195,7 @@ graph TD;
   end
 
   subgraph TencLoader
+    direction TB
     feat_tenc["Features Extraction<br>RMS"]
 
     time_tenc["Time Alignment<br>FastDTW"]

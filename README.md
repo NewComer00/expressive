@@ -9,7 +9,7 @@
 
 # Expressive
 
-**Expressive** 是一个为 [OpenUtau](https://github.com/stakira/OpenUtau) 开发的 [DiffSinger](https://github.com/openvpi/diffsinger) 表情参数导入工具，旨在从真实人声中提取情感参数，并导入至工程的相应轨道。
+**Expressive** 是一个为 [OpenUtau](https://github.com/stakira/OpenUtau) 开发的 [DiffSinger](https://github.com/openvpi/diffsinger) 表情参数导入工具，旨在从真实人声中提取表情参数，并导入至工程的相应轨道。
 
 当前版本支持以下表情参数的导入：
 
@@ -21,8 +21,8 @@
   <img src="https://github.com/user-attachments/assets/cd4c3f0f-4ac2-4d59-910d-4dec2d786b4f" width="100%" /> 
 </p>
 
-> *OpenUtau 版本来自 [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
-> *歌手模型来自 [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
+> - *OpenUtau 版本来自 [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
+> - *歌手模型来自 [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
 
 ## ✅ 支持平台
 
@@ -30,21 +30,20 @@
 * OpenUtau Beta（支持 DiffSinger）
 * Python 3.10 \*
 
-支持使用 NVIDIA GPU 进行计算加速，需安装支持 [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/) 的显卡驱动。
+若您的系统中安装了 NVIDIA 显卡驱动，且驱动支持 [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)（即：驱动版本 >= 450），本应用会自动启用 GPU 加速以提升处理速度。
+
 
 <details>
   <summary>点击展开更多平台说明</summary>
 
-* \* 本项目使用 [CREPE](https://github.com/marl/crepe) 作为音高提取器，依赖于 TensorFlow 框架。
-
-  * 在 Windows 下，最后支持 GPU 加速的 TensorFlow 版本为 2.10，且 [PyPI](https://pypi.org/project/tensorflow/2.10.1/#files) 提供的 `.whl` 文件版本有限。
+* \* 本项目使用 [CREPE](https://github.com/marl/crepe) \*\* 作为音高提取器，依赖于 TensorFlow 框架。在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
 * \*\* 未来可能切换至基于 PyTorch 的 [PESTO](https://github.com/SonyCSLParis/pesto) 替代 CREPE，以提高兼容性。
 
 </details>
 
 ## 📌 使用场景
 
-**典型需求**：在使用 DiffSinger 虚拟歌手翻唱时，用户通常已完成填词的音高轨，但缺少合适的情感表现。本工具正是为自动生成并导入这些表情参数而设计。
+**典型需求**：在使用 DiffSinger 虚拟歌手翻唱时，已经完成了填好词的无参 OpenUtau 工程，但尚未添加表情参数。本应用可以从参考人声音频中提取表情参数，并导入至 OpenUtau 工程中。
 
 **所需输入：**
 
@@ -55,7 +54,7 @@
 
 **输出结果：**
 
-* 一个携带情感参数的新 USTX 文件，原始工程不会被修改。
+* 一个携带表情参数的新 USTX 文件，原始工程不会被修改。
 
 ## ✨ 功能特性
 
@@ -140,6 +139,8 @@ python ./expressive-cli.py \
   --expression tenc
 ```
 
+输出工程文件将保存在 `examples/明天会更好/output.ustx`。
+
 ### 图形用户界面（GUI）
 
 启动中文界面
@@ -156,7 +157,7 @@ python ./expressive-gui.py --lang en
 
 ## 🔬 算法流程
 ```mermaid
-graph TD;
+graph TB;
   ustx_in[/"OpenUtau Project (USTX)"/]
   refwav[/"Reference WAV"/]
   utauwav[/"OpenUtau WAV"/]
@@ -166,6 +167,7 @@ graph TD;
   ustx_in-->|Tempo|time_pitd
 
   subgraph PitdLoader
+    direction TB
     feat_pitd["Features Extraction<br>Pitch & MFCC"]
 
     time_pitd["Time Alignment<br>FastDTW"]
@@ -178,10 +180,11 @@ graph TD;
     pitch_algn-->get_pitd
   end
 
-    utsx_out[/"OpenUtau Project Output"/]
-    get_pitd-->utsx_out
+  utsx_out[/"OpenUtau Project Output"/]
+  get_pitd-->utsx_out
 
   subgraph DynLoader
+    direction TB
     feat_dyn["Features Extraction<br>RMS"]
 
     time_dyn["Time Alignment<br>FastDTW"]
@@ -192,6 +195,7 @@ graph TD;
   end
 
   subgraph TencLoader
+    direction TB
     feat_tenc["Features Extraction<br>RMS"]
 
     time_tenc["Time Alignment<br>FastDTW"]
