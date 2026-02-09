@@ -26,6 +26,7 @@ from utils.ui import (
     webview_active_window,
 )
 from utils.gpu import add_cuda_to_path
+from utils.monkeypatch import patch_runpy
 from expressive import process_expressions
 from expressions.base import getExpressionLoader, get_registered_expressions
 
@@ -570,12 +571,15 @@ if __name__ in {"__main__", "__mp_main__"}:
     multiprocessing.freeze_support()
 
     try:
-        ui.run(
-            title="Expressive GUI",
-            native=True,
-            reload=False,
-            window_size=(600, 640),
-        )
+        # For PyInstaller compatibility with runpy used in ui.run from nicegui 3
+        # https://github.com/zauberzeug/nicegui/issues/5247
+        with patch_runpy():
+            ui.run(
+                title="Expressive GUI",
+                native=True,
+                reload=False,
+                window_size=(600, 640),
+            )
     except KeyboardInterrupt:
         if getattr(sys, 'frozen', False):
             # Suppress KeyboardInterrupt error on exit

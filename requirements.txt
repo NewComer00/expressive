@@ -17,7 +17,7 @@ platformdirs
 librosa
 matplotlib
 scikit-learn
-nicegui>=2.23.0
+nicegui>=3
 pywebview>=6.0
 pywin32; platform_system=="Windows"
 pywinstyles; platform_system=="Windows"
