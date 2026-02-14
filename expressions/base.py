@@ -84,6 +84,7 @@ def register_expression(cls: type[ExpressionLoader]):
         cls (type[ExpressionLoader]): The expression loader class to register.
     """
     EXPRESSION_LOADER_TABLE[cls.expression_name] = cls
+    return cls
 
 
 def getExpressionLoader(expression_name: str | None) -> type[ExpressionLoader]:
