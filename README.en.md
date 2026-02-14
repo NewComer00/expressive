@@ -82,10 +82,11 @@ cd expressive
 
 ### 2. Install dependencies
 
-It’s recommended to use a virtual environment:
+Run following commands inside of a virtual environment:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install --upgrade pip setuptools<82 wheel
+pip install --no-build-isolation -r requirements.txt
 ```
 
 ### 3. Quick Test

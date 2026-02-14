@@ -83,10 +83,11 @@ cd expressive
 
 ### 2. 安装依赖
 
-建议在虚拟环境中操作：
+请在虚拟环境中操作：
 
 ```bash
-pip install -r requirements.txt
+python -m pip install --upgrade pip setuptools<82 wheel
+pip install --no-build-isolation -r requirements.txt
 ```
 
 ### 3. 快速测试
