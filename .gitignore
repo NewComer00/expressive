@@ -1,6 +1,7 @@
 *~
 *venv/
 .vscode/
+.claude/
 __pycache__/
 .nicegui/
 dist/
@@ -14,3 +15,7 @@ build/*
 settings.json
 expressive_config.json
 Expressive-GUI.spec
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
