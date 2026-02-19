@@ -1,0 +1,66 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=utils",
+    "--cov=expressions",
+    "--cov=expressive",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "requires_audio: marks tests that require audio files",
+    "requires_gpu: marks tests that require GPU/CUDA",
+]
+
+log_cli = false
+log_cli_level = "INFO"
+
+[tool.coverage.run]
+source = ["utils", "expressions", "expressive"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.ruff]
+line-length = 127
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "B",    # flake8-bugbear
+    "C90",  # mccabe complexity
+]
+
+ignore = [
+    "E203",  # allow whitespace before ':'
+    "E402",  # allow dynamic imports
+    "E731",  # allow lambda assignment
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 30
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

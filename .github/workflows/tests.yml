@@ -5,7 +5,11 @@ on:
     branches: [ main, dev ]
   pull_request:
     branches: [ main, dev ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -29,17 +33,19 @@ jobs:
         cache: 'pip'
         cache-dependency-path: |
           requirements.txt
-          tests/requirements.txt
+          requirements-dev.txt
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools<82 wheel
+        python -m pip install --upgrade pip "setuptools<82" wheel
         pip install --no-build-isolation -r requirements.txt
-        pip install -r tests/requirements.txt
+        pip install -r requirements-dev.txt
 
     - name: Run fast tests with coverage
       run: |
-        pytest tests/ -v -m "not slow and not requires_audio" --cov=utils --cov=expressions --cov=expressive --cov-report=xml --cov-report=term-missing
+        pytest tests/ -v -m "not slow and not requires_audio" \
+          --cov=utils --cov=expressions --cov=expressive \
+          --cov-report=xml --cov-report=html --cov-report=term-missing
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -48,7 +54,7 @@ jobs:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
-        fail_ci_if_error: false
+        fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload coverage reports as artifact
@@ -59,7 +65,7 @@ jobs:
         path: |
           coverage.xml
           htmlcov/
-        retention-days: 30
+        retention-days: 14
 
   test-all:
     name: Full test suite on ${{ matrix.os }} (including slow tests)
@@ -82,17 +88,29 @@ jobs:
         cache: 'pip'
         cache-dependency-path: |
           requirements.txt
-          tests/requirements.txt
+          requirements-dev.txt
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools<82 wheel
+        python -m pip install --upgrade pip "setuptools<82" wheel
         pip install --no-build-isolation -r requirements.txt
-        pip install -r tests/requirements.txt
+        pip install -r requirements-dev.txt
 
     - name: Run all tests (including slow tests)
       run: |
-        pytest tests/ -v --cov=utils --cov=expressions --cov=expressive --cov-report=xml --cov-report=term-missing
+        pytest tests/ -v \
+          --cov=utils --cov=expressions --cov=expressive \
+          --cov-report=xml --cov-report=html --cov-report=term-missing
+
+    - name: Upload full coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: matrix.os == 'ubuntu-latest'
+      with:
+        file: ./coverage.xml
+        flags: full-suite
+        name: codecov-full
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload full coverage report
       uses: actions/upload-artifact@v4
@@ -101,55 +119,40 @@ jobs:
         path: |
           coverage.xml
           htmlcov/
-        retention-days: 30
+        retention-days: 14
 
   lint:
-    name: Code quality checks
+    name: Lint Code
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-        cache: 'pip'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r tests/requirements.txt
-
-    - name: Run flake8
-      run: |
-        flake8 utils/ expressions/ expressive.py --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 utils/ expressions/ expressive.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      continue-on-error: true
-
-    - name: Check code formatting with black
-      run: |
-        black --check utils/ expressions/ expressive.py tests/
-      continue-on-error: true
-
-    - name: Check import sorting with isort
-      run: |
-        isort --check-only utils/ expressions/ expressive.py tests/
-      continue-on-error: true
+    - name: Lint Code
+      uses: astral-sh/ruff-action@v3
 
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [test, test-all, lint]
     if: always()
 
     steps:
     - name: Check test results
       run: |
-        if [ "${{ needs.test.result }}" == "success" ]; then
-          echo "✅ All tests passed!"
+        FAST_RESULT="${{ needs.test.result }}"
+        FULL_RESULT="${{ needs.test-all.result }}"
+        LINT_RESULT="${{ needs.lint.result }}"
+
+        echo "Fast tests:  $FAST_RESULT"
+        echo "Full suite:  $FULL_RESULT"
+        echo "Lint:        $LINT_RESULT"
+
+        if [ "$FAST_RESULT" == "success" ] && \
+           [ "$LINT_RESULT" == "success" ] && \
+           { [ "$FULL_RESULT" == "success" ] || [ "$FULL_RESULT" == "skipped" ]; }; then
+          echo "✅ All checks passed!"
         else
-          echo "❌ Some tests failed!"
+          echo "❌ One or more checks failed!"
           exit 1
         fi
