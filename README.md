@@ -86,7 +86,7 @@ cd expressive
 请在虚拟环境中操作：
 
 ```bash
-python -m pip install --upgrade pip setuptools<82 wheel
+python -m pip install --upgrade pip "setuptools<82" wheel
 pip install --no-build-isolation -r requirements.txt
 ```
 

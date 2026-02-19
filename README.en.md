@@ -85,7 +85,7 @@ cd expressive
 Run following commands inside of a virtual environment:
 
 ```bash
-python -m pip install --upgrade pip setuptools<82 wheel
+python -m pip install --upgrade pip "setuptools<82" wheel
 pip install --no-build-isolation -r requirements.txt
 ```
 
