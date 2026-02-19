@@ -1,5 +1,6 @@
 # For i18n support, argparse is required to set the language of gettext before importing any other modules
-import os, argparse
+import os
+import argparse
 from utils.i18n import _, init_gettext
 parser = argparse.ArgumentParser(description='Choose application language.')
 parser.add_argument('--lang', default='en', help='Set language for localization (e.g. zh_CN, en)')

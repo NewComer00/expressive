@@ -1,6 +1,5 @@
 import pytest
 import logging
-from pathlib import Path
 
 from expressions.base import (
     Args,
@@ -24,7 +23,7 @@ class TestArgs:
             help="Test argument"
         )
         assert arg.name == "test_arg"
-        assert arg.type == int
+        assert arg.type is int
         assert arg.default == 10
         assert arg.help == "Test argument"
 
@@ -45,10 +44,10 @@ class TestArgs:
         arg_str = Args("str_arg", str, "", "String")
         arg_bool = Args("bool_arg", bool, False, "Boolean")
 
-        assert arg_int.type == int
-        assert arg_float.type == float
-        assert arg_str.type == str
-        assert arg_bool.type == bool
+        assert arg_int.type is int
+        assert arg_float.type is float
+        assert arg_str.type is str
+        assert arg_bool.type is bool
 
 
 class TestExpressionLoader:
@@ -108,17 +107,17 @@ voice_parts:
         assert "track_number" in args_dict
 
         # Verify all are Args instances
-        for key, value in args_dict.items():
+        for _, value in args_dict.items():
             assert isinstance(value, Args)
 
     def test_get_args_dict_types(self):
         """Test args dictionary has correct types"""
         args_dict = ExpressionLoader.get_args_dict()
 
-        assert args_dict["ref_path"].type == str
-        assert args_dict["utau_path"].type == str
-        assert args_dict["ustx_path"].type == str
-        assert args_dict["track_number"].type == int
+        assert args_dict["ref_path"].type is str
+        assert args_dict["utau_path"].type is str
+        assert args_dict["ustx_path"].type is str
+        assert args_dict["track_number"].type is int
 
     def test_get_expression_default(self, temp_ustx_file):
         """Test default get_expression method"""
@@ -317,7 +316,6 @@ class TestLoadToUSTX:
 
     def test_load_to_ustx_thread_safety(self):
         """Test that ustx_lock exists for thread safety"""
-        import threading
 
         assert hasattr(ExpressionLoader, 'ustx_lock')
         # Check that it's a lock object by verifying it has lock methods

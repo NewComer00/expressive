@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import Mock, MagicMock, patch, call
-from pathlib import Path
+from unittest.mock import Mock, patch
 
 from expressive import process_expressions
 
