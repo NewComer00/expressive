@@ -52,10 +52,10 @@ jobs:
           --cov-report=xml --cov-report=html --cov-report=term-missing
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
       with:
-        file: ./coverage.xml
+        files: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: true
@@ -111,10 +111,10 @@ jobs:
           --cov-report=xml --cov-report=html --cov-report=term-missing
 
     - name: Upload full coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: matrix.os == 'ubuntu-latest'
       with:
-        file: ./coverage.xml
+        files: ./coverage.xml
         flags: full-suite
         name: codecov-full
         fail_ci_if_error: true
