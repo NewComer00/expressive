@@ -61,11 +61,11 @@ def main():
 
     # General arguments
     general_args = getExpressionLoader(None).args
-    parser.add_argument("-u", "--utau_wav",     type=general_args.utau_path.type,    required=True, help=general_args.utau_path.help)
-    parser.add_argument("-r", "--ref_wav",      type=general_args.ref_path.type,     required=True, help=general_args.ref_path.help)
-    parser.add_argument("-i", "--ustx_input",   type=general_args.ustx_path.type,    required=True, help=general_args.ustx_path.help)
-    parser.add_argument("-o", "--ustx_output",  type=str,                            required=True, help="Path to save the processed USTX file")
-    parser.add_argument("-t", "--track_number", type=general_args.track_number.type, required=True, help=general_args.track_number.help)
+    parser.add_argument("-u", "--utau_wav",     type=general_args.utau_path.type,    required=True, help=general_args.utau_path.help)  # noqa: E501
+    parser.add_argument("-r", "--ref_wav",      type=general_args.ref_path.type,     required=True, help=general_args.ref_path.help)  # noqa: E501
+    parser.add_argument("-i", "--ustx_input",   type=general_args.ustx_path.type,    required=True, help=general_args.ustx_path.help)  # noqa: E501
+    parser.add_argument("-o", "--ustx_output",  type=str,                            required=True, help="Path to save the processed USTX file")  # noqa: E501
+    parser.add_argument("-t", "--track_number", type=general_args.track_number.type, required=True, help=general_args.track_number.help)  # noqa: E501
 
     parser.add_argument("-e", "--expression", type=str, action="append", required=True, choices=get_registered_expressions(), 
                         help="Specify expressions to apply (e.g., --expression dyn --expression pitd)")

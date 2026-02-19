@@ -18,9 +18,9 @@ class DynLoader(ExpressionLoader):
     expression_name = "dyn"
     expression_info = _("Dynamics (curve)")
     args = SimpleNamespace(
-        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),
+        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
         smoothness      = Args(name="smoothness"  , type=int  , default=2  , help=_("Smoothness of the expression curve")),
-        scaler          = Args(name="scaler"      , type=float, default=1.5, help=_("Scaling factor for the expression curve")),
+        scaler          = Args(name="scaler"      , type=float, default=1.5, help=_("Scaling factor for the expression curve")),  # noqa: E501
     )
 
     def get_expression(

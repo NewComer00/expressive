@@ -18,9 +18,9 @@ class TencLoader(ExpressionLoader):
     expression_name = "tenc"
     expression_info = _("Tension (curve)")
     args = SimpleNamespace(
-        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),
+        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
         smoothness      = Args(name="smoothness"  , type=int  , default=6  , help=_("Smoothness of the expression curve")),
-        scaler          = Args(name="scaler"      , type=float, default=1.0, help=_("Scaling factor for the expression curve")),
+        scaler          = Args(name="scaler"      , type=float, default=1.0, help=_("Scaling factor for the expression curve")),  # noqa: E501
         bias            = Args(name="bias"        , type=int  , default=10  , help=_("Bias for the expression curve")),
     )
 

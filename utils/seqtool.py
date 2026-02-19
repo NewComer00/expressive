@@ -95,7 +95,7 @@ def unify_sequence_time(seq_times, seq_vals, to_ticks=False, tempo=120, ppqn=480
         unified_seq_time = np.unique(unified_seq_time)
         unified_seqs_val = [
             interp1d(st, sv, fill_value="extrapolate")(unified_seq_time) # type: ignore
-            for (st, sv) in zip(seq_times, seq_vals)
+            for (st, sv) in zip(seq_times, seq_vals, strict=False)
         ]
         return unified_seq_time, tuple(unified_seqs_val)
 
@@ -106,7 +106,7 @@ def unify_sequence_time(seq_times, seq_vals, to_ticks=False, tempo=120, ppqn=480
         time_mapping = ticks_to_time(unified_seq_ticks, tempo, ppqn)
         unified_seqs_val = [
             interp1d(st, sv, fill_value="extrapolate")(time_mapping) # type: ignore
-            for (st, sv) in zip(seq_times, seq_vals)
+            for (st, sv) in zip(seq_times, seq_vals, strict=False)
         ]
         return unified_seq_ticks, tuple(unified_seqs_val)
 
@@ -176,8 +176,8 @@ def align_sequence_tick(
     qs_nonan = np.nan_to_num(zscore(unified_queries, axis=1, nan_policy="omit"))
     rs_nonan = np.nan_to_num(zscore(unified_references, axis=1, nan_policy="omit"))
     distance, path = fastdtw(
-        list(map(tuple, zip(*qs_nonan))),
-        list(map(tuple, zip(*rs_nonan))),
+        list(map(tuple, zip(*qs_nonan, strict=False))),
+        list(map(tuple, zip(*rs_nonan, strict=False))),
         radius=align_radius,
     )
 

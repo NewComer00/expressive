@@ -104,7 +104,7 @@ class NiceguiNativeDropArea(ui.element):
         on_drop: Optional[Callable] = None,
         *args, **kwargs
     ):
-        super().__init__(tag='div', *args, **kwargs)
+        super().__init__(tag='div', *args, **kwargs)  # noqa: B026
 
         self.on_dragenter = on_dragenter
         self.on_dragleave = on_dragleave

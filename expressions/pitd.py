@@ -28,12 +28,12 @@ class PitdLoader(ExpressionLoader):
     expression_name = "pitd"
     expression_info = _("Pitch Deviation (curve)")
     args = SimpleNamespace(
-        confidence_utau = Args(name="confidence_utau", type=float, default=0.8 , help=_("Confidence threshold for filtering uncertain pitch values in UTAU WAV")),
-        confidence_ref  = Args(name="confidence_ref" , type=float, default=0.6 , help=_("Confidence threshold for filtering uncertain pitch values in reference WAV")),
-        align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),
-        semitone_shift  = Args(name="semitone_shift" , type=int  , default=None, help=_("Semitone shift between the UTAU and reference WAV; if the USTX WAV is an octave higher than the reference WAV, set to 12, otherwise -12; leave it empty to enable automatic shift estimation")),
+        confidence_utau = Args(name="confidence_utau", type=float, default=0.8 , help=_("Confidence threshold for filtering uncertain pitch values in UTAU WAV")),  # noqa: E501
+        confidence_ref  = Args(name="confidence_ref" , type=float, default=0.6 , help=_("Confidence threshold for filtering uncertain pitch values in reference WAV")),  # noqa: E501
+        align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
+        semitone_shift  = Args(name="semitone_shift" , type=int  , default=None, help=_("Semitone shift between the UTAU and reference WAV; if the USTX WAV is an octave higher than the reference WAV, set to 12, otherwise -12; leave it empty to enable automatic shift estimation")),  # noqa: E501
         smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_("Smoothness of the expression curve")),
-        scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_("Scaling factor for the expression curve")),
+        scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_("Scaling factor for the expression curve")),  # noqa: E501
     )
 
     def get_expression(
@@ -271,7 +271,7 @@ def extract_wav_frequency(file_path, use_cache=True):
             with open(cache_path, mode="w+", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(["Time (s)", "Frequency (Hz)", "Confidence"])
-                for t, f, c in zip(time, frequency, confidence):
+                for t, f, c in zip(time, frequency, confidence, strict=False):
                     writer.writerow([t, f, c])
             print(_("F0 data saved to cache file: '{}'").format(cache_path))
 

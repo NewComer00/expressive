@@ -72,7 +72,7 @@ class patch_runpy(ContextDecorator):
 
         # Try PyInstaller's _pyi_main_co
         if hasattr(main_mod, "_pyi_main_co"):
-            code = getattr(main_mod, "_pyi_main_co")
+            code = main_mod._pyi_main_co
 
         # Try standard __spec__.loader.get_code
         elif getattr(main_mod, "__spec__", None):
@@ -102,12 +102,12 @@ class patch_runpy(ContextDecorator):
 
 if __name__ == "__main__":
     print("Calling run_path with patch in simulated non-frozen mode (context manager):")
-    setattr(sys, "frozen", False)
+    sys.frozen = False
     with patch_runpy():
         print(runpy.run_path.__doc__)
 
     print("Calling run_path with patch in simulated frozen mode (decorator):")
-    setattr(sys, "frozen", True)
+    sys.frozen = True
     @patch_runpy()
     def test_decorator():
         print(runpy.run_path.__doc__)

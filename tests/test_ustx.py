@@ -1,7 +1,4 @@
 import pytest
-import tempfile
-import os
-from pathlib import Path
 import numpy as np
 
 from utils.ustx import load_ustx, save_ustx, edit_ustx_expression_curve

@@ -1,4 +1,3 @@
-from math import e
 import oyaml
 import numpy as np
 from yamlcore import CoreLoader
