@@ -73,31 +73,30 @@ If your system has an NVIDIA GPU driver that supports [CUDA 11.x](https://docs.n
 
 ### 1. Clone the repository
 
-> This project uses [Git LFS](https://git-lfs.com/) to store large files such as example audio under `examples/`. Please ensure Git LFS is installed on your system.
+> This project uses [Git LFS](https://git-lfs.com/) to store large files such as example audio under `examples/`. Please ensure Git LFS is installed on your system before cloning.
 
 ```bash
 git clone https://github.com/NewComer00/expressive.git --depth 1
 cd expressive
 ```
 
-### 2. Install dependencies
+### 2. Install the application
 
-Run following commands inside of a virtual environment:
-
-```bash
-python -m pip install --upgrade pip "setuptools<82" wheel
-pip install --no-build-isolation -r requirements.txt
-```
-
-### 3. Quick Test
-
-If the example audio is available, run the following command to test:
+Install the package and its dependencies in a virtual environment:
 
 ```bash
-python ./expressive.py
+pip install -e ".[gpu,gui]"
 ```
 
-The output project file will be saved to `examples/Прекрасное Далеко/output.ustx`.
+> **Note:**
+> - The `-e` flag installs in editable mode, useful for development
+> - Optional dependency groups available:
+>   - `gpu`: GPU acceleration dependencies (e.g., CUDA runtime libraries)
+>   - `gui`: Graphical user interface dependencies (e.g., NiceGUI)
+>   - `dev`: Development dependencies (e.g., pytest testing framework)
+>   - `all`: Install all of the above
+
+After installation, you can use the `expressive` and `expressive-gui` entry points to run the command-line interface and graphical user interface.
 
 ## 📖 Usage
 
@@ -106,13 +105,13 @@ The output project file will be saved to `examples/Прекрасное Дале
 Display help:
 
 ```bash
-python ./expressive-cli.py --help
+expressive --help
 ```
 
 Run example in Windows PowerShell:
 
 ```powershell
-python .\expressive-cli.py `
+expressive `
   --utau_wav "examples/明天会更好/utau.wav" `
   --ref_wav "examples/明天会更好/reference.wav" `
   --ustx_input "examples/明天会更好/project.ustx" `
@@ -127,7 +126,7 @@ python .\expressive-cli.py `
 Run example in Linux shell:
 
 ```bash
-python ./expressive-cli.py \
+expressive \
   --utau_wav "examples/明天会更好/utau.wav" \
   --ref_wav "examples/明天会更好/reference.wav" \
   --ustx_input "examples/明天会更好/project.ustx" \
@@ -146,13 +145,13 @@ The output project file will be saved to `examples/明天会更好/output.ustx`.
 Launch in Chinese:
 
 ```bash
-python ./expressive-gui.py --lang zh_CN
+expressive-gui --lang zh_CN
 ```
 
 Launch in English:
 
 ```bash
-python ./expressive-gui.py --lang en
+expressive-gui --lang en
 ```
 
 ## 🔬 Algorithm Workflow

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from utils.i18n import _
+from utils.i18n import _, _l
 from utils.ustx import load_ustx, save_ustx, edit_ustx_expression_curve
 
 
@@ -24,10 +24,10 @@ class ExpressionLoader():
     expression_info: str = ""
     ustx_lock = threading.Lock()
     args = SimpleNamespace(
-        ref_path     = Args(name="ref_path"    , type=str, default="", help=_("Path to the reference audio file")),
-        utau_path    = Args(name="utau_path"   , type=str, default="", help=_("Path to the UTAU audio file")),
-        ustx_path    = Args(name="ustx_path"   , type=str, default="", help=_("Path to the USTX project file to be processed")),  # noqa: E501
-        track_number = Args(name="track_number", type=int, default=1 , help=_("Track number to apply expressions")),
+        ref_path     = Args(name="ref_path"    , type=str, default="", help=_l("Path to the reference audio file")),
+        utau_path    = Args(name="utau_path"   , type=str, default="", help=_l("Path to the UTAU audio file")),
+        ustx_path    = Args(name="ustx_path"   , type=str, default="", help=_l("Path to the USTX project file to be processed")),  # noqa: E501
+        track_number = Args(name="track_number", type=int, default=1 , help=_l("Track number to apply expressions")),
     )
 
     @classmethod

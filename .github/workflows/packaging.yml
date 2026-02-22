@@ -3,55 +3,79 @@ name: Packaging and Installer Creation for Windows
 on:
   push:
     tags:
-      - '*'  # Trigger on tag push
-    branches:
-      - main  # Optional: trigger also on main branch commits
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      with:
-        lfs: true
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
 
-    - name: Pull Git LFS files
-      run: git lfs pull
+      - name: Pull Git LFS files
+        run: git lfs pull
 
-    - name: Get tag or commit hash
-      shell: bash
-      run: |
-        if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-          echo "TAG_NAME=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
-        else
-          echo "TAG_NAME=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-        fi
+      - name: Extract clean version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Detected version: $VERSION"
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+          cache-dependency-path: pyproject.toml
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip "setuptools<82" wheel
-        pip install --no-build-isolation -r requirements.txt
-        pip install pyinstaller
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[gpu,gui]"
+          pip install pyinstaller
 
-    - name: Build executable with PyInstaller
-      run: |
-        pyinstaller --noconfirm --onedir --windowed --icon "assets/icons/app.ico" --name "Expressive-GUI" --contents-directory "." --splash "assets/splash/big.png" --collect-data "crepe" --collect-data "nicegui" --add-data "examples;examples/" --add-data "assets;assets/" --add-data "locales;locales/" --add-data "README.md;./" --add-data "LICENSE;./" --additional-hooks-dir "build/hooks"  "expressive-gui.py"
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onedir --windowed \
+            --icon assets/icons/app.ico \
+            --name Expressive-GUI \
+            --contents-directory "." \
+            --splash assets/splash/big.png \
+            --collect-data crepe \
+            --collect-data nicegui \
+            --add-data "examples;examples/" \
+            --add-data "assets;assets/" \
+            --add-data "locales;locales/" \
+            --add-data "README.md;." \
+            --add-data "LICENSE;." \
+            --additional-hooks-dir build/hooks \
+            expressive_gui.py
 
-    - name: Install Inno Setup
-      run: choco install innosetup -y
+      - name: Install Inno Setup
+        run: choco install innosetup -y
 
-    - name: Create installer with Inno Setup
-      run: ISCC build/installer.iss
+      - name: Create installer with Inno Setup
+        run: ISCC build/installer.iss
 
-    - name: Upload installer as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Expressive-GUI-${{ env.TAG_NAME }}-Installer
-        path: dist/Expressive-GUI-${{ env.TAG_NAME }}-Installer.exe
+      - name: Generate SHA256 checksum
+        run: |
+          INSTALLER="dist/Expressive-GUI-$VERSION-Windows-x64.exe"
+          sha256sum "$INSTALLER" > "$INSTALLER.sha256"
+          cat "$INSTALLER.sha256"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/Expressive-GUI-${{ env.VERSION }}-Windows-x64.exe
+            dist/Expressive-GUI-${{ env.VERSION }}-Windows-x64.exe.sha256

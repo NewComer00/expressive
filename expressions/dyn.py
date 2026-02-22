@@ -4,7 +4,7 @@ import librosa
 from scipy.stats import zscore
 
 from .base import Args, ExpressionLoader, register_expression
-from utils.i18n import _
+from utils.i18n import _, _l
 from utils.seqtool import (
     unify_sequence_time,
     align_sequence_tick,
@@ -16,11 +16,11 @@ from utils.seqtool import (
 @register_expression
 class DynLoader(ExpressionLoader):
     expression_name = "dyn"
-    expression_info = _("Dynamics (curve)")
+    expression_info = _l("Dynamics (curve)")
     args = SimpleNamespace(
-        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
-        smoothness      = Args(name="smoothness"  , type=int  , default=2  , help=_("Smoothness of the expression curve")),
-        scaler          = Args(name="scaler"      , type=float, default=1.5, help=_("Scaling factor for the expression curve")),  # noqa: E501
+        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_l("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
+        smoothness      = Args(name="smoothness"  , type=int  , default=2  , help=_l("Smoothness of the expression curve")),
+        scaler          = Args(name="scaler"      , type=float, default=1.5, help=_l("Scaling factor for the expression curve")),  # noqa: E501
     )
 
     def get_expression(
