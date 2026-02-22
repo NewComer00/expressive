@@ -72,33 +72,32 @@
 
 ## 🚀 快速开始
 
-### 1. 克隆项目
+### 1. 克隆仓库
 
-> 本项目使用 [Git LFS](https://git-lfs.com/) 存储 `examples/` 下的示例音频等大文件。请确保本地已正确安装 Git LFS。
+> 本项目使用 [Git LFS](https://git-lfs.com/) 存储 `examples/` 下的示例音频等大文件。克隆仓库前，请确保本地已正确安装 Git LFS。
 
 ```bash
 git clone https://github.com/NewComer00/expressive.git --depth 1
 cd expressive
 ```
 
-### 2. 安装依赖
+### 2. 安装应用
 
-请在虚拟环境中操作：
-
-```bash
-python -m pip install --upgrade pip "setuptools<82" wheel
-pip install --no-build-isolation -r requirements.txt
-```
-
-### 3. 快速测试
-
-若示例音频存在，可运行以下命令测试：
+请在虚拟环境中安装本软件包及其依赖：
 
 ```bash
-python ./expressive.py
+pip install -e ".[gpu,gui]"
 ```
 
-输出工程文件将保存在 `examples/Прекрасное Далеко/output.ustx`。
+> **注意**：
+> - `-e` 参数以可编辑模式安装，便于开发
+> - 本软件包支持的可选依赖项包括：
+>   - `gpu`：启用 GPU 加速相关依赖（如 CUDA 运行时库）
+>   - `gui`：启用图形用户界面相关依赖（如 NiceGUI）
+>   - `dev`：开发环境依赖（如测试框架 pytest）
+>   - `all`：安装上述所有依赖项
+
+安装完成后，您将能够使用 `expressive` 和 `expressive-gui` 两个入口点来运行命令行界面和图形用户界面。
 
 ## 📖 使用方式
 
@@ -107,13 +106,13 @@ python ./expressive.py
 显示帮助信息
 
 ```bash
-python ./expressive-cli.py --help
+expressive --help
 ```
 
 在 Windows PowerShell 中执行示例命令
 
 ```powershell
-python .\expressive-cli.py `
+expressive `
   --utau_wav "examples/明天会更好/utau.wav" `
   --ref_wav "examples/明天会更好/reference.wav" `
   --ustx_input "examples/明天会更好/project.ustx" `
@@ -128,7 +127,7 @@ python .\expressive-cli.py `
 在 Linux Shell 中执行示例命令
 
 ```bash
-python ./expressive-cli.py \
+expressive \
   --utau_wav "examples/明天会更好/utau.wav" \
   --ref_wav "examples/明天会更好/reference.wav" \
   --ustx_input "examples/明天会更好/project.ustx" \
@@ -147,13 +146,13 @@ python ./expressive-cli.py \
 启动中文界面
 
 ```bash
-python ./expressive-gui.py --lang zh_CN
+expressive-gui --lang zh_CN
 ```
 
 Launch with English UI
 
 ```bash
-python ./expressive-gui.py --lang en
+expressive-gui --lang en
 ```
 
 ## 🔬 算法流程

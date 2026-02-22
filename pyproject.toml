@@ -1,3 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "expressive"
+version = "0.1.0"
+description = "A tool to migrate expressions from real singers to DiffSingers"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "numpy<2",
+    "tensorflow==2.10",
+    "crepe @ git+https://github.com/NewComer00/crepe.git@master",
+    "oyaml",
+    "fastdtw",
+    "scipy",
+    "yamlcore",
+    "platformdirs",
+    "librosa",
+    "matplotlib",
+    "scikit-learn",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "nvidia-cuda-runtime-cu11",
+    "nvidia-cuda-nvcc-cu11",
+    "nvidia-cublas-cu11",
+    "nvidia-cusolver-cu11",
+    "nvidia-cusparse-cu11",
+    "nvidia-cufft-cu11",
+    "nvidia-curand-cu11",
+    "nvidia-cudnn-cu11==8.*",
+]
+gui = [
+    "nicegui>=3",
+    "pywebview>=6.0",
+    "pywin32; platform_system=='Windows'",
+    "pywinstyles; platform_system=='Windows'",
+]
+dev = [
+    "pyinstaller==6.11.1",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-xdist>=3.0.0",
+    "ruff",
+    "python-semantic-release",
+]
+all = [
+    "expressive[gpu,gui,dev]",
+]
+
+[project.scripts]
+expressive = "expressive:main"
+
+[project.gui-scripts]
+expressive-gui = "expressive_gui:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["expressions", "utils"]
+include = [
+    "expressive.py",
+    "expressive_gui.py",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
@@ -64,3 +134,28 @@ max-complexity = 30
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
+
+[tool.semantic_release]
+commit_parser = "conventional"
+version_toml = ["pyproject.toml:project.version"]
+version_variable = ["__version__.py:VERSION"]
+tag_format = "v{version}"
+major_on_zero = false  # TODO: set to true after the first stable release
+allow_zero_version = true
+
+[tool.semantic_release.branches.main]
+match = "(main|master)"
+
+[tool.semantic_release.changelog]
+mode = "update"
+insertion_flag = "<!-- version list -->"
+
+[tool.semantic_release.commit_parser_options]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
+other_allowed_tags = ["build", "chore", "ci", "docs", "style", "refactor", "test"]
+parse_squash_commits = true
+ignore_merge_commits = true
+
+[tool.semantic_release.remote]
+type = "github"
