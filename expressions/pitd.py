@@ -32,7 +32,7 @@ class PitdLoader(ExpressionLoader):
         confidence_ref  = Args(name="confidence_ref" , type=float, default=0.6 , help=_l("Confidence threshold for filtering uncertain pitch values in reference WAV")),  # noqa: E501
         align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_l("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
         semitone_shift  = Args(name="semitone_shift" , type=int  , default=None, help=_l("Semitone shift between the UTAU and reference WAV; if the USTX WAV is an octave higher than the reference WAV, set to 12, otherwise -12; leave it empty to enable automatic shift estimation")),  # noqa: E501
-        smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_l("Smoothness of the expression curve")),
+        smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_l("Smoothness of the expression curve")),  # noqa: E501
         scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_l("Scaling factor for the expression curve")),  # noqa: E501
     )
 
