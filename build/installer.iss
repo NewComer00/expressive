@@ -1,12 +1,14 @@
-#define AppVersion GetEnv("TAG_NAME")
+#define AppVersion GetEnv("VERSION")
 
 [Setup]
 AppName=Expressive-GUI
 AppVersion={#AppVersion}
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 DefaultDirName={autopf}\Expressive-GUI
 DefaultGroupName=Expressive-GUI
 OutputDir=..\dist
-OutputBaseFilename=Expressive-GUI-{#AppVersion}-Installer
+OutputBaseFilename=Expressive-GUI-{#AppVersion}-Windows-x64
 Compression=lzma
 SolidCompression=yes
 LZMAUseSeparateProcess=yes

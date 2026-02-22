@@ -4,7 +4,7 @@ import librosa
 from scipy.stats import zscore
 
 from .base import Args, ExpressionLoader, register_expression
-from utils.i18n import _
+from utils.i18n import _, _l
 from utils.seqtool import (
     unify_sequence_time,
     align_sequence_tick,
@@ -16,12 +16,12 @@ from utils.seqtool import (
 @register_expression
 class TencLoader(ExpressionLoader):
     expression_name = "tenc"
-    expression_info = _("Tension (curve)")
+    expression_info = _l("Tension (curve)")
     args = SimpleNamespace(
-        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
-        smoothness      = Args(name="smoothness"  , type=int  , default=6  , help=_("Smoothness of the expression curve")),
-        scaler          = Args(name="scaler"      , type=float, default=1.0, help=_("Scaling factor for the expression curve")),  # noqa: E501
-        bias            = Args(name="bias"        , type=int  , default=10  , help=_("Bias for the expression curve")),
+        align_radius    = Args(name="align_radius", type=int  , default=1  , help=_l("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
+        smoothness      = Args(name="smoothness"  , type=int  , default=6  , help=_l("Smoothness of the expression curve")),
+        scaler          = Args(name="scaler"      , type=float, default=1.0, help=_l("Scaling factor for the expression curve")),  # noqa: E501
+        bias            = Args(name="bias"        , type=int  , default=10 , help=_l("Bias for the expression curve")),
     )
 
     def get_expression(

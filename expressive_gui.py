@@ -1,19 +1,9 @@
-# For i18n support, argparse is required to set the language of gettext before importing any other modules
 import os
-import argparse
-from utils.i18n import _, init_gettext
-parser = argparse.ArgumentParser(description='Choose application language.')
-parser.add_argument('--lang', default='en', help='Set language for localization (e.g. zh_CN, en)')
-# Parse only the known arguments for frozen script with multiprocessing 
-args, unknown = parser.parse_known_args()
-init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales'), "app")
-
-
-# Application code starts here
 import sys
 import json
 import logging
 import asyncio
+import argparse
 from collections.abc import Mapping
 from os.path import splitext, basename
 
@@ -26,9 +16,11 @@ from utils.ui import (
     NiceguiNativeDropArea,
     webview_active_window,
 )
+from __version__ import VERSION
 from utils.gpu import add_cuda_to_path
 from utils.monkeypatch import patch_runpy
 from expressive import process_expressions
+from utils.i18n import _, init_gettext, patch_nicegui_json
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
@@ -561,9 +553,21 @@ def create_gui():
             logger_app, logger_exp = setup_loggers(log_element)
 
 
-# Run the app
-if __name__ in {"__main__", "__mp_main__"}:
-    add_cuda_to_path()
+def main():
+    parser = argparse.ArgumentParser(
+        description="Migrate expressions from real singers to DiffSingers (GUI)",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument('--lang', default='en', help='Set language for localization (e.g. zh_CN, en)')
+    parser.add_argument("--version", action="version", version=f"%(prog)s v{VERSION}")
+
+    # Parse only the known arguments for frozen script with multiprocessing
+    args, unknown = parser.parse_known_args()
+    init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales'), "app")
+
+    # Patch NiceGUI's JSON serializer to handle LazyString
+    patch_nicegui_json()
+
     create_gui()
 
     # For multiprocessing support in PyInstaller on Windows before calling ui.run()
@@ -576,7 +580,7 @@ if __name__ in {"__main__", "__mp_main__"}:
         # https://github.com/zauberzeug/nicegui/issues/5247
         with patch_runpy():
             ui.run(
-                title="Expressive GUI",
+                title=f"Expressive GUI v{VERSION}",
                 native=True,
                 reload=False,
                 window_size=(600, 640),
@@ -587,3 +591,9 @@ if __name__ in {"__main__", "__mp_main__"}:
             pass
         else:
             raise
+
+
+# Run the app
+if __name__ in {"__main__", "__mp_main__"}:
+    add_cuda_to_path()
+    main()
