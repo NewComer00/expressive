@@ -1,7 +1,22 @@
 import pytest
+import logging
+from pathlib import Path
 from unittest.mock import Mock, patch
 
-from expressive import process_expressions
+from expressive import process_expressions, setup_loggers
+
+
+class TestVersion:
+    """Test version import"""
+
+    def test_version_import(self):
+        """Test that VERSION is imported from __version__"""
+        from expressive import VERSION
+        assert isinstance(VERSION, str)
+        assert len(VERSION) > 0
+        # Should follow semantic versioning pattern
+        parts = VERSION.split(".")
+        assert len(parts) >= 2  # At least major.minor
 
 
 class TestProcessExpressions:
@@ -571,3 +586,130 @@ class TestEdgeCases:
                 track_number=1,
                 expressions=[{"expression": "DYN"}]  # Wrong case
             )
+
+
+class TestSetupLoggers:
+    """Test the setup_loggers context manager"""
+
+    def test_setup_loggers_creates_log_file(self):
+        """Test that setup_loggers creates a log file"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            assert Path(log_path).exists()
+            assert logger_app is not None
+            assert logger_exp is not None
+
+        # Log file should still exist after context
+        assert Path(log_path).exists()
+        Path(log_path).unlink()  # Cleanup
+
+    def test_setup_loggers_returns_correct_types(self):
+        """Test that setup_loggers returns correct logger types"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            assert isinstance(logger_app, logging.Logger)
+            assert isinstance(logger_exp, logging.Logger)
+            assert isinstance(log_path, str)
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_configures_handlers(self):
+        """Test that loggers have correct handlers configured"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            # App logger should have 2 handlers (file + stream)
+            assert len(logger_app.handlers) == 2
+            handler_types = [type(h).__name__ for h in logger_app.handlers]
+            assert 'FileHandler' in handler_types
+            assert 'StreamHandler' in handler_types
+
+            # Expression logger should have 1 handler (file only)
+            assert len(logger_exp.handlers) == 1
+            assert isinstance(logger_exp.handlers[0], logging.FileHandler)
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_sets_debug_level(self):
+        """Test that loggers are set to DEBUG level"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            assert logger_app.level == logging.DEBUG
+            assert logger_exp.level == logging.DEBUG
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_writes_to_file(self):
+        """Test that logs are written to the file"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            logger_app.info("Test message from app")
+            logger_exp.debug("Test message from exp")
+
+        # Read log file and verify messages
+        log_content = Path(log_path).read_text(encoding='utf-8-sig')
+        assert "Test message from app" in log_content
+        assert "Test message from exp" in log_content
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_cleanup_on_exit(self):
+        """Test that handlers are cleaned up on context exit"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            app_handler_count = len(logger_app.handlers)
+            exp_handler_count = len(logger_exp.handlers)
+            assert app_handler_count > 0
+            assert exp_handler_count > 0
+
+        # After exit, handlers should be removed
+        assert len(logger_app.handlers) == 0
+        assert len(logger_exp.handlers) == 0
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_cleanup_on_exception(self):
+        """Test that handlers are cleaned up even if exception occurs"""
+        logger_app = None
+        logger_exp = None
+        log_path = None
+
+        try:
+            with setup_loggers() as (la, le, lp):
+                logger_app, logger_exp, log_path = la, le, lp
+                raise ValueError("Test exception")
+        except ValueError:
+            pass
+
+        # Handlers should still be cleaned up
+        assert len(logger_app.handlers) == 0
+        assert len(logger_exp.handlers) == 0
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_log_file_naming(self):
+        """Test that log file has correct naming pattern"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            log_filename = Path(log_path).name
+            assert log_filename.startswith("expressive_cli_")
+            assert log_filename.endswith(".log")
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_writes_final_message(self):
+        """Test that final log message is written on exit"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            pass
+
+        # Read log file and verify final message
+        log_content = Path(log_path).read_text(encoding='utf-8-sig')
+        assert f"Logs saved to {log_path}" in log_content
+
+        Path(log_path).unlink()
+
+    def test_setup_loggers_file_encoding(self):
+        """Test that log file uses UTF-8-SIG encoding"""
+        with setup_loggers() as (logger_app, logger_exp, log_path):
+            # Log a message with unicode characters
+            logger_app.info("Test with unicode: 你好世界 Привет мир")
+
+        # Read and verify unicode content
+        log_content = Path(log_path).read_text(encoding='utf-8-sig')
+        assert "你好世界" in log_content
+        assert "Привет мир" in log_content
+
+        Path(log_path).unlink()
+
