@@ -19,6 +19,7 @@ jobs:
         with:
           ssh-key: ${{ secrets.DEPLOY_KEY }}
           fetch-depth: 0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.9.0
