@@ -38,7 +38,7 @@ class TeeStream(TextIO):
     def write(self, message):
         self.original.write(message)
         self.original.flush()
-        for line in message.rstrip().splitlines():
+        for line in message.rstrip().split('\n'):
             sanitized = _sanitize_line(line)
             if sanitized:
                 self.logger.log(self.level, sanitized)
