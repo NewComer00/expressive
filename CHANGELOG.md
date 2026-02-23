@@ -6,3 +6,7 @@ The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
 <!-- version list -->
+
+## v0.1.0 (2026-02-23)
+
+- Initial Release
