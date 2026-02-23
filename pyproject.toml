@@ -159,3 +159,5 @@ ignore_merge_commits = true
 
 [tool.semantic_release.remote]
 type = "github"
+token = { env = "GITHUB_TOKEN" }
+ignore_token_for_push = true  # See https://github.com/dxvidparham/psr-deploy-keys-for-protected-branches
