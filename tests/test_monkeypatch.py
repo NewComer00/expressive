@@ -1,8 +1,7 @@
 """Tests for monkeypatch utilities."""
 
 import sys
-import inspect
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 from types import ModuleType
 
 import pytest
