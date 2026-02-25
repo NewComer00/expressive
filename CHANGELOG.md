@@ -7,6 +7,19 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.2.1 (2026-02-25)
+
+### Bug Fixes
+
+- **build**: Compile .mo via hatch hook, untrack binary artifacts
+  ([`d2141a0`](https://github.com/NewComer00/expressive/commit/d2141a0e00a05c676629ff811273c9302eb29eb1))
+
+### Continuous Integration
+
+- Pin all GitHub Actions to commit SHAs
+  ([`d59a22e`](https://github.com/NewComer00/expressive/commit/d59a22e20e7a88338e6fceadbd9bbb3da43e20c7))
+
+
 ## v0.2.0 (2026-02-25)
 
 ### Features
