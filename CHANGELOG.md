@@ -7,6 +7,14 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.2.3 (2026-02-25)
+
+### Bug Fixes
+
+- **packaging**: Add CPU and GPU installer variants
+  ([`5fb0f1f`](https://github.com/NewComer00/expressive/commit/5fb0f1fc463f0a2291de535e1966ef45ca3d3311))
+
+
 ## v0.2.2 (2026-02-25)
 
 ### Bug Fixes
