@@ -7,6 +7,14 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.2.2 (2026-02-25)
+
+### Bug Fixes
+
+- **config**: Fix version_variables typo and sync __version__.py
+  ([`058871d`](https://github.com/NewComer00/expressive/commit/058871d024c5603a61802fe8bf035e8f1a2df4ab))
+
+
 ## v0.2.1 (2026-02-25)
 
 ### Bug Fixes
