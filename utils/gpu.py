@@ -6,12 +6,15 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+CUDA_PACKAGES = [
+    "nvidia.cuda_nvcc", "nvidia.cuda_runtime", "nvidia.cudnn", "nvidia.cublas",
+    "nvidia.cusolver", "nvidia.cusparse", "nvidia.cufft", "nvidia.curand",
+]
+
+
 def add_cuda_to_path(skip_missing: bool = False):
     """Add CUDA to library searching path."""
-    packages = [
-        "nvidia.cuda_nvcc", "nvidia.cuda_runtime", "nvidia.cudnn", "nvidia.cublas",
-        "nvidia.cusolver", "nvidia.cusparse", "nvidia.cufft", "nvidia.curand",
-    ]
+    packages = CUDA_PACKAGES
 
     missing = []
     for package_name in packages:

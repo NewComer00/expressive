@@ -73,7 +73,8 @@ If your system has an NVIDIA GPU driver that supports [CUDA 11.x](https://docs.n
 
 You can download pre-compiled executable files directly from the [Releases](https://github.com/NewComer00/expressive/releases) page:
 
-- `Expressive-GUI-<version>-Windows-x64.exe`: GUI installer for Windows x64 architecture (includes GPU acceleration support)
+- `Expressive-GUI-<version>-Windows-x64-CPU.exe`: GUI installer for Windows x64, CPU-only (no CUDA dependencies)
+- `Expressive-GUI-<version>-Windows-x64-GPU.exe`: GUI installer for Windows x64 with NVIDIA GPU acceleration (requires driver >= 450, CUDA 11.x)
 
 ## 👨‍💻 Install from Source
 

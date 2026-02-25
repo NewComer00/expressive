@@ -74,7 +74,8 @@
 
 您可以直接在 [Releases](https://github.com/NewComer00/expressive/releases) 页面下载预编译的可执行文件:
 
-- `Expressive-GUI-<version>-Windows-x64.exe`: 适用于 x64 架构 Windows 的图形用户界面版本的安装包（包含GPU加速支持）
+- `Expressive-GUI-<version>-Windows-x64-CPU.exe`: 适用于 x64 架构 Windows 的图形用户界面安装包（仅 CPU，无 CUDA 依赖）
+- `Expressive-GUI-<version>-Windows-x64-GPU.exe`: 适用于 x64 架构 Windows 的图形用户界面安装包（含 NVIDIA GPU 加速，需驱动版本 >= 450，支持 CUDA 11.x）
 
 ## 👨‍💻 源码安装
 

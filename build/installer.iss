@@ -1,4 +1,5 @@
 #define AppVersion GetEnv("VERSION")
+#define Variant GetEnv("VARIANT")
 
 [Setup]
 AppName=Expressive-GUI
@@ -8,7 +9,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 DefaultDirName={autopf}\Expressive-GUI
 DefaultGroupName=Expressive-GUI
 OutputDir=..\dist
-OutputBaseFilename=Expressive-GUI-{#AppVersion}-Windows-x64
+OutputBaseFilename=Expressive-GUI-{#AppVersion}-Windows-x64-{#Variant}
 Compression=lzma
 SolidCompression=yes
 LZMAUseSeparateProcess=yes
