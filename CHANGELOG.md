@@ -7,6 +7,14 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.2.4 (2026-02-25)
+
+### Bug Fixes
+
+- **packaging**: Guard find_spec against missing parent package
+  ([`7daccd2`](https://github.com/NewComer00/expressive/commit/7daccd2d5f50a00ea6efadde411d13b2c1997c34))
+
+
 ## v0.2.3 (2026-02-25)
 
 ### Bug Fixes
