@@ -70,10 +70,17 @@
 
 1. 当前版本尚不支持单一轨道中的 `Tempo` 变化，建议工程全程使用统一节奏。该限制将在未来版本中解决。
 
-## 🚀 快速开始
+## 🚀 直接安装
 
-### 1. 克隆仓库
+您可以直接在 [Releases](https://github.com/NewComer00/expressive/releases) 页面下载预编译的可执行文件:
 
+- `Expressive-GUI-<version>-Windows-x64.exe`: 适用于 x64 架构 Windows 的图形用户界面版本的安装包（包含GPU加速支持）
+
+## 👨‍💻 源码安装
+
+### 克隆仓库
+
+> [!IMPORTANT]
 > 本项目使用 [Git LFS](https://git-lfs.com/) 存储 `examples/` 下的示例音频等大文件。克隆仓库前，请确保本地已正确安装 Git LFS。
 
 ```bash
@@ -81,7 +88,7 @@ git clone https://github.com/NewComer00/expressive.git --depth 1
 cd expressive
 ```
 
-### 2. 安装应用
+### 安装应用
 
 请在虚拟环境中安装本软件包及其依赖：
 
@@ -89,8 +96,8 @@ cd expressive
 pip install -e ".[gpu,gui]"
 ```
 
-> **注意**：
-> - `-e` 参数以可编辑模式安装，便于开发
+> [!TIP]
+> - `-e` 参数以可编辑模式安装，便于二次开发
 > - 本软件包支持的可选依赖项包括：
 >   - `gpu`：启用 GPU 加速相关依赖（如 CUDA 运行时库）
 >   - `gui`：启用图形用户界面相关依赖（如 NiceGUI）
@@ -149,11 +156,12 @@ expressive \
 expressive-gui --lang zh_CN
 ```
 
-Launch with English UI
-
-```bash
-expressive-gui --lang en
-```
+> [!IMPORTANT]
+> 由于框架限制，通过 `expressive-gui` 命令启动的图形界面目前**不支持文件拖放**功能。若需使用拖放功能，请[直接安装](#-直接安装)本应用，或以脚本方式运行 `expressive_gui.py`：
+> 
+> ```bash
+> python expressive_gui.py --lang zh_CN
+> ```
 
 ## 🔬 算法流程
 ```mermaid

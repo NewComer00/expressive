@@ -4,6 +4,7 @@ import json
 import logging
 import asyncio
 import argparse
+from pathlib import Path
 from collections.abc import Mapping
 from os.path import splitext, basename
 
@@ -37,6 +38,26 @@ class LogElementHandler(logging.Handler):
             self.element.push(msg)
         except Exception:
             self.handleError(record)
+
+
+def is_root_mode() -> bool:
+    """Determine if the app is running in root mode or in script mode.
+    This is used to decide how to run the NiceGUI app.
+    """
+    def is_file(path: str | Path | None) -> bool:
+        """Check if the path is a file that exists.
+        Cited from nicegui/helpers.py @ v3.7.1 with MIT License, Copyright (c) 2021 Zauberzeug GmbH
+        """
+        if not path:
+            return False
+        if isinstance(path, str) and path.strip().startswith('data:'):
+            return False  # NOTE: avoid passing data URLs to Path
+        try:
+            return Path(path).is_file()
+        except OSError:
+            return False
+
+    return not sys.argv or not sys.argv[0] or not is_file(sys.argv[0])
 
 
 def dict_update(d: dict, u: Mapping):
@@ -570,23 +591,36 @@ def main():
     # Patch NiceGUI's JSON serializer to handle LazyString
     patch_nicegui_json()
 
-    create_gui()
-
-    # For multiprocessing support in PyInstaller on Windows before calling ui.run()
-    # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-Multiprocessing
-    import multiprocessing
-    multiprocessing.freeze_support()
-
     try:
-        # For PyInstaller compatibility with runpy used in ui.run from nicegui 3
-        # https://github.com/zauberzeug/nicegui/issues/5247
-        with patch_runpy():
+        # Deal with different running mode of this nicegui app
+        if is_root_mode():
+            # Run with root function (app installed from wheel)
             ui.run(
+                root=create_gui,
                 title=f"Expressive GUI v{VERSION}",
                 native=True,
                 reload=False,
                 window_size=(600, 640),
             )
+        else:
+            # Run in script mode (app run through this script or frozen with pyinstaller)
+            create_gui()
+
+            # For multiprocessing support in PyInstaller on Windows before calling ui.run()
+            # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-Multiprocessing
+            import multiprocessing
+            multiprocessing.freeze_support()
+
+            # For PyInstaller compatibility with runpy used in ui.run from nicegui 3
+            # https://github.com/zauberzeug/nicegui/issues/5247
+            with patch_runpy():
+                ui.run(
+                    title=f"Expressive GUI v{VERSION}",
+                    native=True,
+                    reload=False,
+                    window_size=(600, 640),
+                )
+
     except KeyboardInterrupt:
         if getattr(sys, 'frozen', False):
             # Suppress KeyboardInterrupt error on exit
