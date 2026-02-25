@@ -55,9 +55,7 @@ all = [
 
 [project.scripts]
 expressive = "expressive:main"
-
-[project.gui-scripts]
-expressive-gui = "expressive_gui:main"
+expressive-gui = "expressive_gui:main"  # Intentional; for commandline interaction
 
 [tool.hatch.build.targets.wheel]
 packages = ["expressions", "utils"]
@@ -162,3 +160,7 @@ ignore_merge_commits = true
 type = "github"
 token = { env = "GITHUB_TOKEN" }
 ignore_token_for_push = true  # See https://github.com/dxvidparham/psr-deploy-keys-for-protected-branches
+
+[tool.semantic_release.publish]
+upload_to_vcs_release = false  # Assets will be built and attached to the GitHub release by another workflow
+dist_glob_patterns = []

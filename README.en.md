@@ -69,10 +69,17 @@ If your system has an NVIDIA GPU driver that supports [CUDA 11.x](https://docs.n
 
 1. The current version does not support tempo changes within a single track. It’s recommended to use a consistent tempo throughout the project. This limitation will be addressed in future updates.
 
-## 🚀 Quick Start
+## 🚀 Direct Install
 
-### 1. Clone the repository
+You can download pre-compiled executable files directly from the [Releases](https://github.com/NewComer00/expressive/releases) page:
 
+- `Expressive-GUI-<version>-Windows-x64.exe`: GUI installer for Windows x64 architecture (includes GPU acceleration support)
+
+## 👨‍💻 Install from Source
+
+### Clone the repository
+
+> [!IMPORTANT]
 > This project uses [Git LFS](https://git-lfs.com/) to store large files such as example audio under `examples/`. Please ensure Git LFS is installed on your system before cloning.
 
 ```bash
@@ -80,7 +87,7 @@ git clone https://github.com/NewComer00/expressive.git --depth 1
 cd expressive
 ```
 
-### 2. Install the application
+### Install the application
 
 Install the package and its dependencies in a virtual environment:
 
@@ -88,8 +95,8 @@ Install the package and its dependencies in a virtual environment:
 pip install -e ".[gpu,gui]"
 ```
 
-> **Note:**
-> - The `-e` flag installs in editable mode, useful for development
+> [!TIP]
+> - The `-e` flag installs in editable mode, useful for further development
 > - Optional dependency groups available:
 >   - `gpu`: GPU acceleration dependencies (e.g., CUDA runtime libraries)
 >   - `gui`: Graphical user interface dependencies (e.g., NiceGUI)
@@ -142,17 +149,18 @@ The output project file will be saved to `examples/明天会更好/output.ustx`.
 
 ### Graphical User Interface (GUI)
 
-Launch in Chinese:
-
-```bash
-expressive-gui --lang zh_CN
-```
-
 Launch in English:
 
 ```bash
 expressive-gui --lang en
 ```
+
+> [!IMPORTANT]
+> Due to framework limitations, the GUI launched via the `expressive-gui` command currently **does not support drag-and-drop**. To use drag-and-drop, please install the GUI [directly](#-direct-install), or run `expressive_gui.py` as a script:
+> 
+> ```bash
+> python expressive_gui.py --lang en
+> ```
 
 ## 🔬 Algorithm Workflow
 
