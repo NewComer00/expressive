@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "babel"]
 build-backend = "hatchling.build"
 
 [project]
@@ -46,8 +46,10 @@ dev = [
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
     "pytest-xdist>=3.0.0",
-    "ruff",
-    "python-semantic-release",
+    "ruff>=0.15.1",
+    "python-semantic-release>=10.5.3",
+    "hatchling>=1.29",
+    "babel>=2.18",
 ]
 all = [
     "expressive[gpu,gui,dev]",
@@ -56,6 +58,9 @@ all = [
 [project.scripts]
 expressive = "expressive:main"
 expressive-gui = "expressive_gui:main"  # Intentional; for commandline interaction
+
+[tool.hatch.build.hooks.custom]
+path = "build/hatch_build.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["expressions", "utils"]
