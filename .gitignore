@@ -1,5 +1,6 @@
 *~
 *venv/
+locales/**/*.mo
 .vscode/
 .claude/
 __pycache__/
@@ -9,6 +10,7 @@ build/*
 !build/installer.iss
 !build/auto-py-to-exe.json
 !build/hooks/
+!build/hatch_build.py
 *.pyc
 *PitchLoader Output*.ustx
 *output*.ustx
