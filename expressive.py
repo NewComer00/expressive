@@ -163,6 +163,7 @@ def main():
     with setup_loggers() as (logger_app, _, _):
         logger_app.info("Starting Expressive CLI...")
         try:
+            add_cuda_to_path(skip_missing=True)
             process_expressions(
                 args.utau_wav, args.ref_wav, args.ustx_input,
                 args.ustx_output, args.track_number, expressions
@@ -175,5 +176,4 @@ def main():
 
 
 if __name__ == "__main__":
-    add_cuda_to_path()
     main()

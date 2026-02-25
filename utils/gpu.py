@@ -1,24 +1,37 @@
 import os
+import logging
+import importlib
 from pathlib import Path
 
-import nvidia.cuda_nvcc
-import nvidia.cuda_runtime
-import nvidia.cudnn
-import nvidia.cublas
-import nvidia.cusolver
-import nvidia.cusparse
-import nvidia.cufft
-import nvidia.curand
+logger = logging.getLogger(__name__)
 
 
-def add_cuda_to_path():
+def add_cuda_to_path(skip_missing: bool = False):
     """Add CUDA to library searching path."""
-    for package in [nvidia.cuda_nvcc, nvidia.cuda_runtime, nvidia.cudnn, nvidia.cublas,
-                    nvidia.cusolver, nvidia.cusparse, nvidia.cufft, nvidia.curand]:
+    packages = [
+        "nvidia.cuda_nvcc", "nvidia.cuda_runtime", "nvidia.cudnn", "nvidia.cublas",
+        "nvidia.cusolver", "nvidia.cusparse", "nvidia.cufft", "nvidia.curand",
+    ]
+
+    missing = []
+    for package_name in packages:
+        try:
+            package = importlib.import_module(package_name)
+        except ImportError:
+            if skip_missing:
+                missing.append(package_name)
+                continue
+            raise
+
         lib_path = Path(package.__path__[0]) / "bin"
         if os.name == "nt":
-            os.environ["PATH"] = \
-                str(lib_path) + ';' + os.environ.get('PATH', '')
+            os.environ["PATH"] = str(lib_path) + ';' + os.environ.get('PATH', '')
         else:
-            os.environ["LD_LIBRARY_PATH"] = \
-                str(lib_path) + ':' + os.environ.get('LD_LIBRARY_PATH', '')
+            os.environ["LD_LIBRARY_PATH"] = str(lib_path) + ':' + os.environ.get('LD_LIBRARY_PATH', '')
+
+    if missing:
+        logger.warning(
+            "The following CUDA packages were not found and will be skipped: %s. "
+            "If you are running the CPU-only version, you can safely ignore this message.",
+            ", ".join(missing),
+        )

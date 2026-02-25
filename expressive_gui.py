@@ -565,6 +565,8 @@ def main():
     args, unknown = parser.parse_known_args()
     init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales'), "app")
 
+    add_cuda_to_path(skip_missing=True)
+
     # Patch NiceGUI's JSON serializer to handle LazyString
     patch_nicegui_json()
 
@@ -595,5 +597,4 @@ def main():
 
 # Run the app
 if __name__ in {"__main__", "__mp_main__"}:
-    add_cuda_to_path()
     main()
