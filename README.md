@@ -32,7 +32,7 @@
 
 本应用默认选择 [swift-f0](https://github.com/lars76/swift-f0)（基于 ONNX Runtime）作为音高提取后端，仅需 CPU 即可运行，可满足基础使用场景。
 
-也提供了经典的 [CREPE](https://github.com/marl/crepe)（依赖 TensorFlow）音高提取后端。若您的电脑配有 NVIDIA 显卡且支持 [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)（即显卡驱动版本 >= 450），使用 CREPE 后端时会自动启用 GPU 加速。
+也提供了经典的 [CREPE](https://github.com/marl/crepe)（依赖 TensorFlow）音高提取后端，适合更高要求的使用场景。若您的电脑配有 NVIDIA 显卡且支持 [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)（即显卡驱动版本 >= 450），使用 CREPE 后端时会自动启用 GPU 加速。
 
 > \* 在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
 
@@ -132,6 +132,7 @@ expressive `
   --track_number 1 `
   --expression dyn `
   --expression pitd `
+  --pitd.semitone_shift 0 `
   --expression tenc
 ```
 
@@ -146,6 +147,7 @@ expressive \
   --track_number 1 \
   --expression dyn \
   --expression pitd \
+  --pitd.semitone_shift 0 \
   --expression tenc
 ```
 

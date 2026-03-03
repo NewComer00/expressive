@@ -496,7 +496,8 @@ def create_gui():
                 forward=lambda v: pitd_args.align_radius.type(v) if v is not None else None,
             ).tooltip_md(pitd_args.align_radius.help)
 
-            ui.number(label=_("Semitone Shift"), step=1, format="%d").bind_value(
+            ui.number(label=_("Semitone Shift"), step=1, format="%d",
+                      placeholder=_("Auto Estimation")).bind_value(
                 state["expressions"]["pitd"], "semitone_shift",
                 forward=lambda v: pitd_args.semitone_shift.type(v) if v is not None else None,
             ).tooltip_md(pitd_args.semitone_shift.help)

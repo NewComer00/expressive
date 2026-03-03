@@ -32,7 +32,7 @@ The current version supports importing the following expression parameters:
 
 By default, this application uses [swift-f0](https://github.com/lars76/swift-f0) (based on ONNX Runtime) as the pitch extraction backend, which runs on CPU only and satisfies basic usage scenarios.
 
-The classic [CREPE](https://github.com/marl/crepe) pitch extraction backend (depends on TensorFlow) is also available. If your computer is equipped with an NVIDIA GPU and supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) (i.e., GPU driver version >= 450), the CREPE backend will automatically enable GPU acceleration.
+The classic [CREPE](https://github.com/marl/crepe) pitch extraction backend (depends on TensorFlow) is also available, which suits for scenarios with higher accuracy requirements. If your computer is equipped with an NVIDIA GPU and supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) (i.e., GPU driver version >= 450), the CREPE backend will automatically enable GPU acceleration.
 
 > \* On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
 
@@ -134,6 +134,7 @@ expressive `
   --track_number 1 `
   --expression dyn `
   --expression pitd `
+  --pitd.semitone_shift 0 `
   --expression tenc
 ```
 
@@ -148,6 +149,7 @@ expressive \
   --track_number 1 \
   --expression dyn \
   --expression pitd \
+  --pitd.semitone_shift 0 \
   --expression tenc
 ```
 
