@@ -12,6 +12,7 @@ dependencies = [
     "numpy<2",
     "tensorflow==2.10",
     "crepe @ git+https://github.com/NewComer00/crepe.git@master",
+    "swift-f0",
     "oyaml",
     "fastdtw",
     "scipy",
@@ -21,6 +22,8 @@ dependencies = [
     "matplotlib",
     "scikit-learn",
     "lazy-string",
+    "rich-argparse",
+    "rich",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +42,7 @@ gui = [
     "pywebview>=6.0",
     "pywin32; platform_system=='Windows'",
     "pywinstyles; platform_system=='Windows'",
+    "markdown",
 ]
 dev = [
     "pyinstaller==6.11.1",
@@ -71,6 +75,17 @@ include = [
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.babel]
+[[tool.babel.mappings]]
+method = "ignore"
+pattern = ["tests/**.py", "dist/**.py", "build/**.py"]
+
+[[tool.babel.mappings]]
+method = "python"
+pattern = "**.py"
+encoding = "utf-8"
+keywords = ["_", "_l", "_lf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

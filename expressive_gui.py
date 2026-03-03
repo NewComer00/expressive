@@ -17,11 +17,14 @@ from utils.ui import (
     NiceguiNativeDropArea,
     webview_active_window,
 )
+from utils.monkeypatch import (
+    patch_runpy,
+    patch_tooltip_md,
+    patch_nicegui_json,
+)
 from __version__ import VERSION
-from utils.gpu import add_cuda_to_path
-from utils.monkeypatch import patch_runpy
+from utils.i18n import _, init_gettext
 from expressive import process_expressions
-from utils.i18n import _, init_gettext, patch_nicegui_json
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
@@ -393,7 +396,7 @@ def create_gui():
                 file_inputs["ustx_output"] = (
                     ui.input(
                         label=_("Output USTX File"),
-                        placeholder=_("Path to save processed USTX file"),
+                        placeholder=_("Path to save the processed `.ustx` file"),
                         validation={_("Input required"): lambda v: bool(v)},
                     )
                     .bind_value(state, "ustx_output")
@@ -409,7 +412,7 @@ def create_gui():
         ui.number(label=_("Track Number"), min=1, format="%d").bind_value(
             state, "track_number",
             forward=lambda v: general_args.track_number.type(v) if v is not None else None,
-        ).classes("w-full").tooltip(general_args.track_number.help)
+        ).classes("w-full").tooltip_md(general_args.track_number.help)
 
     # Expression selection
     with ui.card().classes("w-full"):
@@ -434,17 +437,17 @@ def create_gui():
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
                 state["expressions"]["dyn"], "align_radius",
                 forward=lambda v: dyn_args.align_radius.type(v) if v is not None else None,
-            ).tooltip(dyn_args.align_radius.help)
+            ).tooltip_md(dyn_args.align_radius.help)
 
             ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
                 state["expressions"]["dyn"], "smoothness",
                 forward=lambda v: dyn_args.smoothness.type(v) if v is not None else None,
-            ).tooltip(dyn_args.smoothness.help)
+            ).tooltip_md(dyn_args.smoothness.help)
 
             ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
                 state["expressions"]["dyn"], "scaler",
                 forward=lambda v: dyn_args.scaler.type(v) if v is not None else None,
-            ).tooltip(dyn_args.scaler.help)
+            ).tooltip_md(dyn_args.scaler.help)
 
     # Pitd parameters
     pitd_args = getExpressionLoader("pitd").args
@@ -455,37 +458,58 @@ def create_gui():
         ui.label(pitd_info).classes("text-lg font-bold")
 
         with ui.grid(columns=3).classes("w-full"):
-            ui.number(
-                label=_("UTAU Confidence"), min=0.0, max=1.0, step=0.1, format="%.1f"
+            def on_backend_change(e):
+                nonlocal ui_confidence_utau, ui_confidence_ref
+                backend = e.value
+                # Update the confidence input placeholders based on the selected backend's recommended values
+                # TODO: _props is an internal API of NiceGUI, may need to be updated if NiceGUI changes its implementation
+                ui_confidence_utau._props.set_optional(
+                    'placeholder',
+                    getExpressionLoader("pitd").confidence_utau_recommended[backend]
+                )
+                ui_confidence_utau.update()
+                ui_confidence_ref._props.set_optional(
+                    'placeholder',
+                    getExpressionLoader("pitd").confidence_ref_recommended[backend]
+                )
+                ui_confidence_ref.update()
+
+            ui_confidence_utau = ui.number(
+                label=_("UTAU Confidence"), min=0.0, max=1.0, step=0.01, format="%.2f"
             ).bind_value(state["expressions"]["pitd"], "confidence_utau",
                             forward=lambda v: pitd_args.confidence_utau.type(v) if v is not None else None,
-            ).tooltip(pitd_args.confidence_utau.help)
+            ).tooltip_md(pitd_args.confidence_utau.help)
 
-            ui.number(
-                label=_("Reference Confidence"), min=0.0, max=1.0, step=0.1, format="%.1f"
+            ui_confidence_ref = ui.number(
+                label=_("Reference Confidence"), min=0.0, max=1.0, step=0.01, format="%.2f"
             ).bind_value(state["expressions"]["pitd"], "confidence_ref",
                             forward=lambda v: pitd_args.confidence_ref.type(v) if v is not None else None,
-            ).tooltip(pitd_args.confidence_ref.help)
+            ).tooltip_md(pitd_args.confidence_ref.help)
+
+            ui.select(
+                label=_("Backend"), options=pitd_args.backend.choices,
+                on_change=on_backend_change,
+            ).bind_value(state["expressions"]["pitd"], "backend").tooltip_md(pitd_args.backend.help)
 
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
                 state["expressions"]["pitd"], "align_radius",
                 forward=lambda v: pitd_args.align_radius.type(v) if v is not None else None,
-            ).tooltip(pitd_args.align_radius.help)
+            ).tooltip_md(pitd_args.align_radius.help)
 
             ui.number(label=_("Semitone Shift"), step=1, format="%d").bind_value(
                 state["expressions"]["pitd"], "semitone_shift",
                 forward=lambda v: pitd_args.semitone_shift.type(v) if v is not None else None,
-            ).tooltip(pitd_args.semitone_shift.help)
+            ).tooltip_md(pitd_args.semitone_shift.help)
 
             ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
                 state["expressions"]["pitd"], "smoothness",
                 forward=lambda v: pitd_args.smoothness.type(v) if v is not None else None,
-            ).tooltip(pitd_args.smoothness.help)
+            ).tooltip_md(pitd_args.smoothness.help)
 
             ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
                 state["expressions"]["pitd"], "scaler",
                 forward=lambda v: pitd_args.scaler.type(v) if v is not None else None,
-            ).tooltip(pitd_args.scaler.help)
+            ).tooltip_md(pitd_args.scaler.help)
 
     # Tenc parameters
     tenc_args = getExpressionLoader("tenc").args
@@ -499,22 +523,22 @@ def create_gui():
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
                 state["expressions"]["tenc"], "align_radius",
                 forward=lambda v: tenc_args.align_radius.type(v) if v is not None else None,
-            ).tooltip(tenc_args.align_radius.help)
+            ).tooltip_md(tenc_args.align_radius.help)
 
             ui.number(label=_("Smoothness"), min=0, format="%d").bind_value(
                 state["expressions"]["tenc"], "smoothness",
                 forward=lambda v: tenc_args.smoothness.type(v) if v is not None else None,
-            ).tooltip(tenc_args.smoothness.help)
+            ).tooltip_md(tenc_args.smoothness.help)
 
             ui.number(label=_("Scaler"), min=0.0, step=0.1, format="%.1f").bind_value(
                 state["expressions"]["tenc"], "scaler",
                 forward=lambda v: tenc_args.scaler.type(v) if v is not None else None,
-            ).tooltip(tenc_args.scaler.help)
+            ).tooltip_md(tenc_args.scaler.help)
 
             ui.number(label=_("Bias"), format="%d").bind_value(
                 state["expressions"]["tenc"], "bias",
                 forward=lambda v: tenc_args.bias.type(v) if v is not None else None,
-            ).tooltip(tenc_args.bias.help)
+            ).tooltip_md(tenc_args.bias.help)
 
     # Add the config buttons above the Process button
     with ui.row().classes("w-full justify-between"):
@@ -586,10 +610,9 @@ def main():
     args, unknown = parser.parse_known_args()
     init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales'), "app")
 
-    add_cuda_to_path(skip_missing=True)
-
     # Patch NiceGUI's JSON serializer to handle LazyString
     patch_nicegui_json()
+    patch_tooltip_md()
 
     try:
         # Deal with different running mode of this nicegui app

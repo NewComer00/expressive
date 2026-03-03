@@ -130,6 +130,38 @@ def _l(msg: str) -> LazyString:
     return LazyString(_, msg)
 
 
+def _lf(msg: str, *args, **kwargs) -> LazyString:
+    """Like :func:`_l`, but supports formatting arguments.
+
+    Args:
+        msg: The source-language string (translation key), with optional format
+            placeholders, e.g. ``"Hello, {name}!"``.
+        *args: Positional arguments for old-style ``%`` formatting.  If provided,
+            the string is formatted using ``msg % args[0]``.
+        **kwargs: Keyword arguments for new-style ``str.format`` formatting.  If
+            provided, the string is formatted using ``msg.format(**kwargs)``.
+            If both *args* and *kwargs* are provided, *args* takes precedence.
+
+    Returns:
+        A :class:`~lazy_string.LazyString` proxy that formats the translated string
+        on first use.
+
+    Example::
+        ERROR_LABEL = _lf("Error: {error_code}", error_code=404)
+        WARNING_LABEL = _lf("Warning: %s", "Low battery")
+        # Formatter arguments can also be lazily evaluated:
+        help = _lf(
+            "**F0 detection backend** ...options:\n\n%s\n\n",
+            lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()])
+        )
+    """
+    return LazyString(
+        lambda: _(msg) % (args[0]() if callable(args[0]) else args[0])
+        if args else
+        _(msg).format(**{k: (v() if callable(v) else v) for k, v in kwargs.items()})
+    )
+
+
 class LazyStringEncoder(json.JSONEncoder):
     """JSON encoder that transparently handles :class:`~lazy_string.LazyString`.
 
@@ -171,36 +203,3 @@ def json_dumps(obj, **kwargs) -> str:
         print(json_dumps(data))
     """
     return json.dumps(obj, cls=LazyStringEncoder, **kwargs)
-
-
-def patch_nicegui_json() -> None:
-    """Patch NiceGUI's orjson converter to resolve ``LazyString`` during serialization.
-
-    Monkey-patches ``_orjson_converter`` in ``nicegui.json.orjson_wrapper`` so
-    that ``LazyString`` objects are automatically converted to plain strings
-    when NiceGUI serializes UI state.
-
-    Call this function **once** during application initialization, before
-    creating any NiceGUI UI elements::
-
-        from utils.i18n import init_gettext, patch_nicegui_json
-
-        init_gettext("en", "locales", "app")
-        patch_nicegui_json()
-
-    If NiceGUI is not installed this function is a no-op.
-    """
-    try:
-        from nicegui.json import orjson_wrapper
-
-        original_converter = orjson_wrapper._orjson_converter
-
-        def patched_converter(obj):
-            if isinstance(obj, LazyString):
-                return str(obj)
-            return original_converter(obj)
-
-        orjson_wrapper._orjson_converter = patched_converter
-
-    except ImportError:
-        pass

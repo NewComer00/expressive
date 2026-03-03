@@ -26,6 +26,13 @@ def make_mock_pkg(path_base: str):
     return m
 
 
+@pytest.fixture(autouse=True)
+def reset_cuda_state():
+    """Reset the _cuda_added flag before each test."""
+    with patch("utils.gpu._cuda_added", False):
+        yield
+
+
 @pytest.mark.skipif(os.name != "nt", reason="Windows-specific test")
 def test_add_cuda_to_path_windows():
     """Test adding CUDA to PATH on Windows using importlib import mock."""

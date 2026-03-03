@@ -7,8 +7,8 @@ from contextlib import contextmanager
 from os.path import splitext, basename
 
 from __version__ import VERSION
-from utils.gpu import add_cuda_to_path
 from expressions.base import getExpressionLoader, get_registered_expressions
+from utils.ui import ArgumentDefaultsWrappedTextRichHelpFormatter
 
 
 def process_expressions(
@@ -76,7 +76,6 @@ expressions = [
         loader.load_to_ustx(track_number)
 
 
-
 @contextmanager
 def setup_loggers():
     log_file = tempfile.NamedTemporaryFile(
@@ -122,7 +121,7 @@ def setup_loggers():
 def main():
     parser = argparse.ArgumentParser(
         description="Migrate expressions from real singers to DiffSingers (CLI)",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=ArgumentDefaultsWrappedTextRichHelpFormatter,
     )
 
     # General arguments
@@ -130,11 +129,11 @@ def main():
     parser.add_argument("-u", "--utau_wav",     type=general_args.utau_path.type,    required=True, help=general_args.utau_path.help)  # noqa: E501
     parser.add_argument("-r", "--ref_wav",      type=general_args.ref_path.type,     required=True, help=general_args.ref_path.help)  # noqa: E501
     parser.add_argument("-i", "--ustx_input",   type=general_args.ustx_path.type,    required=True, help=general_args.ustx_path.help)  # noqa: E501
-    parser.add_argument("-o", "--ustx_output",  type=str,                            required=True, help="Path to save the processed USTX file")  # noqa: E501
+    parser.add_argument("-o", "--ustx_output",  type=str,                            required=True, help="Path to save the processed `.ustx` file")  # noqa: E501
     parser.add_argument("-t", "--track_number", type=general_args.track_number.type, required=True, help=general_args.track_number.help)  # noqa: E501
 
     parser.add_argument("-e", "--expression", type=str, action="append", required=True, choices=get_registered_expressions(), 
-                        help="Specify expressions to apply (e.g., --expression dyn --expression pitd)")
+                        help="**Expression(s)** to apply. Repeat the flag for multiple expressions (e.g., `-e dyn -e pitd`)")
     parser.add_argument("--version", action="version", version=f"%(prog)s v{VERSION}")
 
     # Expression-specific arguments
@@ -142,10 +141,12 @@ def main():
     get_expression_args = lambda exp_name: getExpressionLoader(exp_name).get_args_dict()
 
     for exp_name in expression_names:
-        group = parser.add_argument_group(f"{exp_name.upper()} Expression")
+        exp_info = getExpressionLoader(exp_name).expression_info
+        group = parser.add_argument_group(f"[{exp_name.upper()}] {exp_info} Expression")
         for arg_name, arg in get_expression_args(exp_name).items():
             group.add_argument(f"--{exp_name}.{arg_name}",
-                                type=arg.type, default=arg.default, help=arg.help)
+                                type=arg.type, default=arg.default, help=arg.help,
+                                choices=arg.choices)
 
     # Parse arguments
     args = parser.parse_args()
@@ -163,7 +164,6 @@ def main():
     with setup_loggers() as (logger_app, _, _):
         logger_app.info("Starting Expressive CLI...")
         try:
-            add_cuda_to_path(skip_missing=True)
             process_expressions(
                 args.utau_wav, args.ref_wav, args.ustx_input,
                 args.ustx_output, args.track_number, expressions

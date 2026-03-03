@@ -5,6 +5,10 @@ from typing import Callable, Any
 from contextlib import ContextDecorator
 
 import runpy
+from nicegui import ui
+from lazy_string import LazyString
+
+from utils.ui import tooltip_md
 
 
 def ensure_same_signature(
@@ -98,6 +102,49 @@ class patch_runpy(ContextDecorator):
 
         exec(code, globals_dict)
         return globals_dict
+
+
+def patch_nicegui_json() -> None:
+    """Patch NiceGUI's orjson converter to resolve ``LazyString`` during serialization.
+
+    Monkey-patches ``_orjson_converter`` in ``nicegui.json.orjson_wrapper`` so
+    that ``LazyString`` objects are automatically converted to plain strings
+    when NiceGUI serializes UI state.
+
+    Call this function **once** during application initialization, before
+    creating any NiceGUI UI elements::
+
+        from utils.i18n import init_gettext, patch_nicegui_json
+
+        init_gettext("en", "locales", "app")
+        patch_nicegui_json()
+
+    If NiceGUI is not installed this function is a no-op.
+    """
+    try:
+        from nicegui.json import orjson_wrapper
+
+        original_converter = orjson_wrapper._orjson_converter
+
+        def patched_converter(obj):
+            if isinstance(obj, LazyString):
+                return str(obj)
+            return original_converter(obj)
+
+        orjson_wrapper._orjson_converter = patched_converter
+
+    except ImportError:
+        pass
+
+
+def patch_tooltip_md() -> None:
+    """Patch tooltip_md() onto all NiceGUI elements as a chainable method.
+
+    Call this once at startup. After patching, any ui.element supports:
+        ui.select(...).bind_value(...).tooltip_md("**help text**")
+    """
+    if not hasattr(ui.element, "tooltip_md"):
+        ui.element.tooltip_md = tooltip_md
 
 
 if __name__ == "__main__":
