@@ -7,8 +7,8 @@ from contextlib import contextmanager
 from os.path import splitext, basename
 
 from __version__ import VERSION
+from utils.cli import ArgumentDefaultsWrappedTextRichHelpFormatter
 from expressions.base import getExpressionLoader, get_registered_expressions
-from utils.ui import ArgumentDefaultsWrappedTextRichHelpFormatter
 
 
 def process_expressions(
