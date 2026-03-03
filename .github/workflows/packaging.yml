@@ -62,6 +62,7 @@ jobs:
             --splash assets/splash/big.png \
             --collect-data crepe \
             --collect-data nicegui \
+            --collect-data swift_f0 \
             --add-data "examples;examples/" \
             --add-data "assets;assets/" \
             --add-data "locales;locales/" \

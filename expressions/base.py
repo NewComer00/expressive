@@ -16,6 +16,7 @@ class Args:
     type: type
     default: Any | None
     help: str
+    choices: list | None = None
 
 
 class ExpressionLoader():
@@ -24,10 +25,10 @@ class ExpressionLoader():
     expression_info: str = ""
     ustx_lock = threading.Lock()
     args = SimpleNamespace(
-        ref_path     = Args(name="ref_path"    , type=str, default="", help=_l("Path to the reference audio file")),
-        utau_path    = Args(name="utau_path"   , type=str, default="", help=_l("Path to the UTAU audio file")),
-        ustx_path    = Args(name="ustx_path"   , type=str, default="", help=_l("Path to the USTX project file to be processed")),  # noqa: E501
-        track_number = Args(name="track_number", type=int, default=1 , help=_l("Track number to apply expressions")),
+        ref_path     = Args(name="ref_path"    , type=str, default="", help=_l("Path to the **reference** audio file")),  # noqa: E501
+        utau_path    = Args(name="utau_path"   , type=str, default="", help=_l("Path to the **UTAU** audio file")),  # noqa: E501
+        ustx_path    = Args(name="ustx_path"   , type=str, default="", help=_l("Path to the `.ustx` project file to be processed")),  # noqa: E501
+        track_number = Args(name="track_number", type=int, default=1 , help=_l("**Track number** to apply expressions to (1-based index)")),  # noqa: E501
     )
 
     @classmethod

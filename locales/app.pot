@@ -1,47 +1,159 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Translations template for expressive.
+# Copyright (C) 2025-2026 NewComer00
+# This file is distributed under the same license as the expressive project.
+# NewComer00, 2025.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-06 21:48+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Project-Id-Version: expressive\n"
+"Report-Msgid-Bugs-To: https://github.com/NewComer00/expressive/issues\n"
+"POT-Creation-Date: 2026-03-01 19:30+0800\n"
+"Last-Translator: NewComer00\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: expressions/base.py:27
-msgid "Path to the reference audio file"
+#: expressive_gui.py:154
+msgid "Config exported successfully!"
+msgstr ""
+
+#: expressive_gui.py:156
+msgid "Failed to export config"
+msgstr ""
+
+#: expressive_gui.py:169
+msgid "Config imported successfully!"
+msgstr ""
+
+#: expressive_gui.py:172
+msgid "Failed to import config"
+msgstr ""
+
+#: expressive_gui.py:207 expressive_gui.py:208
+msgid "Processing completed successfully!"
+msgstr ""
+
+#: expressive_gui.py:210 expressive_gui.py:211
+msgid "Error during processing"
+msgstr ""
+
+#: expressive_gui.py:273
+msgid "Please fill all required file paths"
+msgstr ""
+
+#: expressive_gui.py:282
+msgid "Please select at least one expression to apply"
+msgstr ""
+
+#: expressive_gui.py:337
+msgid "File Paths"
+msgstr ""
+
+#: expressive_gui.py:353
+msgid "Reference WAV File"
+msgstr ""
+
+#: expressive_gui.py:355 expressive_gui.py:370 expressive_gui.py:385
+#: expressive_gui.py:400
+msgid "Input required"
+msgstr ""
+
+#: expressive_gui.py:368
+msgid "UTAU WAV File"
+msgstr ""
+
+#: expressive_gui.py:383
+msgid "Input USTX File"
+msgstr ""
+
+#: expressive_gui.py:398
+msgid "Output USTX File"
+msgstr ""
+
+#: expressive_gui.py:399
+msgid "Path to save the processed `.ustx` file"
+msgstr ""
+
+#: expressive_gui.py:412
+msgid "Track Number"
+msgstr ""
+
+#: expressive_gui.py:419
+msgid "Expression Selection"
+msgstr ""
+
+#: expressive_gui.py:437 expressive_gui.py:485 expressive_gui.py:514
+msgid "Align Radius"
+msgstr ""
+
+#: expressive_gui.py:442 expressive_gui.py:495 expressive_gui.py:519
+msgid "Smoothness"
+msgstr ""
+
+#: expressive_gui.py:447 expressive_gui.py:500 expressive_gui.py:524
+msgid "Scaler"
+msgstr ""
+
+#: expressive_gui.py:469
+msgid "Backend"
+msgstr ""
+
+#: expressive_gui.py:474
+msgid "UTAU Confidence"
+msgstr ""
+
+#: expressive_gui.py:480
+msgid "Reference Confidence"
+msgstr ""
+
+#: expressive_gui.py:490
+msgid "Semitone Shift"
+msgstr ""
+
+#: expressive_gui.py:529
+msgid "Bias"
+msgstr ""
+
+#: expressive_gui.py:537
+msgid "Import Config"
+msgstr ""
+
+#: expressive_gui.py:543
+msgid "Export Config"
+msgstr ""
+
+#: expressive_gui.py:554
+msgid "Process"
 msgstr ""
 
 #: expressions/base.py:28
-msgid "Path to the UTAU audio file"
+msgid "Path to the **reference** audio file"
 msgstr ""
 
 #: expressions/base.py:29
-msgid "Path to the USTX project file to be processed"
+msgid "Path to the **UTAU** audio file"
 msgstr ""
 
 #: expressions/base.py:30
-msgid "Track number to apply expressions"
+msgid "Path to the `.ustx` project file to be processed"
 msgstr ""
 
-#: expressions/base.py:50
+#: expressions/base.py:31
+msgid "**Track number** to apply expressions to (1-based index)"
+msgstr ""
+
+#: expressions/base.py:51
 msgid "Initialization complete."
 msgstr ""
 
-#: expressions/base.py:67
+#: expressions/base.py:68
+#, python-brace-format
 msgid "Expression written to USTX file: '{}'"
 msgstr ""
 
-#: expressions/base.py:69
+#: expressions/base.py:70
 msgid "Expression result is empty. Skipping USTX update."
 msgstr ""
 
@@ -49,57 +161,96 @@ msgstr ""
 msgid "Dynamics (curve)"
 msgstr ""
 
-#: expressions/dyn.py:21 expressions/pitd.py:33 expressions/tenc.py:21
+#: expressions/dyn.py:21 expressions/pitd.py:39 expressions/tenc.py:21
 msgid ""
-"Radius for the FastDTW algorithm; larger radius allows for more flexible "
-"alignment but increases computation time"
+"**Radius** for the FastDTW alignment algorithm; larger values allow more "
+"flexible alignment but increase computation time"
 msgstr ""
 
-#: expressions/dyn.py:22 expressions/pitd.py:35 expressions/tenc.py:22
-msgid "Smoothness of the expression curve"
+#: expressions/dyn.py:22 expressions/pitd.py:41 expressions/tenc.py:22
+msgid ""
+"Controls the **smoothness** of the expression curve using Gaussian "
+"filtering. Higher values produce smoother curves but may lose fine detail"
 msgstr ""
 
-#: expressions/dyn.py:23 expressions/pitd.py:36 expressions/tenc.py:23
-msgid "Scaling factor for the expression curve"
+#: expressions/dyn.py:23 expressions/pitd.py:42 expressions/tenc.py:23
+msgid ""
+"**Scaling factor** applied to the expression curve. Values >1 amplify the"
+" expression, =1 keeps original intensity, <1 reduces it"
 msgstr ""
 
-#: expressions/dyn.py:32 expressions/pitd.py:48 expressions/tenc.py:34
+#: expressions/dyn.py:32 expressions/pitd.py:55 expressions/tenc.py:34
 msgid "Extracting expression..."
 msgstr ""
 
-#: expressions/dyn.py:56 expressions/pitd.py:92 expressions/tenc.py:58
+#: expressions/dyn.py:56 expressions/pitd.py:105 expressions/tenc.py:58
 msgid "Expression extraction complete."
 msgstr ""
 
-#: expressions/pitd.py:29
+#: expressions/pitd.py:28
 msgid "Pitch Deviation (curve)"
 msgstr ""
 
+#: expressions/pitd.py:30
+msgid "fast, CPU-based (ONNX Runtime)"
+msgstr ""
+
 #: expressions/pitd.py:31
-msgid "Confidence threshold for filtering uncertain pitch values in UTAU WAV"
+msgid "classic but slow, CPU & NVIDIA GPU (TensorFlow)"
 msgstr ""
 
-#: expressions/pitd.py:32
+#: expressions/pitd.py:36
+#, python-format
 msgid ""
-"Confidence threshold for filtering uncertain pitch values in reference WAV"
+"**F0 detection backend** for extracting pitch from WAV files. Available "
+"options:\n"
+"\n"
+"%s\n"
+"\n"
 msgstr ""
 
-#: expressions/pitd.py:34
+#: expressions/pitd.py:37
+#, python-format
 msgid ""
-"Semitone shift between the UTAU and reference WAV; if the USTX WAV is an "
-"octave higher than the reference WAV, set to 12, otherwise -12; leave it "
-"empty to enable automatic shift estimation"
+"Minimum **confidence level** for keeping detected pitch values in the "
+"**UTAU** WAV. Lower values retain more frames but may include errors. "
+"Leave unset to use the recommended value for the selected backend:\n"
+"\n"
+"%s\n"
+"\n"
 msgstr ""
 
-#: expressions/pitd.py:200
+#: expressions/pitd.py:38
+#, python-format
+msgid ""
+"Minimum **confidence level** for keeping detected pitch values in the "
+"**reference** WAV. Lower values retain more frames but may include "
+"errors. Leave unset to use the recommended value for the selected "
+"backend:\n"
+"\n"
+"%s\n"
+"\n"
+msgstr ""
+
+#: expressions/pitd.py:40
+msgid ""
+"**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is"
+" an octave higher than the reference WAV, set to 12; if lower, set to "
+"-12. Leave empty to enable automatic shift estimation"
+msgstr ""
+
+#: expressions/pitd.py:214
+#, python-brace-format
 msgid "Estimated Semitone-shift: {}"
 msgstr ""
 
-#: expressions/pitd.py:255
+#: expressions/pitd.py:277
+#, python-brace-format
 msgid "Loading F0 data from cache file: '{}'"
 msgstr ""
 
-#: expressions/pitd.py:276
+#: expressions/pitd.py:310
+#, python-brace-format
 msgid "F0 data saved to cache file: '{}'"
 msgstr ""
 
@@ -108,114 +259,8 @@ msgid "Tension (curve)"
 msgstr ""
 
 #: expressions/tenc.py:24
-msgid "Bias for the expression curve"
+msgid ""
+"**Bias** offset added to the expression curve. Positive values shift the "
+"curve upward; negative values shift it downward"
 msgstr ""
 
-#: expressive-gui.py:128
-msgid "Config exported successfully!"
-msgstr ""
-
-#: expressive-gui.py:130
-msgid "Failed to export config"
-msgstr ""
-
-#: expressive-gui.py:143
-msgid "Config imported successfully!"
-msgstr ""
-
-#: expressive-gui.py:146
-msgid "Failed to import config"
-msgstr ""
-
-#: expressive-gui.py:181 expressive-gui.py:182
-msgid "Processing completed successfully!"
-msgstr ""
-
-#: expressive-gui.py:184 expressive-gui.py:185
-msgid "Error during processing"
-msgstr ""
-
-#: expressive-gui.py:217
-msgid "Please fill all required file paths"
-msgstr ""
-
-#: expressive-gui.py:226
-msgid "Please select at least one expression to apply"
-msgstr ""
-
-#: expressive-gui.py:262
-msgid "File Paths"
-msgstr ""
-
-#: expressive-gui.py:267
-msgid "Reference WAV File"
-msgstr ""
-
-#: expressive-gui.py:269 expressive-gui.py:284 expressive-gui.py:299
-#: expressive-gui.py:314
-msgid "Input required"
-msgstr ""
-
-#: expressive-gui.py:282
-msgid "UTAU WAV File"
-msgstr ""
-
-#: expressive-gui.py:297
-msgid "Input USTX File"
-msgstr ""
-
-#: expressive-gui.py:312
-msgid "Output USTX File"
-msgstr ""
-
-#: expressive-gui.py:313
-msgid "Path to save processed USTX file"
-msgstr ""
-
-#: expressive-gui.py:326
-msgid "Track Number"
-msgstr ""
-
-#: expressive-gui.py:333
-msgid "Expression Selection"
-msgstr ""
-
-#: expressive-gui.py:351 expressive-gui.py:387 expressive-gui.py:416
-msgid "Align Radius"
-msgstr ""
-
-#: expressive-gui.py:356 expressive-gui.py:397 expressive-gui.py:421
-msgid "Smoothness"
-msgstr ""
-
-#: expressive-gui.py:361 expressive-gui.py:402 expressive-gui.py:426
-msgid "Scaler"
-msgstr ""
-
-#: expressive-gui.py:376
-msgid "UTAU Confidence"
-msgstr ""
-
-#: expressive-gui.py:382
-msgid "Reference Confidence"
-msgstr ""
-
-#: expressive-gui.py:392
-msgid "Semitone Shift"
-msgstr ""
-
-#: expressive-gui.py:431
-msgid "Bias"
-msgstr ""
-
-#: expressive-gui.py:439
-msgid "Import Config"
-msgstr ""
-
-#: expressive-gui.py:445
-msgid "Export Config"
-msgstr ""
-
-#: expressive-gui.py:456
-msgid "Process"
-msgstr ""

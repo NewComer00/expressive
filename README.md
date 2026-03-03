@@ -27,34 +27,31 @@
 ## ✅ 支持平台
 
 * Windows / Linux
-* OpenUtau Beta（支持 DiffSinger）
+* OpenUtau Beta（或支持 DiffSinger 的其他版本）
 * Python 3.10 \*
 
-若您的系统中安装了 NVIDIA 显卡驱动，且驱动支持 [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)（即：驱动版本 >= 450），本应用会自动启用 GPU 加速以提升处理速度。
+本应用默认选择 [swift-f0](https://github.com/lars76/swift-f0)（基于 ONNX Runtime）作为音高提取后端，仅需 CPU 即可运行，可满足基础使用场景。
 
+也提供了经典的 [CREPE](https://github.com/marl/crepe)（依赖 TensorFlow）音高提取后端。若您的电脑配有 NVIDIA 显卡且支持 [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)（即显卡驱动版本 >= 450），使用 CREPE 后端时会自动启用 GPU 加速。
 
-<details>
-  <summary>点击展开更多平台说明</summary>
-
-* \* 本项目使用 [CREPE](https://github.com/marl/crepe) \*\* 作为音高提取器，依赖于 TensorFlow 框架。在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
-* \*\* 未来可能切换至基于 PyTorch 的 [PESTO](https://github.com/SonyCSLParis/pesto) 替代 CREPE，以提高兼容性。
-
-</details>
+> \* 在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
 
 ## 📌 使用场景
 
-**典型需求**：在使用 DiffSinger 虚拟歌手翻唱时，已经完成了填好词的无参 OpenUtau 工程，但尚未添加表情参数。本应用可以从参考人声音频中提取表情参数，并导入至 OpenUtau 工程中。
+### 需求
 
-**所需输入：**
+在使用 DiffSinger 虚拟歌手翻唱时，已经完成了填好词的无参 OpenUtau 工程，但尚未添加表情参数。本应用可以从参考人声音频中提取表情参数，并导入至 OpenUtau 工程中。
 
-* 歌姬音声：由 OpenUtau 输出的无表情虚拟歌声音频（WAV 格式）。建议节奏 (`Tempo`) 和分段尽量与参考人声一致。
-* 参考人声：原始人声录音（WAV 格式），可使用 [UVR](https://github.com/Anjok07/ultimatevocalremovergui) 等工具去除伴奏与混响。
-* 输入工程：原始 OpenUtau 工程文件（USTX 格式）。
-* 输出工程路径：处理完成后新工程文件的保存位置。
+### 输入
 
-**输出结果：**
+* **歌姬音声**：由 OpenUtau 输出的无表情虚拟歌声音频（WAV 格式）。建议节奏 (`Tempo`) 和分段尽量与参考人声一致。
+* **参考人声**：原始人声录音（WAV 格式），可使用 [UVR](https://github.com/Anjok07/ultimatevocalremovergui) 等工具去除伴奏与混响。
+* **输入工程**：原始 OpenUtau 工程文件（USTX 格式）。
+* **输出路径**：处理完成后新工程文件的保存位置。
 
-* 一个携带表情参数的新 USTX 文件，原始工程不会被修改。
+### 输出
+
+一个携带表情参数的新 USTX 文件。原始工程不会被修改。
 
 ## ✨ 功能特性
 
@@ -74,8 +71,15 @@
 
 您可以直接在 [Releases](https://github.com/NewComer00/expressive/releases) 页面下载预编译的可执行文件:
 
-- `Expressive-GUI-<version>-Windows-x64-CPU.exe`: 适用于 x64 架构 Windows 的图形用户界面安装包（仅 CPU，无 CUDA 依赖）
-- `Expressive-GUI-<version>-Windows-x64-GPU.exe`: 适用于 x64 架构 Windows 的图形用户界面安装包（含 NVIDIA GPU 加速，需驱动版本 >= 450，支持 CUDA 11.x）
+### `Expressive-GUI-<version>-Windows-x64-CPU.exe`
+适用于 x64 架构 Windows 的图形用户界面安装包。
+
+仅可使用 CPU，无 CUDA 运行时库。安装体积小，但选择 CREPE 后端提取音高时速度较慢。
+
+### `Expressive-GUI-<version>-Windows-x64-GPU.exe`
+带 GPU 支持的适用于 x64 架构 Windows 的图形用户界面安装包。
+
+含 CUDA 运行时库。在配备 NVIDIA 显卡（驱动版本 >= 450）的电脑上使用时，会大幅提高 CREPE 后端的推理速度。
 
 ## 👨‍💻 源码安装
 
@@ -128,7 +132,6 @@ expressive `
   --track_number 1 `
   --expression dyn `
   --expression pitd `
-  --pitd.semitone_shift 0 `
   --expression tenc
 ```
 
@@ -143,7 +146,6 @@ expressive \
   --track_number 1 \
   --expression dyn \
   --expression pitd \
-  --pitd.semitone_shift 0 \
   --expression tenc
 ```
 

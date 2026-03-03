@@ -5,6 +5,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+_cuda_added = False
 
 CUDA_PACKAGES = [
     "nvidia.cuda_nvcc", "nvidia.cuda_runtime", "nvidia.cudnn", "nvidia.cublas",
@@ -14,6 +15,10 @@ CUDA_PACKAGES = [
 
 def add_cuda_to_path(skip_missing: bool = False):
     """Add CUDA to library searching path."""
+    global _cuda_added
+    if _cuda_added:
+        return
+
     packages = CUDA_PACKAGES
 
     missing = []
@@ -38,3 +43,5 @@ def add_cuda_to_path(skip_missing: bool = False):
             "If you are running the CPU-only version, you can safely ignore this message.",
             ", ".join(missing),
         )
+
+    _cuda_added = True

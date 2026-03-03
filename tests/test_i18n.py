@@ -19,10 +19,11 @@ from utils.i18n import (
     LazyStringEncoder,
     _,
     _l,
+    _lf,
     init_gettext,
     json_dumps,
-    patch_nicegui_json,
 )
+from utils.monkeypatch import patch_nicegui_json
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +219,159 @@ class TestInitGettext:
         assert _("Save") == "Enregistrer"
         _install_translator({"Save": "Guardar"})
         assert _("Save") == "Guardar"
+
+
+# ---------------------------------------------------------------------------
+# _lf (lazy formatted translation)
+# ---------------------------------------------------------------------------
+
+class TestLazyFormattedTranslation:
+    def test_returns_lazy_string(self):
+        ls = _lf("Hello, {name}!", name=lambda: "World")
+        assert isinstance(ls, LazyString)
+
+    def test_str_format_before_init(self):
+        ls = _lf("Hello, {name}!", name=lambda: "World")
+        assert str(ls) == "Hello, World!"
+
+    def test_str_format_after_init(self, fr_translator):
+        ls = _lf("Hello, {name}!", name=lambda: "World")
+        assert str(ls) == "Bonjour, World!"
+
+    def test_percent_formatting_before_init(self):
+        ls = _lf("Hello, %s!", lambda: "World")
+        assert str(ls) == "Hello, World!"
+
+    def test_percent_formatting_after_init(self, fr_translator):
+        ls = _lf("Hello, %s!", lambda: "World")
+        assert str(ls) == "Bonjour, World!"
+
+    def test_lazy_format_args(self, fr_translator):
+        ls = _lf("Hello, {name}!", name=lambda: "Alice")
+        assert str(ls) == "Bonjour, Alice!"
+
+    def test_lazy_percent_args(self, fr_translator):
+        ls = _lf("Hello, %s!", lambda: "Alice")
+        assert str(ls) == "Bonjour, Alice!"
+
+    def test_resolves_after_init(self):
+        ls = _lf("Hello, {name}!", name=lambda: "World")
+        _install_translator({"Hello, {name}!": "Bonjour, {name}!"})
+        assert str(ls) == "Bonjour, World!"
+
+    def test_reflects_locale_hot_swap(self):
+        ls = _lf("Hello, {name}!", name=lambda: "World")
+        _install_translator({"Hello, {name}!": "Bonjour, {name}!"})
+        assert str(ls) == "Bonjour, World!"
+        _install_translator({"Hello, {name}!": "Hola, {name}!"})
+        assert str(ls) == "Hola, World!"
+
+    def test_multiple_kwargs(self, fr_translator):
+        # Add the multi-placeholder translation to the fixture mapping
+        import utils.i18n
+        with utils.i18n._lock:
+            utils.i18n._current_gettext = lambda msg: {
+                "Hello, {name}, you are {age}!": "Bonjour, {name}, vous avez {age} ans!",
+                "Hello": "Bonjour",
+                "Save": "Enregistrer",
+                "Cancel": "Annuler",
+                "Hello, %s!": "Bonjour, %s!",
+                "Hello, {name}!": "Bonjour, {name}!",
+                "item": "élément",
+                "Test message": "Message de test",
+                "Nested": "Imbriqué",
+                "Item1": "Élément1",
+                "Item2": "Élément2",
+            }.get(msg, msg)
+        ls = _lf("Hello, {name}, you are {age}!", name=lambda: "Alice", age=lambda: "25")
+        assert str(ls) == "Bonjour, Alice, vous avez 25 ans!"
+
+    def test_non_callable_kwarg_int(self):
+        """Test _lf with non-callable integer argument."""
+        ls = _lf("Error: {error_code}", error_code=404)
+        assert str(ls) == "Error: 404"
+
+    def test_non_callable_kwarg_int_translated(self, fr_translator):
+        """Test _lf with non-callable integer argument gets translated."""
+        import utils.i18n
+        with utils.i18n._lock:
+            utils.i18n._current_gettext = lambda msg: {
+                "Error: {error_code}": "Erreur: {error_code}",
+            }.get(msg, msg)
+        ls = _lf("Error: {error_code}", error_code=404)
+        assert str(ls) == "Erreur: 404"
+
+    def test_non_callable_percent_arg(self):
+        """Test _lf with non-callable positional argument."""
+        ls = _lf("Warning: %s", "Low battery")
+        assert str(ls) == "Warning: Low battery"
+
+    def test_non_callable_percent_arg_translated(self, fr_translator):
+        """Test _lf with non-callable positional argument gets translated."""
+        import utils.i18n
+        with utils.i18n._lock:
+            utils.i18n._current_gettext = lambda msg: {
+                "Warning: %s": "Avertissement: %s",
+            }.get(msg, msg)
+        ls = _lf("Warning: %s", "Low battery")
+        assert str(ls) == "Avertissement: Low battery"
+
+    def test_lazy_callable_arg_in_percent(self, fr_translator):
+        """Test _lf with callable (lambda) argument for percent formatting."""
+        import utils.i18n
+        with utils.i18n._lock:
+            utils.i18n._current_gettext = lambda msg: {
+                "Warning: %s": "Avertissement: %s",
+            }.get(msg, msg)
+        ls = _lf("Warning: %s", lambda: "Low battery")
+        assert str(ls) == "Avertissement: Low battery"
+
+    def test_mixed_callable_and_non_callable(self, fr_translator):
+        """Test _lf with both callable and non-callable arguments."""
+        import utils.i18n
+        with utils.i18n._lock:
+            utils.i18n._current_gettext = lambda msg: {
+                "Item {name} costs ${price}": "Article {name} coûte ${price}",
+            }.get(msg, msg)
+        ls = _lf("Item {name} costs ${price}", name=lambda: "Widget", price=9.99)
+        assert str(ls) == "Article Widget coûte $9.99"
+
+    def test_complex_lazy_content(self):
+        """Test _lf with complex lazy-evaluated content (like PitdLoader example)."""
+        backend_choices = {
+            "swift-f0": "fast, CPU-based (ONNX Runtime)",
+            "crepe": "classic but slow, CPU & NVIDIA GPU (TensorFlow)",
+        }
+        ls = _lf(
+            "**F0 detection backend** ...options:\n\n%s\n\n",
+            lambda: "\n".join([f"- `{k}`: {v}" for k, v in backend_choices.items()])
+        )
+        expected_content = "\n".join([
+            "- `swift-f0`: fast, CPU-based (ONNX Runtime)",
+            "- `crepe`: classic but slow, CPU & NVIDIA GPU (TensorFlow)",
+        ])
+        assert str(ls) == f"**F0 detection backend** ...options:\n\n{expected_content}\n\n"
+
+    def test_complex_lazy_content_translated(self, fr_translator):
+        """Test _lf with complex lazy-evaluated content gets translated."""
+        import utils.i18n
+        backend_choices = {
+            "swift-f0": "fast, CPU-based (ONNX Runtime)",
+            "crepe": "classic but slow, CPU & NVIDIA GPU (TensorFlow)",
+        }
+        with utils.i18n._lock:
+            utils.i18n._current_gettext = lambda msg: {
+                "**F0 detection backend** ...options:\n\n%s\n\n": "**Backend F0** ...options:\n\n%s\n\n",
+            }.get(msg, msg)
+        ls = _lf(
+            "**F0 detection backend** ...options:\n\n%s\n\n",
+            lambda: "\n".join([f"- `{k}`: {v}" for k, v in backend_choices.items()])
+        )
+        expected_content = "\n".join([
+            "- `swift-f0`: fast, CPU-based (ONNX Runtime)",
+            "- `crepe`: classic but slow, CPU & NVIDIA GPU (TensorFlow)",
+        ])
+        assert str(ls) == f"**Backend F0** ...options:\n\n{expected_content}\n\n"
 
 
 # ---------------------------------------------------------------------------

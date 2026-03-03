@@ -74,6 +74,10 @@
    "value": "nicegui"
   },
   {
+    "optionDest": "collect_data",
+    "value": "swift_f0"
+  },
+  {
    "optionDest": "datas",
    "value": "examples;examples/"
   },

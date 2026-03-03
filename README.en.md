@@ -27,33 +27,31 @@ The current version supports importing the following expression parameters:
 ## ✅ Supported Platforms
 
 * Windows / Linux
-* OpenUtau Beta (supports DiffSinger)
+* OpenUtau Beta (or other versions with DiffSinger support)
 * Python 3.10 \*
 
-If your system has an NVIDIA GPU driver that supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) or later (i.e., driver version >= 450), this application will automatically enable GPU acceleration to improve processing speed.
+By default, this application uses [swift-f0](https://github.com/lars76/swift-f0) (based on ONNX Runtime) as the pitch extraction backend, which runs on CPU only and satisfies basic usage scenarios.
 
-<details>
-  <summary>Click to expand platform details</summary>
+The classic [CREPE](https://github.com/marl/crepe) pitch extraction backend (depends on TensorFlow) is also available. If your computer is equipped with an NVIDIA GPU and supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) (i.e., GPU driver version >= 450), the CREPE backend will automatically enable GPU acceleration.
 
-* \* This project uses [CREPE](https://github.com/marl/crepe) \*\* as the pitch extractor, which depends on TensorFlow. On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
-* \*\* In the future, it may switch to a PyTorch-based alternative like [PESTO](https://github.com/SonyCSLParis/pesto) to improve compatibility.
-
-</details>
+> \* On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
 
 ## 📌 Use Case
 
-**Typical Need:** When using a DiffSinger virtual singer for covers, users often already have the pitch track with lyrics, but lack suitable emotional expression. This tool is designed to automatically generate and import those expression parameters.
+### Need
 
-**Required Inputs:**
+When using a DiffSinger virtual singer for covers, users often already have an OpenUtau project with lyrics and pitch track but without expression parameters. This tool extracts expression parameters from a reference vocal and imports them into the OpenUtau project.
 
-* Virtual vocal: emotionless synthesized vocal output from OpenUtau (WAV format). It's recommended to keep `Tempo` and segmentation as close to the reference vocal as possible.
-* Reference vocal: original human vocal recording (WAV format). You can use tools like [UVR](https://github.com/Anjok07/ultimatevocalremovergui) to remove instrumental and reverb.
-* Input project: original OpenUtau project file (`.ustx` format).
-* Output project path: where the new processed project will be saved.
+### Inputs
 
-**Output:**
+* **Virtual vocal**: Emotionless synthesized vocal output from OpenUtau (WAV format). It's recommended to keep `Tempo` and segmentation as close to the reference vocal as possible.
+* **Reference vocal**: Original human vocal recording (WAV format). You can use tools like [UVR](https://github.com/Anjok07/ultimatevocalremovergui) to remove instrumental and reverb.
+* **Input project**: Original OpenUtau project file (USTX format).
+* **Output path**: Where the new processed project file will be saved.
 
-* A new `.ustx` file with emotion parameters added. The original project will not be modified.
+### Output
+
+A new USTX file with expression parameters added. The original project will not be modified.
 
 ## ✨ Features
 
@@ -73,8 +71,17 @@ If your system has an NVIDIA GPU driver that supports [CUDA 11.x](https://docs.n
 
 You can download pre-compiled executable files directly from the [Releases](https://github.com/NewComer00/expressive/releases) page:
 
-- `Expressive-GUI-<version>-Windows-x64-CPU.exe`: GUI installer for Windows x64, CPU-only (no CUDA dependencies)
-- `Expressive-GUI-<version>-Windows-x64-GPU.exe`: GUI installer for Windows x64 with NVIDIA GPU acceleration (requires driver >= 450, CUDA 11.x)
+### `Expressive-GUI-<version>-Windows-x64-CPU.exe`
+
+GUI installer for Windows x64 architecture.
+
+CPU-only, no CUDA runtime libraries included. Small installation size, but slower when using the CREPE backend for pitch extraction.
+
+### `Expressive-GUI-<version>-Windows-x64-GPU.exe`
+
+GUI installer for Windows x64 architecture with GPU support.
+
+Includes CUDA runtime libraries. When used on a computer with an NVIDIA GPU (driver version >= 450), it significantly improves CREPE backend inference speed.
 
 ## 👨‍💻 Install from Source
 
@@ -127,7 +134,6 @@ expressive `
   --track_number 1 `
   --expression dyn `
   --expression pitd `
-  --pitd.semitone_shift 0 `
   --expression tenc
 ```
 
@@ -142,7 +148,6 @@ expressive \
   --track_number 1 \
   --expression dyn \
   --expression pitd \
-  --pitd.semitone_shift 0 \
   --expression tenc
 ```
 

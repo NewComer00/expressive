@@ -3,7 +3,6 @@ import csv
 from pathlib import Path
 from types import SimpleNamespace
 
-import crepe
 import librosa
 import numpy as np
 from scipy.io import wavfile
@@ -12,7 +11,7 @@ from sklearn.decomposition import PCA
 from librosa import hz_to_midi
 
 from .base import Args, ExpressionLoader, register_expression
-from utils.i18n import _, _l
+from utils.i18n import _, _l, _lf
 from utils.seqtool import (
     unify_sequence_time,
     align_sequence_tick,
@@ -27,17 +26,25 @@ from utils.cache import CACHE_DIR, calculate_file_hash
 class PitdLoader(ExpressionLoader):
     expression_name = "pitd"
     expression_info = _l("Pitch Deviation (curve)")
+    backend_choices = {
+        "swift-f0": _l("fast, CPU-based (ONNX Runtime)"),
+        "crepe": _l("classic but slow, CPU & NVIDIA GPU (TensorFlow)"),
+    }
+    confidence_utau_recommended = {"swift-f0": 0.95, "crepe": 0.8}
+    confidence_ref_recommended = {"swift-f0": 0.95, "crepe": 0.6}
     args = SimpleNamespace(
-        confidence_utau = Args(name="confidence_utau", type=float, default=0.8 , help=_l("Confidence threshold for filtering uncertain pitch values in UTAU WAV")),  # noqa: E501
-        confidence_ref  = Args(name="confidence_ref" , type=float, default=0.6 , help=_l("Confidence threshold for filtering uncertain pitch values in reference WAV")),  # noqa: E501
-        align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_l("Radius for the FastDTW algorithm; larger radius allows for more flexible alignment but increases computation time")),  # noqa: E501
-        semitone_shift  = Args(name="semitone_shift" , type=int  , default=None, help=_l("Semitone shift between the UTAU and reference WAV; if the USTX WAV is an octave higher than the reference WAV, set to 12, otherwise -12; leave it empty to enable automatic shift estimation")),  # noqa: E501
-        smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_l("Smoothness of the expression curve")),  # noqa: E501
-        scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_l("Scaling factor for the expression curve")),  # noqa: E501
+        backend         = Args(name="backend"        , type=str  , default="swift-f0", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
+        confidence_utau = Args(name="confidence_utau", type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **UTAU** WAV. Lower values retain more frames but may include errors. Leave unset to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_utau_recommended.items()]))),  # noqa: E501
+        confidence_ref  = Args(name="confidence_ref" , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **reference** WAV. Lower values retain more frames but may include errors. Leave unset to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_ref_recommended.items()]))),  # noqa: E501
+        align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
+        semitone_shift  = Args(name="semitone_shift" , type=int  , default=0   , help=_l("**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is an octave higher than the reference WAV, set to 12; if lower, set to -12. Leave empty to enable automatic shift estimation")),  # noqa: E501
+        smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
+        scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
     )
 
     def get_expression(
         self,
+        backend         = args.backend        .default,
         confidence_utau = args.confidence_utau.default,
         confidence_ref  = args.confidence_ref .default,
         align_radius    = args.align_radius   .default,
@@ -47,16 +54,22 @@ class PitdLoader(ExpressionLoader):
     ):
         self.logger.info(_("Extracting expression..."))
 
+        # Resolve per-backend confidence defaults
+        if confidence_utau is None:
+            confidence_utau = self.__class__.confidence_utau_recommended[backend]
+        if confidence_ref is None:
+            confidence_ref = self.__class__.confidence_ref_recommended[backend]
+
         # Extract pitch features from WAV files
         with StreamToLogger(self.logger, tee=True):
             utau_time, utau_pitch, utau_features = get_wav_features(
-                wav_path=self.utau_path, confidence_threshold=confidence_utau
+                wav_path=self.utau_path, confidence_threshold=confidence_utau, backend=backend
             )
 
         # Extract pitch features from reference WAV file
         with StreamToLogger(self.logger, tee=True):
             ref_time, ref_pitch, ref_features = get_wav_features(
-                wav_path=self.ref_path, confidence_threshold=confidence_ref
+                wav_path=self.ref_path, confidence_threshold=confidence_ref, backend=backend
             )
 
         # Align all sequences to a common MIDI tick time base
@@ -127,13 +140,14 @@ def extract_wav_mfcc(wav_path, n_feat=6, n_mfcc=13):
 
 
 # TODO: Deal with different tempo or ppqn within the same USTX file
-def get_wav_features(wav_path, confidence_threshold=0.8, confidence_filter_size=9):
+def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, confidence_filter_size=9):
     """Extract features from a WAV file.
 
     This function extracts pitch and MFCC features from a WAV file, aligning them to a common time base.
 
     Args:
         wav_path (str): Path to the WAV file.
+        backend (str, optional): F0 detection backend ("crepe" or "swift-f0"). Defaults to "swift-f0".
         confidence_threshold (float, optional): Confidence threshold for pitch detection. Defaults to 0.8.
         confidence_filter_size (int, optional): Size of the median filter for confidence. Defaults to 9.
 
@@ -147,7 +161,7 @@ def get_wav_features(wav_path, confidence_threshold=0.8, confidence_filter_size=
     feature_vals = []  # List of feature sequences(list of lists)
 
     # Extract features from WAV file
-    time, frequency, confidence = extract_wav_frequency(wav_path, True)
+    time, frequency, confidence = extract_wav_frequency(wav_path, backend=backend)
     mask = (
         medfilt(np.array(confidence), kernel_size=confidence_filter_size)
         < confidence_threshold
@@ -224,15 +238,19 @@ def get_pitch_delta(query, reference, scaler=2.5):
     return scaler * (query - reference)
 
 
-def extract_wav_frequency(file_path, use_cache=True):
-    """Extract pitch frequency from a WAV file using Crepe.
+def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
+    """Extract pitch frequency from a WAV file.
 
-    This function processes an audio file to extract pitch information using the
-    CREPE algorithm. It supports caching to improve performance when processing
+    This function processes an audio file to extract pitch information.
+    It supports caching to improve performance when processing
     the same file multiple times.
 
     Args:
         file_path (str): Path to the WAV file.
+        backend (str, optional): Pitch detection backend. One of "crepe" or "swift-f0".
+            "crepe" uses the CREPE model (requires TensorFlow, GPU-accelerated).
+            "swift-f0" uses SwiftF0 (faster CPU inference, requires swift-f0 package).
+            Defaults to "swift-f0".
         use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
 
     Returns:
@@ -241,6 +259,10 @@ def extract_wav_frequency(file_path, use_cache=True):
             - frequency (list of float): Detected pitch frequencies in Hz. Shape: (n_time_points).
             - confidence (list of float): Confidence values for the detected pitches. Shape: (n_time_points).
     """
+    _SUPPORTED_BACKENDS = ("crepe", "swift-f0")
+    if backend not in _SUPPORTED_BACKENDS:
+        raise ValueError(f"Unknown backend '{backend}'. Choose from: {_SUPPORTED_BACKENDS}")
+
     time = []
     frequency = []
     confidence = []
@@ -250,7 +272,7 @@ def extract_wav_frequency(file_path, use_cache=True):
         os.makedirs(cache_dir, exist_ok=True)
         wav_hash = calculate_file_hash(file_path)
 
-        cache_path = cache_dir / f"{wav_hash}.csv"
+        cache_path = cache_dir / f"{wav_hash}.{backend}.csv"
         if cache_path.is_file():
             print(_("Loading F0 data from cache file: '{}'").format(cache_path))
             with open(cache_path, "r", newline="") as file:
@@ -263,8 +285,20 @@ def extract_wav_frequency(file_path, use_cache=True):
 
     # If cache is unavailable
     if not all([time, frequency, confidence]):
-        sr, audio = wavfile.read(file_path)
-        time, frequency, confidence, _unused = crepe.predict(audio, sr, viterbi=True)
+        # Extract pitch using the specified backend
+        if backend == "crepe":
+            import crepe
+            from utils.gpu import add_cuda_to_path
+            add_cuda_to_path(skip_missing=True)
+            sr, audio = wavfile.read(file_path)
+            time, frequency, confidence, _unused = crepe.predict(audio, sr, viterbi=True)
+        elif backend == "swift-f0":
+            from swift_f0 import SwiftF0
+            detector = SwiftF0(confidence_threshold=0.0)
+            result = detector.detect_from_file(file_path)
+            time = result.timestamps.tolist()
+            frequency = result.pitch_hz.tolist()
+            confidence = result.confidence.tolist()
 
         # Save data to cache
         if use_cache:
