@@ -7,6 +7,14 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.4.0 (2026-03-05)
+
+### Features
+
+- **gui**: Offload expression processing to subprocess with logging bridge
+  ([`e01adf6`](https://github.com/NewComer00/expressive/commit/e01adf6d57ebcc3e92d1b7bc01f821799f39fb2d))
+
+
 ## v0.3.0 (2026-03-03)
 
 ### Bug Fixes
