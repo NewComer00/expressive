@@ -42,6 +42,10 @@ msgstr "处理完成！"
 msgid "Error during processing"
 msgstr "处理时发生错误"
 
+#: expressive_gui.py:217
+msgid "Start Processing..."
+msgstr "开始处理..."
+
 #: expressive_gui.py:273
 msgid "Please fill all required file paths"
 msgstr "请填写所有必填文件路径"

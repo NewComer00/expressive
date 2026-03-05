@@ -39,6 +39,10 @@ msgstr ""
 msgid "Error during processing"
 msgstr ""
 
+#: expressive_gui.py:217
+msgid "Start Processing..."
+msgstr ""
+
 #: expressive_gui.py:273
 msgid "Please fill all required file paths"
 msgstr ""

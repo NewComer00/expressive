@@ -7,6 +7,8 @@ import argparse
 from pathlib import Path
 from collections.abc import Mapping
 from os.path import splitext, basename
+from logging.handlers import QueueListener
+from concurrent.futures import ProcessPoolExecutor
 
 import webview
 from nicegui import ui, app
@@ -24,8 +26,30 @@ from utils.monkeypatch import (
 )
 from __version__ import VERSION
 from utils.i18n import _, init_gettext
+from utils.worker import WorkerContext, setup_worker_context
 from expressive import process_expressions
 from expressions.base import getExpressionLoader, get_registered_expressions
+
+
+FORMATTER_APP = logging.Formatter(
+    "%(asctime)s %(levelname)s [%(name)s]: %(message)s", datefmt="%H:%M:%S"
+)
+FORMATTER_EXP = logging.Formatter(
+    "%(asctime)s %(levelname)s [%(expression)s]: %(message)s", datefmt="%H:%M:%S"
+)
+LOGGER_APP_NAME = splitext(basename(__file__))[0]
+LOGGER_EXP_NAME = getExpressionLoader(None).__name__
+LOCALE_DIR = os.path.join(os.path.dirname(__file__), 'locales')
+LOCALE_DOMAIN = "app"
+
+worker_context = WorkerContext(
+    formatter_app=FORMATTER_APP,
+    formatter_exp=FORMATTER_EXP,
+    logger_app_name=LOGGER_APP_NAME,
+    logger_exp_name=LOGGER_EXP_NAME,
+    locale_dir=LOCALE_DIR,
+    domain=LOCALE_DOMAIN,
+)
 
 
 class LogElementHandler(logging.Handler):
@@ -189,20 +213,30 @@ def create_gui():
             process_button.disable()
             spinner_dialog.open()
             log_element.clear()
+            logger_app.info(_("Start Processing..."))
             try:
-                # Run in executor since process_expressions is likely synchronous
+                ui_handler = LogElementHandler(log_element)
+                listener = QueueListener(worker_context.log_queue, ui_handler)
+                listener.start()
+
+                # We have to use multiprocessing with a separate process for the expression processing
+                # to avoid blocking the UI and to allow using more CPU cores for heavy processing.
                 loop = asyncio.get_event_loop()
-                await loop.run_in_executor(
-                    None,  # Uses default executor
-                    lambda: process_expressions(
+                with ProcessPoolExecutor(
+                    max_workers=1,  # ALWAYS use a single worker to avoid messing with CUDA in multiple processes
+                    initializer=setup_worker_context,
+                    initargs=(worker_context,),
+                ) as executor:
+                    await loop.run_in_executor(
+                        executor,
+                        process_expressions,
                         state["utau_wav"],
                         state["ref_wav"],
                         state["ustx_input"],
                         state["ustx_output"],
                         state["track_number"],
                         expressions,
-                    ),
-                )
+                    )
                 blink_taskbar_window(app.config.title)
                 logger_app.info(_("Processing completed successfully!"))
                 ui.notify(_("Processing completed successfully!"), type="positive")
@@ -293,22 +327,14 @@ def create_gui():
             logger.addHandler(handler)
             return logger, handler
 
-        formatter_app = logging.Formatter(
-            "%(asctime)s %(levelname)s [%(name)s]: %(message)s", datefmt="%H:%M:%S"
-        )
-        formatter_exp = logging.Formatter(
-            "%(asctime)s %(levelname)s [%(expression)s]: %(message)s", datefmt="%H:%M:%S"
-        )
-
-        logger_app, handler_app = configure_logger(splitext(basename(__file__))[0], formatter_app)
-        logger_exp, handler_exp = configure_logger(getExpressionLoader(None).__name__, formatter_exp)
+        logger_app, handler_app = configure_logger(LOGGER_APP_NAME, FORMATTER_APP)
+        logger_exp, handler_exp = configure_logger(LOGGER_EXP_NAME, FORMATTER_EXP)
 
         # Clean up on disconnect
         ui.context.client.on_disconnect(lambda: (
             logger_app.removeHandler(handler_app),
             logger_exp.removeHandler(handler_exp)
         ))
-
         return logger_app, logger_exp
 
     # Set up the UI dark mode
@@ -609,7 +635,8 @@ def main():
 
     # Parse only the known arguments for frozen script with multiprocessing
     args, unknown = parser.parse_known_args()
-    init_gettext(args.lang, os.path.join(os.path.dirname(__file__), 'locales'), "app")
+    init_gettext(args.lang, LOCALE_DIR, LOCALE_DOMAIN)
+    worker_context.lang = args.lang
 
     # Patch NiceGUI's JSON serializer to handle LazyString
     patch_nicegui_json()
