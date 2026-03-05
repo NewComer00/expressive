@@ -46,6 +46,7 @@ gui = [
 ]
 dev = [
     "pyinstaller==6.11.1",
+    "backports.tarfile; python_version<'3.12'",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
