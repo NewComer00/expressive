@@ -6,6 +6,7 @@ from scipy.stats import zscore
 from .base import Args, ExpressionLoader, register_expression
 from utils.i18n import _, _l
 from utils.seqtool import (
+    time_to_ticks,
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
@@ -52,7 +53,11 @@ class DynLoader(ExpressionLoader):
 
         dyn_val = get_experssion_dynamics(time_aligned_ref_rms, smoothness, scaler)
 
-        self.expression_tick, self.expression_val = dyn_tick, dyn_val
+        # Shift ticks to absolute MIDI position using the UTAU trim offset
+        utau_offset_ticks = time_to_ticks(self.utau_offset, self.tempo)
+        self.expression_tick = dyn_tick + utau_offset_ticks
+        self.expression_val  = dyn_val
+
         self.logger.info(_("Expression extraction complete."))
         return self.expression_tick, self.expression_val
 

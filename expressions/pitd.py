@@ -13,6 +13,7 @@ from librosa import hz_to_midi
 from .base import Args, ExpressionLoader, register_expression
 from utils.i18n import _, _l, _lf
 from utils.seqtool import (
+    time_to_ticks,
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
@@ -101,7 +102,11 @@ class PitdLoader(ExpressionLoader):
             scaler=scaler,
         )
 
-        self.expression_tick, self.expression_val = pitd_tick, pitd_val
+        # Shift ticks to absolute MIDI position using the UTAU trim offset
+        utau_offset_ticks = time_to_ticks(self.utau_offset, self.tempo)
+        self.expression_tick = pitd_tick + utau_offset_ticks
+        self.expression_val  = pitd_val
+
         self.logger.info(_("Expression extraction complete."))
         return self.expression_tick, self.expression_val
 

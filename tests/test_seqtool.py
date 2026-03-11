@@ -22,25 +22,32 @@ class TestTimeConversion:
         """Test basic time to tick conversion"""
         # 120 BPM, 480 PPQN
         # 1 second = 120/60 * 480 = 960 ticks
-        result = time_to_ticks(1.0, tempo=120, ppqn=480)
+        result = time_to_ticks(1.0, tempo=120, ppqn=480, unique=False)
         assert result == 960
 
     def test_time_to_ticks_array(self):
         """Test array input"""
         times = [0, 0.5, 1.0, 2.0]
-        result = time_to_ticks(times, tempo=120, ppqn=480)
+        result = time_to_ticks(times, tempo=120, ppqn=480, unique=False)
         expected = np.array([0, 480, 960, 1920])
+        assert_array_equal(result, expected)
+
+    def test_time_to_ticks_unique(self):
+        """Test that unique=True deduplicates and sorts ticks"""
+        times = [0.0, 0.0, 1.0, 1.0, 2.0]
+        result = time_to_ticks(times, tempo=120, ppqn=480, unique=True)
+        expected = np.array([0, 960, 1920])
         assert_array_equal(result, expected)
 
     def test_ticks_to_time_basic(self):
         """Test basic tick to time conversion"""
         result = ticks_to_time(960, tempo=120, ppqn=480)
-        assert result == 1.0
+        assert result == 1
 
     def test_time_tick_roundtrip(self):
         """Test roundtrip conversion consistency"""
         original_time = np.array([0.5, 1.0, 1.5, 2.0])
-        ticks = time_to_ticks(original_time, tempo=120, ppqn=480)
+        ticks = time_to_ticks(original_time, tempo=120, ppqn=480, unique=False)
         recovered_time = ticks_to_time(ticks, tempo=120, ppqn=480)
         assert_array_almost_equal(original_time, recovered_time)
 
@@ -54,17 +61,17 @@ class TestTimeConversion:
     ])
     def test_time_to_ticks_parametrized(self, time, tempo, ppqn, expected):
         """Test time_to_ticks with multiple parameter combinations"""
-        result = time_to_ticks(time, tempo, ppqn)
+        result = time_to_ticks(time, tempo, ppqn, unique=False)
         assert result == expected
 
     def test_time_to_ticks_zero(self):
         """Test with zero time"""
-        result = time_to_ticks(0, tempo=120, ppqn=480)
+        result = time_to_ticks(0, tempo=120, ppqn=480, unique=False)
         assert result == 0
 
     def test_time_to_ticks_negative(self):
         """Test with negative time"""
-        result = time_to_ticks(-1.0, tempo=120, ppqn=480)
+        result = time_to_ticks(-1.0, tempo=120, ppqn=480, unique=False)
         assert result == -960
 
 
@@ -382,13 +389,23 @@ class TestNumericalStability:
     """Test numerical stability and precision"""
 
     def test_time_tick_roundtrip_precision(self):
-        """Test precision in roundtrip conversion"""
+        """Test precision in roundtrip conversion.
+
+        time_to_ticks rounds to the nearest integer tick, so the round-trip
+        cannot recover sub-tick precision.  The maximum quantization error is
+        half a tick duration:  60 / (tempo * ppqn * 2).
+        """
         original_times = np.linspace(0, 10, 1000)
-        ticks = time_to_ticks(original_times, tempo=120, ppqn=480)
+        ticks = time_to_ticks(original_times, tempo=120, ppqn=480, unique=False)
         recovered_times = ticks_to_time(ticks, tempo=120, ppqn=480)
 
-        # Should be very close
-        assert_array_almost_equal(original_times, recovered_times, decimal=10)
+        tick_duration = 60 / (120 * 480)          # ~0.001042 s — one full tick
+        max_error = tick_duration / 2              # ~0.000521 s — half tick (worst case)
+
+        abs_diff = np.abs(original_times - recovered_times)
+        assert np.all(abs_diff <= max_error + 1e-12), (
+            f"Max error {abs_diff.max():.6f}s exceeds half-tick bound {max_error:.6f}s"
+        )
 
     def test_gaussian_filter_preserves_mean(self):
         """Test that Gaussian filter approximately preserves mean"""

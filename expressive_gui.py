@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import logging
 import asyncio
 import argparse
@@ -11,12 +12,13 @@ from logging.handlers import QueueListener
 from concurrent.futures import ProcessPoolExecutor
 
 import webview
-from nicegui import ui, app
+from nicegui import ui, app, background_tasks
 
 from utils.ui import (
     blink_taskbar_window,
     change_window_style,
     NiceguiNativeDropArea,
+    WaveSurferRangeSelector,
     webview_active_window,
 )
 from utils.monkeypatch import (
@@ -26,8 +28,9 @@ from utils.monkeypatch import (
 )
 from __version__ import VERSION
 from utils.i18n import _, init_gettext
-from utils.worker import WorkerContext, setup_worker_context
 from expressive import process_expressions
+from utils.wavtool import get_wav_end_ts, validate_timestamp
+from utils.worker import WorkerContext, setup_worker_context
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
@@ -51,6 +54,8 @@ worker_context = WorkerContext(
     domain=LOCALE_DOMAIN,
 )
 
+general_args = getExpressionLoader(None).args
+
 
 class LogElementHandler(logging.Handler):
     """A logging handler that emits messages to a log element."""
@@ -63,6 +68,7 @@ class LogElementHandler(logging.Handler):
         try:
             msg = self.format(record)
             self.element.push(msg)
+            time.sleep(0.1)  # Avoid flooding
         except Exception:
             self.handleError(record)
 
@@ -104,7 +110,7 @@ def dict_update(d: dict, u: Mapping):
 def close_splash():
     """Close the splash screen when the app is connected if this script is frozen.
     This is a workaround for PyInstaller, which doesn't support splash screen in the main thread
-    
+
     See: https://github.com/zauberzeug/nicegui/discussions/3536
          https://stackoverflow.com/questions/71057636/how-can-i-solve-no-module-named-pyi-splash-after-using-pyinstaller
     """
@@ -113,14 +119,18 @@ def close_splash():
         pyi_splash.close()
 
 
-def create_gui():
-    # Initialize state
-    state = {
-        "utau_wav"    : "",
-        "ref_wav"     : "",
-        "ustx_input"  : "",
+def build_default_state() -> dict:
+    """Build the default application state from registered expression loaders."""
+    return {
+        "utau_wav"    : general_args.utau_path.default,
+        "ref_wav"     : general_args.ref_path.default,
+        "ustx_input"  : general_args.ustx_path.default,
         "ustx_output" : "",
-        "track_number": 1,
+        "track_number": general_args.track_number.default,
+        "ref_start"   : general_args.ref_start.default,
+        "ref_end"     : general_args.ref_end.default,
+        "utau_start"  : general_args.utau_start.default,
+        "utau_end"    : general_args.utau_end.default,
         "expressions" : {
             exp_name: {
                 "selected": False,
@@ -132,30 +142,9 @@ def create_gui():
         },
     }
 
-    # state = {
-    #     "utau_wav"    : "",
-    #     "ref_wav"     : "",
-    #     "ustx_input"  : "",
-    #     "ustx_output" : "",
-    #     "track_number": 1,
-    #     "expressions" : {
-    #         "dyn": {
-    #             "selected"    : False,
-    #             "align_radius": 1,
-    #             "smoothness"  : 2,
-    #             "scaler"      : 2.0,
-    #         },
-    #         "pitd": {
-    #             "selected"       : False,
-    #             "confidence_utau": 0.8,
-    #             "confidence_ref" : 0.6,
-    #             "align_radius"   : 1,
-    #             "semitone_shift" : None,
-    #             "smoothness"     : 2,
-    #             "scaler"         : 2.0,
-    #         },
-    #     },
-    # }
+
+def create_gui():  # noqa: C901
+    state = build_default_state()
 
     def on_color_scheme_changed(event):
         """Change the window style based on the color scheme."""
@@ -188,7 +177,10 @@ def create_gui():
             try:
                 with open(file[0], "r", encoding="utf-8-sig") as f:
                     cfg = json.load(f)
-                    dict_update(state, cfg)
+                # Start from defaults, then overlay imported values — missing keys stay default
+                default_state = build_default_state()
+                dict_update(default_state, cfg)
+                dict_update(state, default_state)
 
                 ui.notify(_("Config imported successfully!"), type="positive")
                 ui.update()
@@ -235,6 +227,10 @@ def create_gui():
                         state["ustx_input"],
                         state["ustx_output"],
                         state["track_number"],
+                        state["ref_start"],
+                        state["ref_end"],
+                        state["utau_start"],
+                        state["utau_end"],
                         expressions,
                     )
                 blink_taskbar_window(app.config.title)
@@ -343,7 +339,7 @@ def create_gui():
     <script>
         // Emit an event when the color scheme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            const colorScheme = event.matches ? "dark" : "light"; 
+            const colorScheme = event.matches ? "dark" : "light";
             emitEvent('color-scheme-changed', colorScheme);
         });
 
@@ -358,10 +354,8 @@ def create_gui():
 
     # File inputs
     file_inputs = {}
-    general_args = getExpressionLoader(None).args
     with ui.card().classes("w-full"):
         ui.label(_("File Paths")).classes("text-xl font-bold")
-
         on_drag_impl = lambda e: on_drag(e,
             [ f'c{v.id}' for v in file_inputs.values() ])
         on_drop_impl = lambda e: on_drop(e,
@@ -373,12 +367,35 @@ def create_gui():
             on_drop      = on_drop_impl,
         ).classes('w-full'):
 
+            # ── Reference WAV ────────────────────────────────────────────
+            def on_ref_change(e):
+                nonlocal input_ref_start, input_ref_end
+                ref_path = e.value
+                placeholder_start = _("e.g. 0:10.01 (default: beginning)")
+                placeholder_end = _("e.g. 1:30.00 (default: end)")
+
+                input_ref_start._props.set_optional('placeholder', placeholder_start)
+                input_ref_end._props.set_optional('placeholder', placeholder_end)
+
+                if ref_path and os.path.isfile(ref_path):
+                    async def update_placeholders():
+                        try:
+                            end_ts = await asyncio.get_event_loop().run_in_executor(
+                                None, get_wav_end_ts, ref_path
+                            )
+                            input_ref_start._props.set_optional('placeholder', "0:0.0")
+                            input_ref_end._props.set_optional('placeholder', end_ts)
+                        except Exception:
+                            pass
+                    background_tasks.create(update_placeholders(), name="ref_placeholder_update")
+
             with ui.row().classes("w-full"):
                 file_inputs["ref_wav"] = (
                     ui.input(
                         label=_("Reference WAV File"),
                         placeholder=general_args.ref_path.help,
                         validation={_("Input required"): lambda v: bool(v)},
+                        on_change=on_ref_change,
                     )
                     .bind_value(state, "ref_wav")
                     .classes("flex-grow")
@@ -388,12 +405,59 @@ def create_gui():
                     on_click=lambda: choose_file("ref_wav", ("WAV files (*.wav)",)),
                 ).classes("self-end")
 
+            # Waveform shown only after a file is selected
+            with ui.card().classes("w-full no-shadow no-border").bind_visibility_from(state, "ref_wav"):
+                WaveSurferRangeSelector() \
+                    .bind_wav_path_from(state, "ref_wav") \
+                    .bind_start(state, "ref_start") \
+                    .bind_end(state, "ref_end")
+
+                with ui.row().classes("w-full"):
+                    input_ref_start = ui.input(
+                        label=_("Reference Start"),
+                        validation={_("Invalid format"): lambda v: not v or validate_timestamp(v, "ref_start")},
+                    ).bind_value(
+                        state, "ref_start",
+                        forward=lambda v: v or None, backward=lambda v: v or ""
+                    ).classes("flex-grow").tooltip_md(general_args.ref_start.help)
+
+                    input_ref_end =ui.input(
+                        label=_("Reference End"),
+                        validation={_("Invalid format"): lambda v: not v or validate_timestamp(v, "ref_end")},
+                    ).bind_value(
+                        state, "ref_end",
+                        forward=lambda v: v or None, backward=lambda v: v or ""
+                    ).classes("flex-grow").tooltip_md(general_args.ref_end.help)
+
+            # ── UTAU WAV ─────────────────────────────────────────────────
+            def on_utau_change(e):
+                nonlocal input_utau_start, input_utau_end
+                utau_path = e.value
+                placeholder_start = _("e.g. 0:10.01 (default: beginning)")
+                placeholder_end = _("e.g. 1:30.00 (default: end)")
+
+                input_utau_start._props.set_optional('placeholder', placeholder_start)
+                input_utau_end._props.set_optional('placeholder', placeholder_end)
+
+                if utau_path and os.path.isfile(utau_path):
+                    async def update_placeholders():
+                        try:
+                            end_ts = await asyncio.get_event_loop().run_in_executor(
+                                None, get_wav_end_ts, utau_path
+                            )
+                            input_utau_start._props.set_optional('placeholder', "0:0.0")
+                            input_utau_end._props.set_optional('placeholder', end_ts)
+                        except Exception:
+                            pass
+                    background_tasks.create(update_placeholders(), name="utau_placeholder_update")
+
             with ui.row().classes("w-full"):
                 file_inputs["utau_wav"] = (
                     ui.input(
                         label=_("UTAU WAV File"),
                         placeholder=general_args.utau_path.help,
                         validation={_("Input required"): lambda v: bool(v)},
+                        on_change=on_utau_change,
                     )
                     .bind_value(state, "utau_wav")
                     .classes("flex-grow")
@@ -403,6 +467,30 @@ def create_gui():
                     on_click=lambda: choose_file("utau_wav", ("WAV files (*.wav)",)),
                 ).classes("self-end")
 
+            with ui.card ().classes("w-full no-shadow no-border").bind_visibility_from(state, "utau_wav"):
+                WaveSurferRangeSelector() \
+                    .bind_wav_path_from(state, "utau_wav") \
+                    .bind_start(state, "utau_start") \
+                    .bind_end(state, "utau_end")
+
+                with ui.row().classes("w-full"):
+                    input_utau_start = ui.input(
+                        label=_("UTAU Start"),
+                        validation={_("Invalid format"): lambda v: not v or validate_timestamp(v, "utau_start")},
+                    ).bind_value(
+                        state, "utau_start",
+                        forward=lambda v: v or None, backward=lambda v: v or ""
+                    ).classes("flex-grow").tooltip_md(general_args.utau_start.help)
+
+                    input_utau_end = ui.input(
+                        label=_("UTAU End"),
+                        validation={_("Invalid format"): lambda v: not v or validate_timestamp(v, "utau_end")},
+                    ).bind_value(
+                        state, "utau_end",
+                        forward=lambda v: v or None, backward=lambda v: v or ""
+                    ).classes("flex-grow").tooltip_md(general_args.utau_end.help)
+
+            # ── Remaining file inputs ────────────────────────────────────
             with ui.row().classes("w-full"):
                 file_inputs["ustx_input"] = (
                     ui.input(
@@ -493,12 +581,10 @@ def create_gui():
                     'placeholder',
                     getExpressionLoader("pitd").confidence_utau_recommended[backend]
                 )
-                ui_confidence_utau.update()
                 ui_confidence_ref._props.set_optional(
                     'placeholder',
                     getExpressionLoader("pitd").confidence_ref_recommended[backend]
                 )
-                ui_confidence_ref.update()
 
             ui_confidence_utau = ui.number(
                 label=_("UTAU Confidence"), min=0.0, max=1.0, step=0.01, format="%.2f"
@@ -670,6 +756,7 @@ def main():
                     native=True,
                     reload=False,
                     window_size=(600, 640),
+                    reconnect_timeout=60,
                 )
 
     except KeyboardInterrupt:

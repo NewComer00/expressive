@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  expressive\n"
 "Report-Msgid-Bugs-To: https://github.com/NewComer00/expressive/issues\n"
-"POT-Creation-Date: 2026-03-01 19:30+0800\n"
+"POT-Creation-Date: 2026-03-10 13:49+0800\n"
 "PO-Revision-Date: 2026-03-01 20:21+0800\n"
 "Last-Translator: NewComer00\n"
 "Language: zh_CN\n"
@@ -18,199 +18,262 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: expressive_gui.py:154
+#: expressive_gui.py:165
 msgid "Config exported successfully!"
 msgstr "配置导出成功！"
 
-#: expressive_gui.py:156
+#: expressive_gui.py:167
 msgid "Failed to export config"
 msgstr "配置导出失败"
 
-#: expressive_gui.py:169
+#: expressive_gui.py:183
 msgid "Config imported successfully!"
 msgstr "配置导入成功！"
 
-#: expressive_gui.py:172
+#: expressive_gui.py:186
 msgid "Failed to import config"
 msgstr "配置导入失败"
 
-#: expressive_gui.py:207 expressive_gui.py:208
-msgid "Processing completed successfully!"
-msgstr "处理完成！"
-
-#: expressive_gui.py:210 expressive_gui.py:211
-msgid "Error during processing"
-msgstr "处理时发生错误"
-
-#: expressive_gui.py:217
+#: expressive_gui.py:206
 msgid "Start Processing..."
 msgstr "开始处理..."
 
-#: expressive_gui.py:273
+#: expressive_gui.py:235 expressive_gui.py:236
+msgid "Processing completed successfully!"
+msgstr "处理完成！"
+
+#: expressive_gui.py:238 expressive_gui.py:239
+msgid "Error during processing"
+msgstr "处理时发生错误"
+
+#: expressive_gui.py:301
 msgid "Please fill all required file paths"
 msgstr "请填写所有必填文件路径"
 
-#: expressive_gui.py:282
+#: expressive_gui.py:310
 msgid "Please select at least one expression to apply"
 msgstr "请至少选择一个表情"
 
-#: expressive_gui.py:337
+#: expressive_gui.py:356
 msgid "File Paths"
 msgstr "文件路径"
 
-#: expressive_gui.py:353
+#: expressive_gui.py:372
 msgid "Reference WAV File"
 msgstr "参考音频文件（WAV）"
 
-#: expressive_gui.py:355 expressive_gui.py:370 expressive_gui.py:385
-#: expressive_gui.py:400
+#: expressive_gui.py:374 expressive_gui.py:416 expressive_gui.py:457
+#: expressive_gui.py:472
 msgid "Input required"
 msgstr "需要填写内容"
 
-#: expressive_gui.py:368
+#: expressive_gui.py:393
+msgid "Reference Start"
+msgstr "参考音频起始时间"
+
+#: expressive_gui.py:394 expressive_gui.py:435
+msgid "e.g. 0:10.01 (default: beginning)"
+msgstr "如 0:10.01（不填则为音频开头）"
+
+#: expressive_gui.py:395 expressive_gui.py:404 expressive_gui.py:436
+#: expressive_gui.py:445
+msgid "Invalid format"
+msgstr "无效格式"
+
+#: expressive_gui.py:402
+msgid "Reference End"
+msgstr "参考音频结束时间"
+
+#: expressive_gui.py:403 expressive_gui.py:444
+msgid "e.g. 1:30.00 (default: end)"
+msgstr "如 1:30.00（不填则为音频结尾）"
+
+#: expressive_gui.py:414
 msgid "UTAU WAV File"
 msgstr "歌姬音频文件（WAV）"
 
-#: expressive_gui.py:383
+#: expressive_gui.py:434
+msgid "UTAU Start"
+msgstr "歌姬音频起始时间"
+
+#: expressive_gui.py:443
+msgid "UTAU End"
+msgstr "歌姬音频结束时间"
+
+#: expressive_gui.py:455
 msgid "Input USTX File"
 msgstr "输入 OpenUtau 工程文件（USTX）"
 
-#: expressive_gui.py:398
+#: expressive_gui.py:470
 msgid "Output USTX File"
 msgstr "输出 OpenUtau 工程文件（USTX）"
 
-#: expressive_gui.py:399
+#: expressive_gui.py:471
 msgid "Path to save the processed `.ustx` file"
 msgstr "用于保存处理后 USTX 文件的路径"
 
-#: expressive_gui.py:412
+#: expressive_gui.py:484
 msgid "Track Number"
 msgstr "轨道编号"
 
-#: expressive_gui.py:419
+#: expressive_gui.py:491
 msgid "Expression Selection"
 msgstr "表情参数"
 
-#: expressive_gui.py:437 expressive_gui.py:485 expressive_gui.py:514
+#: expressive_gui.py:509 expressive_gui.py:566 expressive_gui.py:596
 msgid "Align Radius"
 msgstr "对齐半径"
 
-#: expressive_gui.py:442 expressive_gui.py:495 expressive_gui.py:519
+#: expressive_gui.py:514 expressive_gui.py:577 expressive_gui.py:601
 msgid "Smoothness"
 msgstr "平滑度"
 
-#: expressive_gui.py:447 expressive_gui.py:500 expressive_gui.py:524
+#: expressive_gui.py:519 expressive_gui.py:582 expressive_gui.py:606
 msgid "Scaler"
 msgstr "缩放因子"
 
-#: expressive_gui.py:469
-msgid "Backend"
-msgstr "后端"
-
-#: expressive_gui.py:474
+#: expressive_gui.py:550
 msgid "UTAU Confidence"
 msgstr "歌姬音频置信度"
 
-#: expressive_gui.py:480
+#: expressive_gui.py:556
 msgid "Reference Confidence"
 msgstr "参考音频置信度"
 
-#: expressive_gui.py:490
+#: expressive_gui.py:562
+msgid "Backend"
+msgstr "后端"
+
+#: expressive_gui.py:571
 msgid "Semitone Shift"
 msgstr "半音偏移"
 
-#: expressive_gui.py:500
+#: expressive_gui.py:572
 msgid "Auto Estimation"
 msgstr "自动估算"
 
-#: expressive_gui.py:529
+#: expressive_gui.py:611
 msgid "Bias"
 msgstr "偏置"
 
-#: expressive_gui.py:537
+#: expressive_gui.py:619
 msgid "Import Config"
 msgstr "导入配置"
 
-#: expressive_gui.py:543
+#: expressive_gui.py:625
 msgid "Export Config"
 msgstr "导出配置"
 
-#: expressive_gui.py:554
+#: expressive_gui.py:636
 msgid "Process"
 msgstr "开始处理"
 
-#: expressions/base.py:28
+#: expressions/base.py:29
 msgid "Path to the **reference** audio file"
 msgstr "参考音频文件路径"
 
-#: expressions/base.py:29
+#: expressions/base.py:30
 msgid "Path to the **UTAU** audio file"
 msgstr "歌姬音频文件路径"
 
-#: expressions/base.py:30
+#: expressions/base.py:31
 msgid "Path to the `.ustx` project file to be processed"
 msgstr "要处理的 USTX 项目文件路径"
 
-#: expressions/base.py:31
+#: expressions/base.py:32
 msgid "**Track number** to apply expressions to (1-based index)"
 msgstr "要导入表情参数的音轨编号（从 1 开始）"
 
-#: expressions/base.py:51
+#: expressions/base.py:33
+msgid ""
+"**Start time** of the **reference** audio (format `M:S`, e.g. `0:10.01`)."
+" Omit to specify the beginning"
+msgstr "**参考音频**的**起始时间戳**（格式 `分:秒`，如`0:10.01`表示`0分10.01秒`）。不指定此参数则默认为音频开头处"
+
+#: expressions/base.py:34
+msgid ""
+"**End time** of the **reference** audio (format `M:S`, e.g. `0:10.01`). "
+"Omit to specify the ending"
+msgstr "**参考音频**的**结束时间戳**（格式 `分:秒`，如`0:10.01`表示`0分10.01秒`）。不指定此参数则默认为音频结尾处"
+
+#: expressions/base.py:35
+msgid ""
+"**Start time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit"
+" to specify the beginning"
+msgstr "**歌姬音频**的**起始时间戳**（格式 `分:秒`，如`0:10.01`表示`0分10.01秒`）。不指定此参数则默认为音频开头处"
+
+#: expressions/base.py:36
+msgid ""
+"**End time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit "
+"to specify the ending"
+msgstr "**歌姬音频**的**结束时间戳**（格式 `分:秒`，如`0:10.01`表示`0分10.01秒`）。不指定此参数则默认为音频结尾处"
+
+#: expressions/base.py:60
+#, python-brace-format
+msgid "ref  [{} → {}] {:.3f}s"
+msgstr "参考音频选段：[{} → {}] 共{:.3f}秒"
+
+#: expressions/base.py:64
+#, python-brace-format
+msgid "utau [{} → {}] {:.3f}s"
+msgstr "歌姬音频选段：[{} → {}] 共{:.3f}秒"
+
+#: expressions/base.py:71
 msgid "Initialization complete."
 msgstr "初始化完成。"
 
-#: expressions/base.py:68
+#: expressions/base.py:88
 #, python-brace-format
 msgid "Expression written to USTX file: '{}'"
 msgstr "表情参数已写入 USTX 文件：'{}'"
 
-#: expressions/base.py:70
+#: expressions/base.py:90
 msgid "Expression result is empty. Skipping USTX update."
 msgstr "表情参数结果为空，USTX 文件将不会更新。"
 
-#: expressions/dyn.py:19
+#: expressions/dyn.py:20
 msgid "Dynamics (curve)"
 msgstr "动态曲线 Dynamics (curve)"
 
-#: expressions/dyn.py:21 expressions/pitd.py:39 expressions/tenc.py:21
+#: expressions/dyn.py:22 expressions/pitd.py:40 expressions/tenc.py:22
 msgid ""
 "**Radius** for the FastDTW alignment algorithm; larger values allow more "
 "flexible alignment but increase computation time"
 msgstr "FastDTW 对齐算法的**半径**；值越大对齐越灵活，但计算时间也越长"
 
-#: expressions/dyn.py:22 expressions/pitd.py:41 expressions/tenc.py:22
+#: expressions/dyn.py:23 expressions/pitd.py:42 expressions/tenc.py:23
 msgid ""
 "Controls the **smoothness** of the expression curve using Gaussian "
 "filtering. Higher values produce smoother curves but may lose fine detail"
 msgstr "通过高斯滤波控制表情曲线的**平滑度**；值越大曲线越平滑，但可能丢失细节"
 
-#: expressions/dyn.py:23 expressions/pitd.py:42 expressions/tenc.py:23
+#: expressions/dyn.py:24 expressions/pitd.py:43 expressions/tenc.py:24
 msgid ""
 "**Scaling factor** applied to the expression curve. Values >1 amplify the"
 " expression, =1 keeps original intensity, <1 reduces it"
 msgstr "应用于表情曲线的**缩放因子**；大于 1 则放大，等于 1 则保持原强度，小于 1 则缩小"
 
-#: expressions/dyn.py:32 expressions/pitd.py:55 expressions/tenc.py:34
+#: expressions/dyn.py:33 expressions/pitd.py:56 expressions/tenc.py:35
 msgid "Extracting expression..."
 msgstr "正在提取表情参数..."
 
-#: expressions/dyn.py:56 expressions/pitd.py:105 expressions/tenc.py:58
+#: expressions/dyn.py:61 expressions/pitd.py:110 expressions/tenc.py:63
 msgid "Expression extraction complete."
 msgstr "表情参数提取完成。"
 
-#: expressions/pitd.py:28
+#: expressions/pitd.py:29
 msgid "Pitch Deviation (curve)"
 msgstr "音高偏差曲线 Pitch Deviation (curve)"
 
-#: expressions/pitd.py:30
+#: expressions/pitd.py:31
 msgid "fast, CPU-based (ONNX Runtime)"
 msgstr "快速，基于 CPU（ONNX Runtime）"
 
-#: expressions/pitd.py:31
+#: expressions/pitd.py:32
 msgid "classic but slow, CPU & NVIDIA GPU (TensorFlow)"
 msgstr "经典但较慢，支持 CPU 和 NVIDIA GPU（TensorFlow）"
 
-#: expressions/pitd.py:36
+#: expressions/pitd.py:37
 #, python-format
 msgid ""
 "**F0 detection backend** for extracting pitch from WAV files. Available "
@@ -224,7 +287,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:37
+#: expressions/pitd.py:38
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
@@ -234,58 +297,76 @@ msgid ""
 "%s\n"
 "\n"
 msgstr ""
-"提取**歌姬**音频音高时保留检测值所需的最低**置信度**；值越低保留帧越多，但可能引入误差。"
-"忽略该参数则使用所选后端的推荐值：\n"
+"提取**歌姬**音频音高时保留检测值所需的最低**置信度**；值越低保留帧越多，但可能引入误差。忽略该参数则使用所选后端的推荐值：\n"
 "\n"
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:38
+#: expressions/pitd.py:39
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
 "**reference** WAV. Lower values retain more frames but may include "
-"errors. Omit to use the recommended value for the selected "
-"backend:\n"
+"errors. Omit to use the recommended value for the selected backend:\n"
 "\n"
 "%s\n"
 "\n"
 msgstr ""
-"提取**参考**音频音高时保留检测值所需的最低**置信度**；值越低保留帧越多，但可能引入误差。"
-"忽略该参数则使用所选后端的推荐值：\n"
+"提取**参考**音频音高时保留检测值所需的最低**置信度**；值越低保留帧越多，但可能引入误差。忽略该参数则使用所选后端的推荐值：\n"
 "\n"
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:40
+#: expressions/pitd.py:41
 msgid ""
 "**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is"
 " an octave higher than the reference WAV, set to 12; if lower, set to "
 "-12. Omit to enable automatic shift estimation"
-msgstr ""
-"歌姬音频与参考音频之间的**半音偏移**；若歌姬比参考高一个八度则设为 12，低一个八度则设为 -12；忽略该参数则启用自动估算"
+msgstr "歌姬音频与参考音频之间的**半音偏移**；若歌姬比参考高一个八度则设为 12，低一个八度则设为 -12；忽略该参数则启用自动估算"
 
-#: expressions/pitd.py:214
+#: expressions/pitd.py:219
 #, python-brace-format
 msgid "Estimated Semitone-shift: {}"
 msgstr "估计的半音偏移：{}"
 
-#: expressions/pitd.py:277
+#: expressions/pitd.py:282
 #, python-brace-format
 msgid "Loading F0 data from cache file: '{}'"
 msgstr "正在从缓存文件加载 F0 数据：'{}'"
 
-#: expressions/pitd.py:310
+#: expressions/pitd.py:315
 #, python-brace-format
 msgid "F0 data saved to cache file: '{}'"
 msgstr "F0 数据已保存到缓存文件：'{}'"
 
-#: expressions/tenc.py:19
+#: expressions/tenc.py:20
 msgid "Tension (curve)"
 msgstr "张力曲线 Tension (curve)"
 
-#: expressions/tenc.py:24
+#: expressions/tenc.py:25
 msgid ""
 "**Bias** offset added to the expression curve. Positive values shift the "
 "curve upward; negative values shift it downward"
 msgstr "添加到表情曲线的**偏置**偏移量；正值使曲线上移，负值使曲线下移"
+
+#: utils/ui.py:353
+msgid "Play/Pause"
+msgstr "播放/暂停"
+
+#: utils/ui.py:354
+msgid "Loop region"
+msgstr "选区循环播放"
+
+#: utils/ui.py:355
+msgid "Zoom"
+msgstr "缩放"
+
+#: utils/wavtool.py:127
+#, python-brace-format
+msgid "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
+msgstr "开始时间 {:.3f}秒 被截取到 {:.3f}秒（完整时长：{:.3f}秒） "
+
+#: utils/wavtool.py:130
+#, python-brace-format
+msgid "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
+msgstr "结束时间 {:.3f}秒 被截取到 {:.3f}秒（完整时长：{:.3f}秒） "
