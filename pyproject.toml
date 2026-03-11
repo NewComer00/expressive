@@ -19,6 +19,7 @@ dependencies = [
     "yamlcore",
     "platformdirs",
     "librosa",
+    "soundfile",
     "matplotlib",
     "scikit-learn",
     "lazy-string",
@@ -66,6 +67,11 @@ expressive-gui = "expressive_gui:main"  # Intentional; for commandline interacti
 
 [tool.hatch.build.hooks.custom]
 path = "build/hatch_build.py"
+vendor-static-deps = [
+    ["wavesurfer/LICENSE",           "https://unpkg.com/wavesurfer.js@7.8.10/LICENSE"],
+    ["wavesurfer/wavesurfer.esm.js", "https://unpkg.com/wavesurfer.js@7.8.10/dist/wavesurfer.esm.js"],
+    ["wavesurfer/regions.esm.js",    "https://unpkg.com/wavesurfer.js@7.8.10/dist/plugins/regions.esm.js"],
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["expressions", "utils"]

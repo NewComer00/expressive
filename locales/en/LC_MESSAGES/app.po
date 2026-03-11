@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  expressive\n"
 "Report-Msgid-Bugs-To: https://github.com/NewComer00/expressive/issues\n"
-"POT-Creation-Date: 2026-03-01 19:30+0800\n"
+"POT-Creation-Date: 2026-03-10 13:49+0800\n"
 "PO-Revision-Date: 2026-03-01 20:21+0800\n"
 "Last-Translator: NewComer00\n"
 "Language: en\n"
@@ -18,232 +18,286 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: expressive_gui.py:154
+#: expressive_gui.py:165
 msgid "Config exported successfully!"
 msgstr "Config exported successfully!"
 
-#: expressive_gui.py:156
+#: expressive_gui.py:167
 msgid "Failed to export config"
 msgstr "Failed to export config"
 
-#: expressive_gui.py:169
+#: expressive_gui.py:183
 msgid "Config imported successfully!"
 msgstr "Config imported successfully!"
 
-#: expressive_gui.py:172
+#: expressive_gui.py:186
 msgid "Failed to import config"
 msgstr "Failed to import config"
 
-#: expressive_gui.py:207 expressive_gui.py:208
-msgid "Processing completed successfully!"
-msgstr "Processing completed successfully!"
-
-#: expressive_gui.py:210 expressive_gui.py:211
-msgid "Error during processing"
-msgstr "Error during processing"
-
-#: expressive_gui.py:217
+#: expressive_gui.py:206
 msgid "Start Processing..."
 msgstr "Start Processing..."
 
-#: expressive_gui.py:273
+#: expressive_gui.py:235 expressive_gui.py:236
+msgid "Processing completed successfully!"
+msgstr "Processing completed successfully!"
+
+#: expressive_gui.py:238 expressive_gui.py:239
+msgid "Error during processing"
+msgstr "Error during processing"
+
+#: expressive_gui.py:301
 msgid "Please fill all required file paths"
 msgstr "Please fill all required file paths"
 
-#: expressive_gui.py:282
+#: expressive_gui.py:310
 msgid "Please select at least one expression to apply"
 msgstr "Please select at least one expression to apply"
 
-#: expressive_gui.py:337
+#: expressive_gui.py:356
 msgid "File Paths"
 msgstr "File Paths"
 
-#: expressive_gui.py:353
+#: expressive_gui.py:372
 msgid "Reference WAV File"
 msgstr "Reference WAV File"
 
-#: expressive_gui.py:355 expressive_gui.py:370 expressive_gui.py:385
-#: expressive_gui.py:400
+#: expressive_gui.py:374 expressive_gui.py:416 expressive_gui.py:457
+#: expressive_gui.py:472
 msgid "Input required"
 msgstr "Input required"
 
-#: expressive_gui.py:368
+#: expressive_gui.py:393
+msgid "Reference Start"
+msgstr "Reference Start"
+
+#: expressive_gui.py:394 expressive_gui.py:435
+msgid "e.g. 0:10.01 (default: beginning)"
+msgstr "e.g. 0:10.01 (default: beginning)"
+
+#: expressive_gui.py:395 expressive_gui.py:404 expressive_gui.py:436
+#: expressive_gui.py:445
+msgid "Invalid format"
+msgstr "Invalid format"
+
+#: expressive_gui.py:402
+msgid "Reference End"
+msgstr "Reference End"
+
+#: expressive_gui.py:403 expressive_gui.py:444
+msgid "e.g. 1:30.00 (default: end)"
+msgstr "e.g. 1:30.00 (default: end)"
+
+#: expressive_gui.py:414
 msgid "UTAU WAV File"
 msgstr "UTAU WAV File"
 
-#: expressive_gui.py:383
+#: expressive_gui.py:434
+msgid "UTAU Start"
+msgstr "UTAU Start"
+
+#: expressive_gui.py:443
+msgid "UTAU End"
+msgstr "UTAU End"
+
+#: expressive_gui.py:455
 msgid "Input USTX File"
 msgstr "Input USTX File"
 
-#: expressive_gui.py:398
+#: expressive_gui.py:470
 msgid "Output USTX File"
 msgstr "Output USTX File"
 
-#: expressive_gui.py:399
+#: expressive_gui.py:471
 msgid "Path to save the processed `.ustx` file"
 msgstr "Path to save the processed `.ustx` file"
 
-#: expressive_gui.py:412
+#: expressive_gui.py:484
 msgid "Track Number"
 msgstr "Track Number"
 
-#: expressive_gui.py:419
+#: expressive_gui.py:491
 msgid "Expression Selection"
 msgstr "Expression Selection"
 
-#: expressive_gui.py:437 expressive_gui.py:485 expressive_gui.py:514
+#: expressive_gui.py:509 expressive_gui.py:566 expressive_gui.py:596
 msgid "Align Radius"
 msgstr "Align Radius"
 
-#: expressive_gui.py:442 expressive_gui.py:495 expressive_gui.py:519
+#: expressive_gui.py:514 expressive_gui.py:577 expressive_gui.py:601
 msgid "Smoothness"
 msgstr "Smoothness"
 
-#: expressive_gui.py:447 expressive_gui.py:500 expressive_gui.py:524
+#: expressive_gui.py:519 expressive_gui.py:582 expressive_gui.py:606
 msgid "Scaler"
 msgstr "Scaler"
 
-#: expressive_gui.py:469
-msgid "Backend"
-msgstr "Backend"
-
-#: expressive_gui.py:474
+#: expressive_gui.py:550
 msgid "UTAU Confidence"
 msgstr "UTAU Confidence"
 
-#: expressive_gui.py:480
+#: expressive_gui.py:556
 msgid "Reference Confidence"
 msgstr "Reference Confidence"
 
-#: expressive_gui.py:490
+#: expressive_gui.py:562
+msgid "Backend"
+msgstr "Backend"
+
+#: expressive_gui.py:571
 msgid "Semitone Shift"
 msgstr "Semitone Shift"
 
-#: expressive_gui.py:500
+#: expressive_gui.py:572
 msgid "Auto Estimation"
 msgstr "Auto Estimation"
 
-#: expressive_gui.py:529
+#: expressive_gui.py:611
 msgid "Bias"
 msgstr "Bias"
 
-#: expressive_gui.py:537
+#: expressive_gui.py:619
 msgid "Import Config"
 msgstr "Import Config"
 
-#: expressive_gui.py:543
+#: expressive_gui.py:625
 msgid "Export Config"
 msgstr "Export Config"
 
-#: expressive_gui.py:554
+#: expressive_gui.py:636
 msgid "Process"
 msgstr "Process"
 
-#: expressions/base.py:28
+#: expressions/base.py:29
 msgid "Path to the **reference** audio file"
 msgstr "Path to the **reference** audio file"
 
-#: expressions/base.py:29
+#: expressions/base.py:30
 msgid "Path to the **UTAU** audio file"
 msgstr "Path to the **UTAU** audio file"
 
-#: expressions/base.py:30
+#: expressions/base.py:31
 msgid "Path to the `.ustx` project file to be processed"
 msgstr "Path to the `.ustx` project file to be processed"
 
-#: expressions/base.py:31
+#: expressions/base.py:32
 msgid "**Track number** to apply expressions to (1-based index)"
 msgstr "**Track number** to apply expressions to (1-based index)"
 
-#: expressions/base.py:51
+#: expressions/base.py:33
+msgid ""
+"**Start time** of the **reference** audio (format `M:S`, e.g. `0:10.01`)."
+" Omit to specify the beginning"
+msgstr ""
+"**Start time** of the **reference** audio (format `M:S`, e.g. `0:10.01`)."
+" Omit to specify the beginning"
+
+#: expressions/base.py:34
+msgid ""
+"**End time** of the **reference** audio (format `M:S`, e.g. `0:10.01`). "
+"Omit to specify the ending"
+msgstr ""
+"**End time** of the **reference** audio (format `M:S`, e.g. `0:10.01`). "
+"Omit to specify the ending"
+
+#: expressions/base.py:35
+msgid ""
+"**Start time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit"
+" to specify the beginning"
+msgstr ""
+"**Start time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit"
+" to specify the beginning"
+
+#: expressions/base.py:36
+msgid ""
+"**End time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit "
+"to specify the ending"
+msgstr ""
+"**End time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit "
+"to specify the ending"
+
+#: expressions/base.py:60
+#, python-brace-format
+msgid "ref  [{} → {}] {:.3f}s"
+msgstr "ref  [{} → {}] {:.3f}s"
+
+#: expressions/base.py:64
+#, python-brace-format
+msgid "utau [{} → {}] {:.3f}s"
+msgstr "utau [{} → {}] {:.3f}s"
+
+#: expressions/base.py:71
 msgid "Initialization complete."
 msgstr "Initialization complete."
 
-#: expressions/base.py:68
+#: expressions/base.py:88
 #, python-brace-format
 msgid "Expression written to USTX file: '{}'"
 msgstr "Expression written to USTX file: '{}'"
 
-#: expressions/base.py:70
+#: expressions/base.py:90
 msgid "Expression result is empty. Skipping USTX update."
 msgstr "Expression result is empty. Skipping USTX update."
 
-#: expressions/dyn.py:19
+#: expressions/dyn.py:20
 msgid "Dynamics (curve)"
 msgstr "Dynamics (curve)"
 
-#: expressions/dyn.py:21 expressions/pitd.py:39 expressions/tenc.py:21
+#: expressions/dyn.py:22 expressions/pitd.py:40 expressions/tenc.py:22
 msgid ""
 "**Radius** for the FastDTW alignment algorithm; larger values allow more "
 "flexible alignment but increase computation time"
 msgstr ""
 "**Radius** for the FastDTW alignment algorithm; larger values allow more "
 "flexible alignment but increase computation time"
-
-#: expressions/dyn.py:22 expressions/pitd.py:41 expressions/tenc.py:22
-msgid ""
-"Controls the **smoothness** of the expression curve using Gaussian "
-"filtering. Higher values produce smoother curves but may lose fine detail"
-msgstr ""
-"Controls the **smoothness** of the expression curve using Gaussian "
-"filtering. Higher values produce smoother curves but may lose fine detail"
 
 #: expressions/dyn.py:23 expressions/pitd.py:42 expressions/tenc.py:23
 msgid ""
+"Controls the **smoothness** of the expression curve using Gaussian "
+"filtering. Higher values produce smoother curves but may lose fine detail"
+msgstr ""
+"Controls the **smoothness** of the expression curve using Gaussian "
+"filtering. Higher values produce smoother curves but may lose fine detail"
+
+#: expressions/dyn.py:24 expressions/pitd.py:43 expressions/tenc.py:24
+msgid ""
 "**Scaling factor** applied to the expression curve. Values >1 amplify the"
 " expression, =1 keeps original intensity, <1 reduces it"
 msgstr ""
 "**Scaling factor** applied to the expression curve. Values >1 amplify the"
 " expression, =1 keeps original intensity, <1 reduces it"
 
-#: expressions/dyn.py:32 expressions/pitd.py:55 expressions/tenc.py:34
+#: expressions/dyn.py:33 expressions/pitd.py:56 expressions/tenc.py:35
 msgid "Extracting expression..."
 msgstr "Extracting expression..."
 
-#: expressions/dyn.py:56 expressions/pitd.py:105 expressions/tenc.py:58
+#: expressions/dyn.py:61 expressions/pitd.py:110 expressions/tenc.py:63
 msgid "Expression extraction complete."
 msgstr "Expression extraction complete."
 
-#: expressions/pitd.py:28
+#: expressions/pitd.py:29
 msgid "Pitch Deviation (curve)"
 msgstr "Pitch Deviation (curve)"
 
-#: expressions/pitd.py:30
+#: expressions/pitd.py:31
 msgid "fast, CPU-based (ONNX Runtime)"
 msgstr "fast, CPU-based (ONNX Runtime)"
 
-#: expressions/pitd.py:31
+#: expressions/pitd.py:32
 msgid "classic but slow, CPU & NVIDIA GPU (TensorFlow)"
 msgstr "classic but slow, CPU & NVIDIA GPU (TensorFlow)"
-
-#: expressions/pitd.py:36
-#, python-format
-msgid ""
-"**F0 detection backend** for extracting pitch from WAV files. Available "
-"options:\n"
-"\n"
-"%s\n"
-"\n"
-msgstr ""
-"**F0 detection backend** for extracting pitch from WAV files. Available "
-"options:\n"
-"\n"
-"%s\n"
-"\n"
 
 #: expressions/pitd.py:37
 #, python-format
 msgid ""
-"Minimum **confidence level** for keeping detected pitch values in the "
-"**UTAU** WAV. Lower values retain more frames but may include errors. "
-"Omit to use the recommended value for the selected backend:\n"
+"**F0 detection backend** for extracting pitch from WAV files. Available "
+"options:\n"
 "\n"
 "%s\n"
 "\n"
 msgstr ""
-"Minimum **confidence level** for keeping detected pitch values in the "
-"**UTAU** WAV. Lower values retain more frames but may include errors. "
-"Omit to use the recommended value for the selected backend:\n"
+"**F0 detection backend** for extracting pitch from WAV files. Available "
+"options:\n"
 "\n"
 "%s\n"
 "\n"
@@ -252,22 +306,37 @@ msgstr ""
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
+"**UTAU** WAV. Lower values retain more frames but may include errors. "
+"Omit to use the recommended value for the selected backend:\n"
+"\n"
+"%s\n"
+"\n"
+msgstr ""
+"Minimum **confidence level** for keeping detected pitch values in the "
+"**UTAU** WAV. Lower values retain more frames but may include errors. "
+"Omit to use the recommended value for the selected backend:\n"
+"\n"
+"%s\n"
+"\n"
+
+#: expressions/pitd.py:39
+#, python-format
+msgid ""
+"Minimum **confidence level** for keeping detected pitch values in the "
 "**reference** WAV. Lower values retain more frames but may include "
-"errors. Omit to use the recommended value for the selected "
-"backend:\n"
+"errors. Omit to use the recommended value for the selected backend:\n"
 "\n"
 "%s\n"
 "\n"
 msgstr ""
 "Minimum **confidence level** for keeping detected pitch values in the "
 "**reference** WAV. Lower values retain more frames but may include "
-"errors. Omit to use the recommended value for the selected "
-"backend:\n"
+"errors. Omit to use the recommended value for the selected backend:\n"
 "\n"
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:40
+#: expressions/pitd.py:41
 msgid ""
 "**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is"
 " an octave higher than the reference WAV, set to 12; if lower, set to "
@@ -277,29 +346,51 @@ msgstr ""
 " an octave higher than the reference WAV, set to 12; if lower, set to "
 "-12. Omit to enable automatic shift estimation"
 
-#: expressions/pitd.py:214
+#: expressions/pitd.py:219
 #, python-brace-format
 msgid "Estimated Semitone-shift: {}"
 msgstr "Estimated Semitone-shift: {}"
 
-#: expressions/pitd.py:277
+#: expressions/pitd.py:282
 #, python-brace-format
 msgid "Loading F0 data from cache file: '{}'"
 msgstr "Loading F0 data from cache file: '{}'"
 
-#: expressions/pitd.py:310
+#: expressions/pitd.py:315
 #, python-brace-format
 msgid "F0 data saved to cache file: '{}'"
 msgstr "F0 data saved to cache file: '{}'"
 
-#: expressions/tenc.py:19
+#: expressions/tenc.py:20
 msgid "Tension (curve)"
 msgstr "Tension (curve)"
 
-#: expressions/tenc.py:24
+#: expressions/tenc.py:25
 msgid ""
 "**Bias** offset added to the expression curve. Positive values shift the "
 "curve upward; negative values shift it downward"
 msgstr ""
 "**Bias** offset added to the expression curve. Positive values shift the "
 "curve upward; negative values shift it downward"
+
+#: utils/ui.py:353
+msgid "Play/Pause"
+msgstr "Play/Pause"
+
+#: utils/ui.py:354
+msgid "Loop region"
+msgstr "Loop region"
+
+#: utils/ui.py:355
+msgid "Zoom"
+msgstr "Zoom"
+
+#: utils/wavtool.py:127
+#, python-brace-format
+msgid "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
+msgstr "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
+
+#: utils/wavtool.py:130
+#, python-brace-format
+msgid "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
+msgstr "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"

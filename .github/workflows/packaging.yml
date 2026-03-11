@@ -66,6 +66,7 @@ jobs:
             --add-data "examples;examples/" \
             --add-data "assets;assets/" \
             --add-data "locales;locales/" \
+            --add-data "static;static/" \
             --add-data "README.md;." \
             --add-data "LICENSE;." \
             --additional-hooks-dir build/hooks \

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from utils.i18n import _, _l
+from utils.wavtool import ClampedWav, sec2timestamp
 from utils.ustx import load_ustx, save_ustx, edit_ustx_expression_curve
 
 
@@ -25,17 +26,23 @@ class ExpressionLoader():
     expression_info: str = ""
     ustx_lock = threading.Lock()
     args = SimpleNamespace(
-        ref_path     = Args(name="ref_path"    , type=str, default="", help=_l("Path to the **reference** audio file")),  # noqa: E501
-        utau_path    = Args(name="utau_path"   , type=str, default="", help=_l("Path to the **UTAU** audio file")),  # noqa: E501
-        ustx_path    = Args(name="ustx_path"   , type=str, default="", help=_l("Path to the `.ustx` project file to be processed")),  # noqa: E501
-        track_number = Args(name="track_number", type=int, default=1 , help=_l("**Track number** to apply expressions to (1-based index)")),  # noqa: E501
+        ref_path     = Args(name="ref_path"    , type=str, default=""  , help=_l("Path to the **reference** audio file")),  # noqa: E501
+        utau_path    = Args(name="utau_path"   , type=str, default=""  , help=_l("Path to the **UTAU** audio file")),  # noqa: E501
+        ustx_path    = Args(name="ustx_path"   , type=str, default=""  , help=_l("Path to the `.ustx` project file to be processed")),  # noqa: E501
+        track_number = Args(name="track_number", type=int, default=1   , help=_l("**Track number** to apply expressions to (1-based index)")),  # noqa: E501
+        ref_start    = Args(name="ref_start"   , type=str, default=None, help=_l("**Start time** of the **reference** audio (format `M:S`, e.g. `0:10.01`). Omit to specify the beginning")),  # noqa: E501
+        ref_end      = Args(name="ref_end"     , type=str, default=None, help=_l("**End time** of the **reference** audio (format `M:S`, e.g. `0:10.01`). Omit to specify the ending")),  # noqa: E501
+        utau_start   = Args(name="utau_start"  , type=str, default=None, help=_l("**Start time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit to specify the beginning")),  # noqa: E501
+        utau_end     = Args(name="utau_end"    , type=str, default=None, help=_l("**End time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit to specify the ending")),  # noqa: E501
     )
 
     @classmethod
     def get_args_dict(cls) -> dict[str, Args]:
         return cls.args.__dict__
 
-    def __init__(self, ref_path: str, utau_path: str, ustx_path: str):
+    def __init__(self, ref_path: str, utau_path: str, ustx_path: str,
+                 ref_start: str | None = None, ref_end: str | None = None,
+                 utau_start: str | None = None, utau_end: str | None = None):
         ExpressionLoader._id_counter += 1
         self.id = ExpressionLoader._id_counter
         self.logger = logging.getLogger(f"{ExpressionLoader.__name__}.{self.expression_name}.{self.id}")
@@ -44,8 +51,23 @@ class ExpressionLoader():
 
         self.expression_tick: list | np.ndarray = []
         self.expression_val: list | np.ndarray = []
-        self.ref_path = ref_path
-        self.utau_path = utau_path
+
+        self._clamped_ref = ClampedWav(ref_path,  ref_start,  ref_end,  logger=self.logger)
+        self.ref_path,  self.ref_offset,  self.ref_duration  = (
+            self._clamped_ref.path, self._clamped_ref.offset_sec, self._clamped_ref.duration_sec)
+        self.logger.info(_("ref  [{} → {}] {:.3f}s").format(
+            sec2timestamp(self.ref_offset),
+            sec2timestamp(self.ref_offset  + self.ref_duration),
+            self.ref_duration))
+
+        self._clamped_utau = ClampedWav(utau_path, utau_start, utau_end, logger=self.logger)
+        self.utau_path, self.utau_offset, self.utau_duration = (
+            self._clamped_utau.path, self._clamped_utau.offset_sec, self._clamped_utau.duration_sec)
+        self.logger.info(_("utau [{} → {}] {:.3f}s").format(
+            sec2timestamp(self.utau_offset),
+            sec2timestamp(self.utau_offset + self.utau_duration),
+            self.utau_duration))
+
         self.ustx_path = ustx_path
         self.tempo = load_ustx(self.ustx_path)["tempos"][0]["bpm"]
         self.logger.info(_("Initialization complete."))

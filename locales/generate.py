@@ -61,7 +61,6 @@ def compile_po(po_file: Path, mo_file: Path) -> None:
     """Compile .po → .mo."""
     run([
         "pybabel", "compile",
-        "--use-fuzzy",
         "--input-file", po_file,
         "--output-file", mo_file,
     ])

@@ -91,6 +91,10 @@
   },
   {
    "optionDest": "datas",
+   "value": "static;static/"
+  },
+  {
+   "optionDest": "datas",
    "value": "README.md;./"
   },
   {

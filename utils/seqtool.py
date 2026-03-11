@@ -7,18 +7,21 @@ from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter1d
 
 
-def time_to_ticks(time, tempo, ppqn=480):
+def time_to_ticks(time, tempo, ppqn=480, unique=True):
     """Convert time in seconds to MIDI ticks.
 
     Args:
         time (float or array-like): Time values in seconds.
         tempo (float): Tempo in beats per minute (BPM).
         ppqn (int, optional): Pulses per quarter note (MIDI resolution). Defaults to 480.
+        unique (bool, optional): If ``True``, return sorted deduplicated integer
+            ticks. If ``False``, return rounded integer ticks preserving the original shape.
 
     Returns:
-        numpy.ndarray: Corresponding MIDI tick values.
+        numpy.ndarray: Integer MIDI tick values, deduplicated and sorted if ``unique=True``.
     """
-    return (np.array(time) * tempo * ppqn) / 60
+    ticks = np.round((np.array(time) * tempo * ppqn) / 60).astype(int)
+    return np.unique(ticks) if unique else ticks
 
 
 def ticks_to_time(ticks, tempo, ppqn=480):
@@ -90,7 +93,7 @@ def unify_sequence_time(seq_times, seq_vals, to_ticks=False, tempo=120, ppqn=480
             - unified_time (numpy.ndarray): Unified time points. Shape: (n_time_points).
             - unified_seqs (tuple): Unified sequences. Shape: (n_sequences, n_time_points).
     """
-    unified_seq_time = np.array(sequence_interval_intersection(seq_times))
+    unified_seq_time = np.array(sequence_interval_union(seq_times))
     if not to_ticks:
         unified_seq_time = np.unique(unified_seq_time)
         unified_seqs_val = [
@@ -100,8 +103,7 @@ def unify_sequence_time(seq_times, seq_vals, to_ticks=False, tempo=120, ppqn=480
         return unified_seq_time, tuple(unified_seqs_val)
 
     else:
-        unified_seq_ticks = time_to_ticks(unified_seq_time, tempo, ppqn)
-        unified_seq_ticks = np.unique(np.round(unified_seq_ticks).astype(int))
+        unified_seq_ticks = time_to_ticks(unified_seq_time, tempo, ppqn, unique=True)
 
         time_mapping = ticks_to_time(unified_seq_ticks, tempo, ppqn)
         unified_seqs_val = [

@@ -11,6 +11,8 @@ build/*
 !build/auto-py-to-exe.json
 !build/hooks/
 !build/hatch_build.py
+static/vendor/*
+!static/vendor/.gitkeep
 *.pyc
 *PitchLoader Output*.ustx
 *output*.ustx
