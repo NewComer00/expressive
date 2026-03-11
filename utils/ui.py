@@ -371,6 +371,18 @@ import RegionsPlugin from '{self._REGIONS_JS}';
 
   window['{iid}'] = {{ ws, regions, loop: {loop_init} }};
 
+  // Prevent scrollLeft from reaching 0: WaveSurfer's enableDragSelection
+  // misinterprets a mousedown at x=0 as a drag, creating a spurious full-width
+  // region. Keeping scrollLeft >= 2 ensures this never triggers.
+  ws.once('decode', () => {{
+    const scrollContainer = ws.getWrapper().parentElement;  // .scroll div
+    scrollContainer.addEventListener('scroll', () => {{
+      if (scrollContainer.scrollLeft <= 1) {{
+        scrollContainer.scrollLeft = 2;
+      }}
+    }});
+  }});
+
   if ({show_controls_json}) {{
     // Overlay controls: inject a style block + overlay div into the waveform container
     const styleEl = document.createElement('style');
@@ -545,7 +557,6 @@ def serve_wav(wav_path: str) -> str:
         app.add_static_files(mount, directory)
     filename = os.path.basename(wav_path)
     return f"{mount}/{filename}"
-
 
 
 class WaveSurferRangeSelector(ui.element):
