@@ -371,18 +371,6 @@ import RegionsPlugin from '{self._REGIONS_JS}';
 
   window['{iid}'] = {{ ws, regions, loop: {loop_init} }};
 
-  // Prevent scrollLeft from reaching 0: WaveSurfer's enableDragSelection
-  // misinterprets a mousedown at x=0 as a drag, creating a spurious full-width
-  // region. Keeping scrollLeft >= 2 ensures this never triggers.
-  ws.once('decode', () => {{
-    const scrollContainer = ws.getWrapper().parentElement;  // .scroll div
-    scrollContainer.addEventListener('scroll', () => {{
-      if (scrollContainer.scrollLeft <= 1) {{
-        scrollContainer.scrollLeft = 2;
-      }}
-    }});
-  }});
-
   if ({show_controls_json}) {{
     // Overlay controls: inject a style block + overlay div into the waveform container
     const styleEl = document.createElement('style');
@@ -503,6 +491,7 @@ import RegionsPlugin from '{self._REGIONS_JS}';
 
     const zoomSlider = document.getElementById('{iid}_zoom');
     zoomSlider.addEventListener('input', () => ws.zoom(Number(zoomSlider.value)));
+    ws.on('zoom', (minPxPerSec) => {{ zoomSlider.value = minPxPerSec; }});
   }}
 
   if ({drag_enabled}) {{
@@ -643,10 +632,15 @@ class WaveSurferRangeSelector(ui.element):
 
   if (inst.ws.getDuration() > 0) {{ attachRegionListeners(); }}
   else {{ inst.ws.once('ready', attachRegionListeners); }}
+  
+  inst.ws.on('ready', (duration) => {{
+    emitEvent('{iid}-ready', {{ duration: duration }});
+  }});
 }})();
 </script>
 """)
         ui.on(f'wavesurfer-range-{iid}', self._handle_region_updated)
+        ui.on(f"{iid}-ready", self._on_range_change)
 
     def _handle_region_updated(self, e) -> None:
         """Called by JS on region-updated; writes back through BindableProperty."""
@@ -716,8 +710,7 @@ class WaveSurferRangeSelector(ui.element):
                     }}
                     inst._updatingFromPython = false;
                 }};
-                if (inst.ws.getDuration() > 0) {{ apply(); }}
-                else {{ inst.ws.once('ready', apply); }}
+                if (inst.ws.getDuration() > 0.001) {{ apply(); }}
             }})();
         """)
 
@@ -731,15 +724,10 @@ class WaveSurferRangeSelector(ui.element):
         if core.loop is None:
             return
         if path:
-            self._from_js = True
-            self._ws.clear_regions()
             self._ws.empty()
-            self._ws.load(serve_wav(path))
             self._ws.clear_regions()
-            self._from_js = False
-            # Trigger range update manually in case of start/end not changed
-            self._on_range_change()
-
+            self._ws.zoom(0)
+            self._ws.load(serve_wav(path))
 
     def bind_wav_path_from(self, target_object: Any, target_name: str = 'wav_path') -> "WaveSurferRangeSelector":
         """One-way bind: target → wav_path."""
