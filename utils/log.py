@@ -77,7 +77,7 @@ class StreamToLogger:
         sys.stderr = self._stderr
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     import time
     import tempfile
 

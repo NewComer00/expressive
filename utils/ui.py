@@ -449,7 +449,7 @@ import RegionsPlugin from '{self._REGIONS_JS}';
     // Scrollbar lives inside WaveSurfer's wrapper shadow — inject there
     const scrollStyle = document.createElement('style');
     scrollStyle.textContent = `
-      ::-webkit-scrollbar {{ height: 6px; }}
+      ::-webkit-scrollbar {{ height: 10px; }}
       ::-webkit-scrollbar-track {{ background: transparent; }}
       ::-webkit-scrollbar-thumb {{ background: rgba(150,150,150,0.35); border-radius: 6px; }}
       body.body--dark ::-webkit-scrollbar-thumb {{ background: rgba(200,200,200,0.25); }}

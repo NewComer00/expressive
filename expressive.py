@@ -7,7 +7,10 @@ from contextlib import contextmanager
 from os.path import splitext, basename
 
 from __version__ import VERSION
-from utils.cli import ArgumentDefaultsWrappedTextRichHelpFormatter
+from utils.cli import (
+    add_expression_args_group,
+    ArgumentDefaultsWrappedTextRichHelpFormatter,
+)
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
@@ -157,12 +160,7 @@ def main():
     get_expression_args = lambda exp_name: getExpressionLoader(exp_name).get_args_dict()
 
     for exp_name in expression_names:
-        exp_info = getExpressionLoader(exp_name).expression_info
-        group = parser.add_argument_group(f"[{exp_name.upper()}] {exp_info} Expression")
-        for arg_name, arg in get_expression_args(exp_name).items():
-            group.add_argument(f"--{exp_name}.{arg_name}",
-                                type=arg.type, default=arg.default, help=arg.help,
-                                choices=arg.choices)
+        add_expression_args_group(parser, exp_name)
 
     # Parse arguments
     args = parser.parse_args()

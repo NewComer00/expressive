@@ -1,13 +1,155 @@
 import os
+import csv
 import atexit
 import logging
 import argparse
 import tempfile
+from pathlib import Path
 
 import librosa
+import numpy as np
 import soundfile as sf
+from scipy.io import wavfile
+from sklearn.decomposition import PCA
+from skimage.filters import threshold_otsu
 
 from utils.i18n import _
+from utils.cache import CACHE_DIR, calculate_file_hash
+
+
+def extract_wav_mfcc(wav_path, n_feat=6, n_mfcc=13):
+    """Extract MFCC features from a WAV file.
+
+    This function extracts Mel-frequency cepstral coefficients (MFCC) from a WAV file.
+
+    Args:
+        wav_path (str): Path to the WAV file.
+        n_feat (int, optional): Number of features to extract. Defaults to 6.
+        n_mfcc (int, optional): Number of MFCC coefficients to extract. Defaults to 13.
+
+    Returns:
+        tuple: (mfcc_time, mfcc), where:
+            - mfcc_time (numpy.ndarray): Time points for the MFCC features. Shape: (n_time_points).
+            - mfcc (numpy.ndarray): Extracted MFCC features. Shape: (n_features, n_time_points).
+    """
+    sr = librosa.get_samplerate(wav_path)
+    y, _ = librosa.load(wav_path, sr=sr)
+
+    # Extract MFCC features
+    _mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+    mfcc_time = librosa.times_like(_mfcc, sr=sr)
+
+    # Add dynamic features into the MFCC
+    delta_mfcc = librosa.feature.delta(_mfcc, order=1)
+    delta2_mfcc = librosa.feature.delta(_mfcc, order=2)
+    mfcc = np.vstack([_mfcc, delta_mfcc, delta2_mfcc])
+
+    # PCA to reduce dimensionality
+    pca = PCA(n_components=n_feat)
+    mfcc = pca.fit_transform(mfcc.T).T
+    return mfcc_time, mfcc
+
+
+def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
+    """Extract pitch frequency from a WAV file.
+
+    This function processes an audio file to extract pitch information.
+    It supports caching to improve performance when processing
+    the same file multiple times.
+
+    Args:
+        file_path (str): Path to the WAV file.
+        backend (str, optional): Pitch detection backend. One of "crepe" or "swift-f0".
+            "crepe" uses the CREPE model (requires TensorFlow, GPU-accelerated).
+            "swift-f0" uses SwiftF0 (faster CPU inference, requires swift-f0 package).
+            Defaults to "swift-f0".
+        use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
+
+    Returns:
+        tuple: (time, frequency, confidence), where:
+            - time (list of float): Time points in seconds. Shape: (n_time_points).
+            - frequency (list of float): Detected pitch frequencies in Hz. Shape: (n_time_points).
+            - confidence (list of float): Confidence values for the detected pitches. Shape: (n_time_points).
+    """
+    _SUPPORTED_BACKENDS = ("crepe", "swift-f0")
+    if backend not in _SUPPORTED_BACKENDS:
+        raise ValueError(f"Unknown backend '{backend}'. Choose from: {_SUPPORTED_BACKENDS}")
+
+    time = []
+    frequency = []
+    confidence = []
+    cache_dir = Path(CACHE_DIR) / "pitd"
+    # Try reading data from cache
+    if use_cache:
+        os.makedirs(cache_dir, exist_ok=True)
+        wav_hash = calculate_file_hash(file_path)
+
+        cache_path = cache_dir / f"{wav_hash}.{backend}.csv"
+        if cache_path.is_file():
+            print(_("Loading F0 data from cache file: '{}'").format(cache_path))
+            with open(cache_path, "r", newline="") as file:
+                reader = csv.reader(file)
+                next(reader)  # Skip header
+                for row in reader:
+                    time.append(float(row[0]))
+                    frequency.append(float(row[1]))
+                    confidence.append(float(row[2]))
+
+    # If cache is unavailable
+    if not all([time, frequency, confidence]):
+        # Extract pitch using the specified backend
+        if backend == "crepe":
+            import crepe
+            from utils.gpu import add_cuda_to_path
+            add_cuda_to_path(skip_missing=True)
+            sr, audio = wavfile.read(file_path)
+            time, frequency, confidence, _unused = crepe.predict(audio, sr, viterbi=True)
+        elif backend == "swift-f0":
+            from swift_f0 import SwiftF0
+            detector = SwiftF0(confidence_threshold=0.0)
+            result = detector.detect_from_file(file_path)
+            time = result.timestamps.tolist()
+            frequency = result.pitch_hz.tolist()
+            confidence = result.confidence.tolist()
+
+        # Save data to cache
+        if use_cache:
+            with open(cache_path, mode="w+", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(["Time (s)", "Frequency (Hz)", "Confidence"])
+                for t, f, c in zip(time, frequency, confidence, strict=False):
+                    writer.writerow([t, f, c])
+            print(_("F0 data saved to cache file: '{}'").format(cache_path))
+
+    return time, frequency, confidence
+
+
+def extract_wav_rms(wav_path, mask_silence=True):
+    """Extract RMS energy from a WAV file.
+
+    Args:
+        wav_path (str): Path to the WAV file.
+        mask_silence (bool, optional): If True, masks leading and trailing silence with NaN
+            using Otsu's method to auto-detect the silence threshold. Defaults to True.
+
+    Returns:
+        tuple: (rms_time, rms), where:
+            - rms_time (numpy.ndarray): Time values for each RMS frame. Shape: (n_frames,).
+            - rms (numpy.ndarray): RMS energy values, with NaN at silent edges if mask_silence
+              is True. Shape: (n_frames,).
+    """
+    sr = librosa.get_samplerate(wav_path)
+    y, _ = librosa.load(wav_path, sr=sr)
+    rms = librosa.feature.rms(y=y)[0]
+    rms_time = librosa.times_like(rms, sr=sr)
+    if mask_silence:
+        threshold   = threshold_otsu(rms)
+        is_silent   = rms < threshold
+        start_frame = np.argmax(~is_silent)
+        end_frame   = len(is_silent) - np.argmax(~is_silent[::-1])
+        rms[:start_frame] = np.nan
+        rms[end_frame:]   = np.nan
+    return rms_time, rms
 
 
 def timestamp2sec(value: str) -> float:

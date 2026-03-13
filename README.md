@@ -17,9 +17,7 @@
 * `Pitch Deviation (curve)`
 * `Tension (curve)`
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/cd4c3f0f-4ac2-4d59-910d-4dec2d786b4f" width="100%" /> 
-</p>
+https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b
 
 > - *OpenUtau 版本来自 [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
 > - *歌手模型来自 [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
