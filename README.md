@@ -17,10 +17,20 @@
 * `Pitch Deviation (curve)`
 * `Tension (curve)`
 
-https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b
+<p align="middle">
+  <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> 
+</p>
 
 > - *OpenUtau 版本来自 [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
 > - *歌手模型来自 [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
+
+> [!TIP]
+> <details>
+>   <summary><b>👉 点击展开完整有声演示视频 👈</b></summary>
+>
+> https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b
+>
+> </details>
 
 ## ✅ 支持平台
 
@@ -41,6 +51,9 @@ https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b
 在使用 DiffSinger 虚拟歌手翻唱时，已经完成了填好词的无参 OpenUtau 工程，但尚未添加表情参数。本应用可以从参考人声音频中提取表情参数，并导入至 OpenUtau 工程中。
 
 ### 输入
+
+> [!TIP]
+> 从 `v0.5.0` 开始，用户可以分别在**歌姬音声**与**参考人声**的完整音频中划定选区，选区内的音频段落将作为最终输入。
 
 * **歌姬音声**：由 OpenUtau 输出的无表情虚拟歌声音频（WAV 格式）。建议节奏 (`Tempo`) 和分段尽量与参考人声一致。
 * **参考人声**：原始人声录音（WAV 格式），可使用 [UVR](https://github.com/Anjok07/ultimatevocalremovergui) 等工具去除伴奏与混响。

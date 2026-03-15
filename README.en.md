@@ -17,10 +17,20 @@ The current version supports importing the following expression parameters:
 * `Pitch Deviation (curve)`
 * `Tension (curve)`
 
-https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b
+<p align="middle">
+  <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> 
+</p>
 
 > - *OpenUtau version used from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
 > - *Singer model from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
+
+> [!TIP]
+> <details>
+>   <summary><b>👉 Click to expand the full voiced demo video 👈</b></summary>
+>
+> https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b
+>
+> </details>
 
 ## ✅ Supported Platforms
 
@@ -42,7 +52,10 @@ When using a DiffSinger virtual singer for covers, users often already have an O
 
 ### Inputs
 
-* **Virtual vocal**: Emotionless synthesized vocal output from OpenUtau (WAV format). It's recommended to keep `Tempo` and segmentation as close to the reference vocal as possible.
+> [!TIP]
+> Starting from `v0.5.0`, users can define a selection region independently within the full audio of both the **Utau vocal** and the **Reference vocal**. The selected audio segment will be used as the final input.
+
+* **Utau vocal**: Emotionless synthesized vocal output from OpenUtau (WAV format). It's recommended to keep `Tempo` and segmentation as close to the reference vocal as possible.
 * **Reference vocal**: Original human vocal recording (WAV format). You can use tools like [UVR](https://github.com/Anjok07/ultimatevocalremovergui) to remove instrumental and reverb.
 * **Input project**: Original OpenUtau project file (USTX format).
 * **Output path**: Where the new processed project file will be saved.
