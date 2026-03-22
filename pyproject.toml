@@ -26,6 +26,7 @@ dependencies = [
     "lazy-string",
     "rich-argparse",
     "rich",
+    "filelock",
 ]
 
 [project.optional-dependencies]

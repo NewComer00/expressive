@@ -1,5 +1,4 @@
 import logging
-import threading
 from typing import Any
 from types import SimpleNamespace
 from dataclasses import dataclass
@@ -7,8 +6,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from utils.i18n import _, _l
+from utils.ustx import UstxEditor
+from utils.seqtool import set_tick_converters
 from utils.wavtool import ClampedWav, sec2timestamp
-from utils.ustx import load_ustx, save_ustx, edit_ustx_expression_curve
 
 
 @dataclass
@@ -21,10 +21,54 @@ class Args:
 
 
 class ExpressionLoader():
+    """Base class for expression loaders.
+
+    An expression loader extracts a single OpenUtau expression curve (e.g.
+    ``dyn``, ``pitd``, ``tenc``) by comparing a reference audio recording
+    against the rendered UTAU audio, then writes the result back into a
+    ``.ustx`` project file.
+
+    Subclasses must set :attr:`expression_name` and override
+    :meth:`get_expression`.  Registering a subclass with
+    :func:`register_expression` makes it discoverable via
+    :func:`getExpressionLoader`.
+
+    The loader opens an exclusive :class:`~utils.ustx.UstxEditor` on
+    *ustx_path* during ``__init__`` and holds it until the instance is
+    garbage-collected, so only one loader per file should be alive at a time
+    within a single process.  Across processes the file lock prevents
+    concurrent writes.
+
+    Class attributes:
+        expression_name (str):  Short abbreviation used as the USTX curve key
+                                (e.g. ``"dyn"``).  Must be set on the subclass.
+        expression_info (str):  Human-readable description of the expression.
+        args (SimpleNamespace): Declared CLI / GUI arguments for this loader.
+                                Each value is an :class:`Args` instance.
+
+    USTX attributes:
+        ustx_path (str):              Path to the ``.ustx`` project file.
+        ustx_editor (UstxEditor):     Live editor holding the file lock.
+        ustx_time_axis (TimeAxis):    Tempo-map-aware tick converter built from
+                                      the project's tempo and time-signature maps.
+
+    Audio attributes:
+        ref_path (str):       Path to the (possibly trimmed) reference audio.
+        ref_offset (float):   Start offset of the reference clip in seconds.
+        ref_duration (float): Duration of the reference clip in seconds.
+        utau_path (str):      Path to the (possibly trimmed) UTAU audio.
+        utau_offset (float):  Start offset of the UTAU clip in seconds.
+        utau_duration (float): Duration of the UTAU clip in seconds.
+
+    Result attributes:
+        expression_tick (ndarray): Tick positions produced by the last
+                                   :meth:`get_expression` call.
+        expression_val (ndarray):  Curve values produced by the last
+                                   :meth:`get_expression` call.
+    """
     _id_counter: int = 0
     expression_name: str = ""
     expression_info: str = ""
-    ustx_lock = threading.Lock()
     args = SimpleNamespace(
         ref_path     = Args(name="ref_path"    , type=str, default=""  , help=_l("Path to the **reference** audio file")),  # noqa: E501
         utau_path    = Args(name="utau_path"   , type=str, default=""  , help=_l("Path to the **UTAU** audio file")),  # noqa: E501
@@ -43,15 +87,26 @@ class ExpressionLoader():
     def __init__(self, ref_path: str, utau_path: str, ustx_path: str,
                  ref_start: str | None = None, ref_end: str | None = None,
                  utau_start: str | None = None, utau_end: str | None = None):
+        # Identify this loader instance
         ExpressionLoader._id_counter += 1
         self.id = ExpressionLoader._id_counter
+
+        # Set up logging
         self.logger = logging.getLogger(f"{ExpressionLoader.__name__}.{self.expression_name}.{self.id}")
         self.logger = logging.LoggerAdapter(self.logger, {"expression": self.expression_name})
         self.logger.setLevel(logging.DEBUG)
 
-        self.expression_tick: list | np.ndarray = []
-        self.expression_val: list | np.ndarray = []
+        # Init USTX editor (with exclusive file lock)
+        self.ustx_path = ustx_path
+        self.ustx_editor = UstxEditor(self.ustx_path)
+        self.ustx_time_axis = self.ustx_editor.build_time_axis()
+        # Register tempo-map-aware tick converters
+        set_tick_converters(
+            self.ustx_time_axis.seconds_to_ticks,
+            self.ustx_time_axis.ticks_to_seconds,
+        )
 
+        # Clamp audio files
         self._clamped_ref = ClampedWav(ref_path,  ref_start,  ref_end,  logger=self.logger)
         self.ref_path,  self.ref_offset,  self.ref_duration  = (
             self._clamped_ref.path, self._clamped_ref.offset_sec, self._clamped_ref.duration_sec)
@@ -68,26 +123,32 @@ class ExpressionLoader():
             sec2timestamp(self.utau_offset + self.utau_duration),
             self.utau_duration))
 
-        self.ustx_path = ustx_path
-        self.tempo = load_ustx(self.ustx_path)["tempos"][0]["bpm"]
+        # Init other attributes
+        self.expression_tick: list | np.ndarray = []
+        self.expression_val:  list | np.ndarray = []
         self.logger.info(_("Initialization complete."))
+
+    def __del__(self):
+        self.ustx_editor.close()
 
     def get_expression(self, *args, **kwargs):
         return self.expression_tick, self.expression_val
 
     def load_to_ustx(self, track_number: int):
         if len(self.expression_tick) > 0 and len(self.expression_val) > 0:
-            with self.__class__.ustx_lock:
-                ustx_dict = load_ustx(self.ustx_path)
-                edit_ustx_expression_curve(
-                    ustx_dict,
-                    track_number,
-                    self.__class__.expression_name,
-                    self.expression_tick,
-                    self.expression_val,
-                )
-                save_ustx(ustx_dict, self.ustx_path)
-                self.logger.info(_("Expression written to USTX file: '{}'").format(self.ustx_path))
+            track_no = track_number - 1
+            # Apply offset first
+            shifted_ticks = self.ustx_time_axis.shift_ticks_by_seconds(
+                np.asarray(self.expression_tick), self.utau_offset
+            )
+            self.ustx_editor.add_expression_to_track(
+                track_no,
+                self.__class__.expression_name,
+                shifted_ticks,
+                self.expression_val,
+            )
+            self.ustx_editor.save()
+            self.logger.info(_("Expression written to USTX file: '{}'").format(self.ustx_path))
         else:
             self.logger.warning(_("Expression result is empty. Skipping USTX update."))
 

@@ -1,0 +1,38 @@
+﻿{
+    "utau_wav": "examples/明天会更好/utau.wav",
+    "ref_wav": "examples/明天会更好/reference.wav",
+    "ustx_input": "examples/明天会更好/project.ustx",
+    "ustx_output": "examples/明天会更好/output.ustx",
+    "track_number": 1,
+    "ref_start": "0:02.55",
+    "ref_end": null,
+    "utau_start": "0:02.47",
+    "utau_end": null,
+    "expressions": {
+        "dyn": {
+            "selected": true,
+            "trim_silence": true,
+            "align_radius": 1,
+            "smoothness": 2,
+            "scaler": 2.0
+        },
+        "pitd": {
+            "selected": true,
+            "backend": "swift-f0",
+            "confidence_utau": 0.9,
+            "confidence_ref": 0.93,
+            "align_radius": 1,
+            "semitone_shift": 0,
+            "smoothness": 2,
+            "scaler": 2.0
+        },
+        "tenc": {
+            "selected": true,
+            "trim_silence": true,
+            "align_radius": 1,
+            "smoothness": 6,
+            "scaler": 1.2,
+            "bias": 10
+        }
+    }
+}

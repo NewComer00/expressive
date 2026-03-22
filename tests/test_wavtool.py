@@ -672,7 +672,6 @@ class TestExtractWavRms(unittest.TestCase):
 
     def test_leading_silence_masked(self):
         """Frames before the first active frame should be NaN when mask_silence=True."""
-        # Build: 0.5 s silence + 1.5 s tone
         sr = 22050
         silence = np.zeros(int(0.5 * sr), dtype=np.float32)
         t = np.linspace(0, 1.5, int(1.5 * sr), endpoint=False)
@@ -718,19 +717,12 @@ class TestExtractWavFrequency(unittest.TestCase):
     """Tests for extract_wav_frequency.
 
     Heavy ML backends (crepe, swift-f0) are mocked so tests stay fast and
-    dependency-free.  A shared _mock_swift_f0 fixture provides realistic-looking
-    return values that mirror the SwiftF0 result object interface.
+    dependency-free.
     """
 
     def setUp(self):
         self.wav = _make_wav(duration=2.0, sr=22050)
         self._n = 200  # number of fake time points
-
-        # Pre-compute plain Python lists so they can be reused across helpers.
-        # Do NOT assign these to MagicMock attributes here — doing so replaces
-        # the auto-created Mock sub-attributes with real numpy arrays, which
-        # causes `.tolist.return_value` to fail with AttributeError because the
-        # builtin ndarray.tolist has no `return_value`.
         self._fake_times = list(np.linspace(0, 2.0, self._n))
         self._fake_freqs = list(np.random.uniform(80, 300, self._n))
         self._fake_confs = list(np.random.uniform(0.5, 1.0, self._n))
@@ -742,20 +734,11 @@ class TestExtractWavFrequency(unittest.TestCase):
             pass
 
     def _patch_swift(self):
-        """Return a context manager that patches SwiftF0 on its home module.
-
-        SwiftF0 is imported inside the function body with
-        ``from swift_f0 import SwiftF0``, so patching ``utils.wavtool.SwiftF0``
-        has no effect.  Patching ``swift_f0.SwiftF0`` ensures the local import
-        picks up the replacement.
-
-        The result object stays a plain MagicMock so that attribute access on
-        ``.timestamps``, ``.pitch_hz``, and ``.confidence`` returns further
-        Mocks whose ``.tolist.return_value`` we can control.
-        """
+        """Patch SwiftF0 on its home module so the local import inside
+        extract_wav_frequency picks up the replacement."""
         fake_result = MagicMock()
         fake_result.timestamps.tolist.return_value = self._fake_times
-        fake_result.pitch_hz.tolist.return_value = self._fake_freqs
+        fake_result.pitch_hz.tolist.return_value   = self._fake_freqs
         fake_result.confidence.tolist.return_value = self._fake_confs
 
         mock_detector = MagicMock()
@@ -771,20 +754,20 @@ class TestExtractWavFrequency(unittest.TestCase):
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 3)
 
-    def test_time_is_list(self):
+    def test_time_is_ndarray(self):
         with self._patch_swift():
             time, _, _ = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
-        self.assertIsInstance(time, list)
+        self.assertIsInstance(time, np.ndarray)
 
-    def test_frequency_is_list(self):
+    def test_frequency_is_ndarray(self):
         with self._patch_swift():
             _, freq, _ = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
-        self.assertIsInstance(freq, list)
+        self.assertIsInstance(freq, np.ndarray)
 
-    def test_confidence_is_list(self):
+    def test_confidence_is_ndarray(self):
         with self._patch_swift():
             _, _, conf = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
-        self.assertIsInstance(conf, list)
+        self.assertIsInstance(conf, np.ndarray)
 
     def test_all_outputs_same_length(self):
         with self._patch_swift():
@@ -797,20 +780,20 @@ class TestExtractWavFrequency(unittest.TestCase):
             time, _, _ = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
         self.assertEqual(len(time), self._n)
 
-    def test_time_values_are_floats(self):
+    def test_time_values_are_numeric(self):
         with self._patch_swift():
             time, _, _ = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
-        self.assertTrue(all(isinstance(t, float) for t in time))
+        self.assertTrue(np.issubdtype(time.dtype, np.floating))
 
-    def test_frequency_values_are_floats(self):
+    def test_frequency_values_are_numeric(self):
         with self._patch_swift():
             _, freq, _ = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
-        self.assertTrue(all(isinstance(f, float) for f in freq))
+        self.assertTrue(np.issubdtype(freq.dtype, np.floating))
 
-    def test_confidence_values_are_floats(self):
+    def test_confidence_values_are_numeric(self):
         with self._patch_swift():
             _, _, conf = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
-        self.assertTrue(all(isinstance(c, float) for c in conf))
+        self.assertTrue(np.issubdtype(conf.dtype, np.floating))
 
     # --- backend validation ---
 
@@ -819,21 +802,16 @@ class TestExtractWavFrequency(unittest.TestCase):
             extract_wav_frequency(self.wav, backend="nonexistent", use_cache=False)
 
     def test_invalid_backend_message_contains_name(self):
-        with self.assertRaises(ValueError, msg="nonexistent") as ctx:
+        with self.assertRaises(ValueError) as ctx:
             extract_wav_frequency(self.wav, backend="nonexistent", use_cache=False)
         self.assertIn("nonexistent", str(ctx.exception))
 
     def test_swift_f0_backend_accepted(self):
         with self._patch_swift():
-            # must not raise
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
 
     def test_crepe_backend_accepted(self):
-        """crepe backend path should be accepted (mocked to avoid TF dependency).
-
-        ``import crepe`` is a top-level import inside the elif branch, so we
-        patch ``crepe.predict`` on the *crepe* module directly.
-        """
+        """crepe backend path should be accepted (mocked to avoid TF dependency)."""
         fake_time = np.linspace(0, 2, self._n)
         fake_freq = np.random.uniform(80, 300, self._n)
         fake_conf = np.random.uniform(0.5, 1.0, self._n)
@@ -867,33 +845,33 @@ class TestExtractWavFrequency(unittest.TestCase):
         self.assertTrue(os.path.exists(cache_path))
 
     def test_cache_read_skips_backend_call(self):
-        """If a valid cache file exists, the backend must not be invoked."""
+        """If a valid cache file exists the backend must not be invoked."""
         tmp_cache_dir = tempfile.mkdtemp()
         fake_hash = "deadbeef"
         cache_path = os.path.join(tmp_cache_dir, "pitd", f"{fake_hash}.swift-f0.csv")
         os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 
-        # Write a minimal cache CSV
         with open(cache_path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["Time (s)", "Frequency (Hz)", "Confidence"])
             writer.writerow([0.0, 220.0, 0.9])
             writer.writerow([0.5, 440.0, 0.95])
 
-        with self._patch_swift() as mock_cls, \
+        with self._patch_swift() as mock_swift_cls, \
              patch("utils.wavtool.CACHE_DIR", tmp_cache_dir), \
              patch("utils.wavtool.calculate_file_hash", return_value=fake_hash):
             time, freq, conf = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=True)
-            mock_cls.assert_not_called()
+            # The SwiftF0 class must never have been instantiated
+            mock_swift_cls.assert_not_called()
 
-        self.assertEqual(time, [0.0, 0.5])
-        self.assertEqual(freq, [220.0, 440.0])
-        self.assertEqual(conf, [0.9, 0.95])
+        np.testing.assert_array_equal(time, [0.0, 0.5])
+        np.testing.assert_array_equal(freq, [220.0, 440.0])
+        np.testing.assert_array_equal(conf, [0.9, 0.95])
 
     def test_cache_disabled_always_calls_backend(self):
-        with self._patch_swift() as mock_cls:
+        with self._patch_swift() as mock_swift_cls:
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
-            mock_cls.assert_called_once()
+            mock_swift_cls.assert_called_once()
 
     def test_no_cache_written_when_use_cache_false(self):
         tmp_cache_dir = tempfile.mkdtemp()

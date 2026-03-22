@@ -738,16 +738,21 @@ def main():
     patch_nicegui_json()
     patch_tooltip_md()
 
+    # Start the GUI
+    ui_params = {
+        "title": f"Expressive GUI v{VERSION}",
+        "native": True,
+        "reload": False,
+        "window_size": (600, 640),
+        "reconnect_timeout": 60,
+    }
     try:
         # Deal with different running mode of this nicegui app
         if is_root_mode():
             # Run with root function (app installed from wheel)
             ui.run(
                 root=create_gui,
-                title=f"Expressive GUI v{VERSION}",
-                native=True,
-                reload=False,
-                window_size=(600, 640),
+                **ui_params
             )
         else:
             # Run in script mode (app run through this script or frozen with pyinstaller)
@@ -762,11 +767,7 @@ def main():
             # https://github.com/zauberzeug/nicegui/issues/5247
             with patch_runpy():
                 ui.run(
-                    title=f"Expressive GUI v{VERSION}",
-                    native=True,
-                    reload=False,
-                    window_size=(600, 640),
-                    reconnect_timeout=60,
+                    **ui_params
                 )
 
     except KeyboardInterrupt:

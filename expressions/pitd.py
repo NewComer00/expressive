@@ -7,14 +7,13 @@ from librosa import hz_to_midi
 from .base import Args, ExpressionLoader, register_expression
 from utils.i18n import _, _l, _lf
 from utils.seqtool import (
-    time_to_ticks,
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
     seq_dynamics_trends,
 )
 from utils.log import StreamToLogger
-from utils.wavtool import extract_wav_mfcc, extract_wav_frequency
+from utils.wavtool import extract_wav_mfcc, extract_wav_frequency, extract_wav_rms
 
 
 @register_expression
@@ -26,7 +25,7 @@ class PitdLoader(ExpressionLoader):
         "crepe": _l("classic but slow, CPU & NVIDIA GPU (TensorFlow)"),
     }
     confidence_utau_recommended = {"swift-f0": 0.95, "crepe": 0.8}
-    confidence_ref_recommended = {"swift-f0": 0.93, "crepe": 0.6}
+    confidence_ref_recommended  = {"swift-f0": 0.93, "crepe": 0.6}
     args = SimpleNamespace(
         backend         = Args(name="backend"        , type=str  , default="swift-f0", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
         confidence_utau = Args(name="confidence_utau", type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **UTAU** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_utau_recommended.items()]))),  # noqa: E501
@@ -60,27 +59,24 @@ class PitdLoader(ExpressionLoader):
             utau_time, utau_pitch, utau_features = get_wav_features(
                 wav_path=self.utau_path, confidence_threshold=confidence_utau, backend=backend
             )
-
-        # Extract pitch features from reference WAV file
         with StreamToLogger(self.logger, tee=True):
             ref_time, ref_pitch, ref_features = get_wav_features(
                 wav_path=self.ref_path, confidence_threshold=confidence_ref, backend=backend
             )
 
-        # Align all sequences to a common MIDI tick time base
-        # NOTICE: features from UTAU WAV are the reference, and those from Ref. WAV are the query
+        # Align all sequences to a common MIDI tick time base.
+        # Features from the UTAU WAV are the reference; Ref. WAV features are the query.
         pitd_tick, (time_aligned_ref_pitch, *_unused), (unified_utau_pitch, *_unused) = (
             align_sequence_tick(
                 query_time=ref_time,
                 queries=(ref_pitch, *ref_features),
                 reference_time=utau_time,
                 references=(utau_pitch, *utau_features),
-                tempo=self.tempo,
                 align_radius=align_radius,
             )
         )
 
-        # Align pitch sequences in pitch axis
+        # Align pitch sequences along the pitch axis
         with StreamToLogger(self.logger, tee=True):
             time_pitch_aligned_ref_pitch, _unused = align_sequence_pitch(
                 time_aligned_ref_pitch,
@@ -96,20 +92,13 @@ class PitdLoader(ExpressionLoader):
             scaler=scaler,
         )
 
-        # Shift ticks to absolute MIDI position using the UTAU trim offset
-        utau_offset_ticks = time_to_ticks(self.utau_offset, self.tempo)
-        self.expression_tick = pitd_tick + utau_offset_ticks
-        self.expression_val  = pitd_val
-
+        self.expression_tick, self.expression_val = pitd_tick, pitd_val
         self.logger.info(_("Expression extraction complete."))
         return self.expression_tick, self.expression_val
 
 
-# TODO: Deal with different tempo or ppqn within the same USTX file
 def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, confidence_filter_size=9):
     """Extract features from a WAV file.
-
-    This function extracts pitch and MFCC features from a WAV file, aligning them to a common time base.
 
     Args:
         wav_path (str): Path to the WAV file.
@@ -118,37 +107,39 @@ def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, con
         confidence_filter_size (int, optional): Size of the median filter for confidence. Defaults to 9.
 
     Returns:
-        tuple: (wav_tick, wav_pitch, wav_features), where:
-            - wav_tick (numpy.ndarray): MIDI ticks for the extracted features. Shape: (n_time_points).
-            - wav_pitch (numpy.ndarray): Extracted pitch values in Hz. Shape: (n_time_points).
-            - wav_features (tuple): Extracted feature sequences. Shape: (n_features, n_time_points).
+        tuple: (wav_time, wav_pitch, wav_features)
     """
-    feature_times = []  # List of time sequences(list of lists)
-    feature_vals = []  # List of feature sequences(list of lists)
+    feature_times = []
+    feature_vals  = []
 
-    # Extract features from WAV file
     time, frequency, confidence = extract_wav_frequency(wav_path, backend=backend)
-    mask = (
-        medfilt(np.array(confidence), kernel_size=confidence_filter_size)
+
+    mask_confidence = (
+        medfilt(confidence, kernel_size=confidence_filter_size)
         < confidence_threshold
     )
-    (pitch := np.array(frequency))[mask] = np.nan
+    (pitch := frequency)[mask_confidence] = np.nan
 
     pitch_time = time
     feature_times += [pitch_time]
-    feature_vals += [pitch]
+    feature_vals  += [pitch]
 
-    # Extract pitch dynamics trends
     pitch_features = seq_dynamics_trends(pitch)
     feature_times += [pitch_time] * len(pitch_features)
-    feature_vals += list(pitch_features)
+    feature_vals  += list(pitch_features)
 
-    # Extract MFCC features
     mfcc_time, mfcc = extract_wav_mfcc(wav_path)
     feature_times += [mfcc_time] * len(mfcc)
-    feature_vals += list(mfcc)
+    feature_vals  += list(mfcc)
 
-    # Unified time and features
+    rms_time, rms = extract_wav_rms(wav_path, mask_silence=True)
+    feature_times += [rms_time]
+    feature_vals  += [rms]
+
+    rms_dynamics_trends = seq_dynamics_trends(rms)
+    feature_times += [rms_time] * len(rms_dynamics_trends)
+    feature_vals  += list(rms_dynamics_trends)
+
     wav_time, (wav_pitch, *wav_features) = unify_sequence_time(
         seq_times=feature_times, seq_vals=feature_vals
     )
@@ -158,45 +149,39 @@ def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, con
 def align_sequence_pitch(query, reference, semitone_shift=None, smoothness=0):
     """Align pitch sequences by shifting in semitones and applying smoothing.
 
-    This function adjusts the pitch sequence to match the reference pitch, allowing for optional smoothing.
-
     Args:
-        query (numpy.ndarray): Pitch values to be aligned. Shape: (n_time_points).
-        reference (numpy.ndarray): Target reference pitch values. Shape: (n_time_points).
-        semitone_shift (int, optional): Number of semitones to shift the query pitch. If None, it is calculated automatically.
-        smoothness (int, optional): Smoothing factor for the aligned pitch. Defaults to 0 (no smoothing).
+        query (numpy.ndarray):          Pitch values to be aligned.
+        reference (numpy.ndarray):      Target reference pitch values.
+        semitone_shift (int, optional): Semitones to shift the query pitch.
+                                        If None, estimated automatically.
+        smoothness (int, optional):     Smoothing sigma. Defaults to 0.
 
     Returns:
-        tuple: (pitch_aligned_query, semitone_shift), where:
-            - pitch_aligned_query (numpy.ndarray): Aligned pitch values. Shape: (n_time_points).
-            - semitone_shift (int): Applied semitone shift.
+        tuple: (pitch_aligned_query, semitone_shift)
     """
     if semitone_shift is None:
-        base_pitch_wav = np.nanmedian(query)
+        base_pitch_wav   = np.nanmedian(query)
         base_pitch_vocal = np.nanmedian(reference)
-        semitone_shift = int(np.round(hz_to_midi(base_pitch_vocal)) - np.round(
-            hz_to_midi(base_pitch_wav)
-        ).astype(int))
+        semitone_shift   = int(
+            np.round(hz_to_midi(base_pitch_vocal))
+            - np.round(hz_to_midi(base_pitch_wav)).astype(int)
+        )
         print(_("Estimated Semitone-shift: {}").format(semitone_shift))
 
-    pitch_aligned_query = query * np.exp2(semitone_shift / 12)
-
     pitch_aligned_query = gaussian_filter1d_with_nan(
-        pitch_aligned_query, sigma=smoothness
+        query * np.exp2(semitone_shift / 12),
+        sigma=smoothness,
     )
-
     return pitch_aligned_query, semitone_shift
 
 
 def get_pitch_delta(query, reference, scaler=2.5):
-    """Calculate the difference between two pitch sequences.
-
-    The delta represents the pitch correction needed to align the query sequence with the reference sequence.
+    """Calculate the scaled pitch difference between two sequences.
 
     Args:
-        query (numpy.ndarray): Pitch values from the query sequence.
+        query (numpy.ndarray):    Pitch values from the query sequence.
         reference (numpy.ndarray): Pitch values from the reference sequence.
-        scaler (float, optional): Scaling factor for the pitch difference. Defaults to 2.5.
+        scaler (float, optional): Scaling factor. Defaults to 2.5.
 
     Returns:
         numpy.ndarray: Scaled pitch difference values.

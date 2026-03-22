@@ -9,7 +9,7 @@
 
 # Expressive
 
-**Expressive** is a [DiffSinger](https://github.com/openvpi/diffsinger) expression parameter importer developed for [OpenUtau](https://github.com/stakira/OpenUtau). It aims to extract emotional parameters from real human vocals and import them into the appropriate tracks of your project.
+**Expressive** is a [DiffSinger](https://github.com/openvpi/diffsinger) expression parameter importer developed for [OpenUtau](https://github.com/stakira/OpenUtau). It aims to extract expression parameters from real human vocals and import them into the appropriate tracks of your project.
 
 The current version supports importing the following expression parameters:
 
@@ -21,14 +21,14 @@ The current version supports importing the following expression parameters:
   <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> 
 </p>
 
-> - *OpenUtau version used from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
+> - *OpenUtau version from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
 > - *Singer model from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
 
 > [!TIP]
 > <details>
 >   <summary><b>👉 Click to expand the full voiced demo video 👈</b></summary>
 >
-> https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b
+>   <p align="center"><video src="https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b"></video></p>
 >
 > </details>
 
@@ -40,7 +40,7 @@ The current version supports importing the following expression parameters:
 
 By default, this application uses [swift-f0](https://github.com/lars76/swift-f0) (based on ONNX Runtime) as the pitch extraction backend, which runs on CPU only and satisfies basic usage scenarios.
 
-The classic [CREPE](https://github.com/marl/crepe) pitch extraction backend (depends on TensorFlow) is also available, which suits for scenarios with higher accuracy requirements. If your computer is equipped with an NVIDIA GPU and supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) (i.e., GPU driver version >= 450), the CREPE backend will automatically enable GPU acceleration.
+The classic [CREPE](https://github.com/marl/crepe) pitch extraction backend (depends on TensorFlow) is also available for scenarios with higher accuracy requirements. If your computer is equipped with an NVIDIA GPU and supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) (i.e., GPU driver version >= 450), the CREPE backend will automatically enable GPU acceleration.
 
 > \* On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
 
@@ -53,12 +53,16 @@ When using a DiffSinger virtual singer for covers, users often already have an O
 ### Inputs
 
 > [!TIP]
+> Starting from `v0.6.0`, this application supports OpenUtau voice tracks with **multiple parts** and **multiple tempos**.
+
+> [!TIP]
 > Starting from `v0.5.0`, users can define a selection region independently within the full audio of both the **Utau vocal** and the **Reference vocal**. The selected audio segment will be used as the final input.
 
-* **Utau vocal**: Emotionless synthesized vocal output from OpenUtau (WAV format). It's recommended to keep `Tempo` and segmentation as close to the reference vocal as possible.
-* **Reference vocal**: Original human vocal recording (WAV format). You can use tools like [UVR](https://github.com/Anjok07/ultimatevocalremovergui) to remove instrumental and reverb.
+* **Utau vocal**: Emotionless synthesized vocal output from OpenUtau (WAV format). It is recommended to keep the segmentation and tempo as close to the **Reference vocal** as possible, as large discrepancies may affect alignment quality.
+* **Reference vocal**: Original human vocal recording (WAV format). You can use tools like [UVR](https://github.com/Anjok07/ultimatevocalremovergui) or [MSST](https://github.com/SUC-DriverOld/MSST-WebUI) to remove instrumentals, harmonies, and reverb.
 * **Input project**: Original OpenUtau project file (USTX format).
 * **Output path**: Where the new processed project file will be saved.
+* **Track number**: The track number in the OpenUtau project where the **Utau vocal** resides (1-based). Expression parameters will be imported into this track.
 
 ### Output
 
@@ -73,10 +77,6 @@ A new USTX file with expression parameters added. The original project will not 
 * [x] `Pitch Deviation` generation
 * [x] `Dynamics` generation
 * [x] `Tension` generation
-
-## ⚠️ Known Issues
-
-1. The current version does not support tempo changes within a single track. It’s recommended to use a consistent tempo throughout the project. This limitation will be addressed in future updates.
 
 ## 🚀 Direct Install
 
@@ -100,7 +100,6 @@ Includes CUDA runtime libraries. When used on a computer with an NVIDIA GPU (dri
 
 > [!IMPORTANT]
 > This project uses [Git LFS](https://git-lfs.com/) to store large files such as example audio under `examples/`. Please ensure Git LFS is installed on your system before cloning.
-
 ```bash
 git clone https://github.com/NewComer00/expressive.git --depth 1
 cd expressive
@@ -109,7 +108,6 @@ cd expressive
 ### Install the application
 
 Install the package and its dependencies in a virtual environment:
-
 ```bash
 pip install -e ".[gpu,gui]"
 ```
@@ -129,13 +127,11 @@ After installation, you can use the `expressive` and `expressive-gui` entry poin
 ### Command Line Interface (CLI)
 
 Display help:
-
 ```bash
 expressive --help
 ```
 
 Run example in Windows PowerShell:
-
 ```powershell
 expressive `
   --utau_wav "examples/明天会更好/utau.wav" `
@@ -150,7 +146,6 @@ expressive `
 ```
 
 Run example in Linux shell:
-
 ```bash
 expressive \
   --utau_wav "examples/明天会更好/utau.wav" \
@@ -169,20 +164,24 @@ The output project file will be saved to `examples/明天会更好/output.ustx`.
 ### Graphical User Interface (GUI)
 
 Launch in English:
-
 ```bash
 expressive-gui --lang en
 ```
 
 > [!IMPORTANT]
-> Due to framework limitations, the GUI launched via the `expressive-gui` command currently **does not support drag-and-drop**. To use drag-and-drop, please install the GUI [directly](#-direct-install), or run `expressive_gui.py` as a script:
-> 
+> Due to framework limitations, the GUI launched via the `expressive-gui` command currently **does not support drag-and-drop**. To use drag-and-drop, please [install directly](#-direct-install), or run `expressive_gui.py` as a script:
+>
 > ```bash
 > python expressive_gui.py --lang en
 > ```
 
-## 🔬 Algorithm Workflow
+## 📂 Examples
 
+The [`examples/` directory](examples/) contains several sample projects. You can import the `expressive_config.json` file from any example into the GUI to automatically populate all parameters with the preset values.
+
+If you installed the application from the installer, a shortcut named `Expressive-examples` pointing to the examples directory will appear on your desktop after installation — you can import the config files directly from there.
+
+## 🔬 Algorithm Workflow
 ```mermaid
 graph TB;
   ustx_in[/"OpenUtau Project (USTX)"/]
@@ -191,11 +190,14 @@ graph TB;
   refwav-->feat_pitd
   ustx_in-.->|Export|utauwav
   utauwav-->feat_pitd
-  ustx_in-->|Tempo|time_pitd
+
+  ustx_editor["USTX Editor"]
+  ustx_in-->ustx_editor
+  ustx_editor-->|UProject & Time Axis|PitdLoader
 
   subgraph PitdLoader
     direction TB
-    feat_pitd["Features Extraction<br>Pitch & MFCC"]
+    feat_pitd["Features Extraction<br>Pitch & MFCC & RMS"]
 
     time_pitd["Time Alignment<br>FastDTW"]
     feat_pitd-->time_pitd
@@ -232,3 +234,47 @@ graph TB;
     time_tenc-->get_tenc
   end
 ```
+
+## ⚠️ Troubleshooting
+
+### Drag-and-drop does not work on first launch after installation
+
+#### Symptom
+On Windows 10 / 11, after installing the application from the installer for the **first time** (reinstalling after a previous uninstall does not count), the drag-and-drop functionality does not work.
+
+#### Possible Cause
+The [NiceGUI](https://nicegui.io/) framework's support for drag-and-drop in native applications is not yet fully mature. The drag-and-drop feature in this application is currently implemented via the underlying library [pywebview](https://pywebview.flowrl.com/).
+
+#### Solution
+Relaunching the application should restore normal functionality, and this issue will not occur again on the same system afterward.
+
+#### Future Plan
+The NiceGUI framework has begun improving its drag-and-drop support and should resolve this in a future release.
+
+### PITD expression curve is overall too flat
+
+#### Symptom
+The extracted PITD expression curve is too flat, with almost no significant variation overall. Pitch changes in the reference vocal are not reflected in the expression curve.
+
+#### Possible Cause
+The two confidence thresholds in the PITD extractor are set **too high**, causing many pitch changes to be discarded.
+
+#### Solution
+Try lowering both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
+
+#### Future Plan
+Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)). Add visualization of intermediate results.
+
+### PITD expression curve has sudden jumps or spikes at certain positions
+
+#### Symptom
+The PITD expression curve changes too rapidly at certain positions, with very large jumps or spikes that clearly do not match natural vocal behavior.
+
+#### Possible Cause
+The two confidence thresholds in the PITD extractor are set **too low**, causing erroneous detection results to be accepted.
+
+#### Solution
+Try increasing both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
+
+#### Future Plan
+Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)). Add visualization of intermediate results.

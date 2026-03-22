@@ -16,7 +16,7 @@ LZMAUseSeparateProcess=yes
 LZMANumBlockThreads=8
 SetupIconFile=..\assets\icons\app.ico
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=commandline dialog
+PrivilegesRequiredOverridesAllowed=commandline
 
 [Files]
 Source: "..\dist\Expressive-GUI\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs

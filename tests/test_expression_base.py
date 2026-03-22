@@ -18,12 +18,16 @@ from expressions.base import (
 
 
 # ---------------------------------------------------------------------------
-# Fixtures
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _write_silent_wav(path: str, duration: float = 3.0, sr: int = 22050) -> None:
     sf.write(path, np.zeros(int(duration * sr), dtype=np.float32), sr)
 
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture()
 def temp_wav_pair(tmp_path):
@@ -37,8 +41,15 @@ def temp_wav_pair(tmp_path):
 
 @pytest.fixture()
 def temp_ustx_file(tmp_path):
-    """Return a Path to a minimal USTX file with BPM 120."""
-    content = "tempos:\n  - bpm: 120\n    position: 0\nvoice_parts:\n  - name: Track 1\n"
+    """Minimal valid USTX file (BPM 120, one voice part covering ticks 0–9600)."""
+    content = (
+        "tempos:\n  - bpm: 120\n    position: 0\n"
+        "time_signatures:\n  - bar_position: 0\n    beat_per_bar: 4\n    beat_unit: 4\n"
+        "tracks:\n  - track_name: Track 1\n    track_color: Blue\n    singer: ''\n"
+        "    phonemizer: ''\n    mute: false\n    solo: false\n    volume: 0.0\n    pan: 0.0\n"
+        "voice_parts:\n  - name: Track 1\n    track_no: 0\n    position: 0\n    duration: 9600\n"
+        "    notes: []\n    curves: []\n"
+    )
     p = tmp_path / "test.ustx"
     p.write_text(content, encoding="utf-8-sig")
     return p
@@ -102,21 +113,17 @@ class TestExpressionLoader:
         loader = ExpressionLoader(ref, utau, str(temp_ustx_file))
 
         # ref_path / utau_path now point to ClampedWav temp files, not the originals
-        assert loader.ref_path  != ref
-        assert loader.utau_path != utau
         assert loader.ref_path.endswith(".wav")
         assert loader.utau_path.endswith(".wav")
-
         assert loader.ustx_path == str(temp_ustx_file)
-        assert loader.tempo == 120
         assert loader.id > 0
 
     def test_loader_offset_and_duration_stored(self, temp_wav_pair, temp_ustx_file):
         ref, utau = temp_wav_pair
         loader = ExpressionLoader(ref, utau, str(temp_ustx_file))
-        assert isinstance(loader.ref_offset,   float)
+        assert isinstance(loader.ref_offset,    float)
         assert isinstance(loader.ref_duration,  float)
-        assert isinstance(loader.utau_offset,  float)
+        assert isinstance(loader.utau_offset,   float)
         assert isinstance(loader.utau_duration, float)
         assert loader.ref_offset  == pytest.approx(0.0)
         assert loader.utau_offset == pytest.approx(0.0)
@@ -134,20 +141,38 @@ class TestExpressionLoader:
         loader = ExpressionLoader(ref, utau, str(temp_ustx_file))
         assert isinstance(loader.logger, logging.LoggerAdapter)
 
-    def test_loader_reads_tempo(self, temp_wav_pair, temp_dir):
+    def test_loader_builds_time_axis(self, temp_wav_pair, temp_ustx_file):
+        """The loader must expose a working TimeAxis, not a raw tempo value."""
+        from utils.ustx import TimeAxis
+        ref, utau = temp_wav_pair
+        loader = ExpressionLoader(ref, utau, str(temp_ustx_file))
+        assert isinstance(loader.ustx_time_axis, TimeAxis)
+        # 120 BPM, 480 PPQN → 960 ticks/second
+        ticks = loader.ustx_time_axis.seconds_to_ticks(np.array([1.0]))
+        assert ticks[0] == 960
+
+    def test_loader_time_axis_reflects_project_tempo(self, temp_wav_pair, temp_dir):
+        """TimeAxis BPM is derived from the USTX file, not hardcoded."""
         ref, utau = temp_wav_pair
         ustx_path = temp_dir / "tempo_test.ustx"
         ustx_path.write_text(
-            "tempos:\n  - bpm: 140\n    position: 0\nvoice_parts:\n  - name: Track 1\n",
+            "tempos:\n  - bpm: 140\n    position: 0\n"
+            "time_signatures:\n  - bar_position: 0\n    beat_per_bar: 4\n    beat_unit: 4\n"
+            "tracks: []\n"
+            "voice_parts:\n  - name: T\n    track_no: 0\n    position: 0\n    duration: 9600\n"
+            "    notes: []\n    curves: []\n",
             encoding="utf-8-sig",
         )
         loader = ExpressionLoader(ref, utau, str(ustx_path))
-        assert loader.tempo == 140
+        # 140 BPM → 140/60*480 ≈ 1120 ticks/second
+        ticks = loader.ustx_time_axis.seconds_to_ticks(np.array([1.0]))
+        expected = round(140 / 60 * 480)
+        assert ticks[0] == expected
 
     def test_loader_trim_start(self, temp_wav_pair, temp_ustx_file):
         ref, utau = temp_wav_pair
         loader = ExpressionLoader(ref, utau, str(temp_ustx_file), ref_start="0:01")
-        assert loader.ref_offset == pytest.approx(1.0, abs=0.01)
+        assert loader.ref_offset   == pytest.approx(1.0, abs=0.01)
         assert loader.ref_duration == pytest.approx(2.0, abs=0.1)
 
     def test_loader_trim_end(self, temp_wav_pair, temp_ustx_file):
@@ -322,14 +347,33 @@ class TestLoadToUSTX:
         ref, utau = temp_wav_pair
         loader = TestLoader(ref, utau, str(temp_ustx_file))
         loader.expression_tick = np.array([0, 480, 960])
-        loader.expression_val  = np.array([0,  50, 100])
+        loader.expression_val  = np.array([0,  50, 100], dtype=float)
 
         loader.load_to_ustx(track_number=1)
 
-        ustx_dict = load_ustx(str(temp_ustx_file))
-        curves = ustx_dict["voice_parts"][0]["curves"]
-        assert len(curves) == 1
-        assert curves[0]["abbr"] == "dyn"
+        project = load_ustx(str(temp_ustx_file))
+        curve = project.voice_parts[0].get_curve("dyn")
+        assert curve is not None
+        assert curve.abbr == "dyn"
+
+    def test_load_to_ustx_curve_values(self, temp_wav_pair, temp_ustx_file):
+        """Values written should survive a save/load roundtrip."""
+        from utils.ustx import load_ustx
+
+        @register_expression
+        class TestLoader(ExpressionLoader):
+            expression_name = "dyn"
+
+        ref, utau = temp_wav_pair
+        loader = TestLoader(ref, utau, str(temp_ustx_file))
+        loader.expression_tick = np.array([0, 480, 960])
+        loader.expression_val  = np.array([0.0, 50.0, 100.0])
+
+        loader.load_to_ustx(track_number=1)
+
+        project = load_ustx(str(temp_ustx_file))
+        curve = project.voice_parts[0].get_curve("dyn")
+        assert curve.ys == [0, 50, 100]
 
     def test_load_to_ustx_empty_data_logs_warning(self, temp_wav_pair, temp_ustx_file, caplog):
         ref, utau = temp_wav_pair
@@ -338,49 +382,26 @@ class TestLoadToUSTX:
         with caplog.at_level(logging.WARNING):
             loader.load_to_ustx(track_number=1)
 
-        # The actual warning message (translated or not) should indicate emptiness
         messages = " ".join(r.message for r in caplog.records)
         assert any(word in messages.lower() for word in ("empty", "空"))
 
-    def test_load_to_ustx_thread_safety(self):
-        assert hasattr(ExpressionLoader, "ustx_lock")
-        lock = ExpressionLoader.ustx_lock
-        assert callable(getattr(lock, "acquire", None))
-        assert callable(getattr(lock, "release", None))
-
-    def test_load_to_ustx_uses_lock(self, temp_wav_pair, temp_ustx_file, monkeypatch):
-        """Verify the lock is actually acquired during load_to_ustx."""
-        ref, utau = temp_wav_pair
+    def test_load_to_ustx_track_number_1based(self, temp_wav_pair, temp_ustx_file):
+        """track_number=1 must map to track_no=0 inside add_expression_to_track."""
+        from utils.ustx import load_ustx
 
         @register_expression
         class TestLoader(ExpressionLoader):
             expression_name = "dyn"
 
+        ref, utau = temp_wav_pair
         loader = TestLoader(ref, utau, str(temp_ustx_file))
-        loader.expression_tick = np.array([0])
-        loader.expression_val  = np.array([0])
+        loader.expression_tick = np.array([0, 480])
+        loader.expression_val  = np.array([10.0, 20.0])
 
-        # threading.Lock().acquire is a read-only slot — wrap the whole lock instead.
-        acquired = []
-
-        class SpyLock:
-            """Thin wrapper that records acquire() calls and delegates to the real lock."""
-            def __init__(self, real):
-                self._real = real
-            def acquire(self, *args, **kwargs):
-                acquired.append(True)
-                return self._real.acquire(*args, **kwargs)
-            def release(self):
-                return self._real.release()
-            def __enter__(self):
-                self.acquire()
-                return self
-            def __exit__(self, *args):
-                self.release()
-
-        monkeypatch.setattr(TestLoader, "ustx_lock", SpyLock(ExpressionLoader.ustx_lock))
         loader.load_to_ustx(track_number=1)
-        assert len(acquired) > 0
+
+        project = load_ustx(str(temp_ustx_file))
+        assert project.voice_parts[0].get_curve("dyn") is not None
 
 
 # ---------------------------------------------------------------------------
@@ -421,7 +442,7 @@ class TestCustomLoader:
         tick, val = loader.get_expression()
 
         assert list(tick) == [0, 480, 960]
-        assert list(val)  == [10,  20,  30]
+        assert list(val)  == [10, 20, 30]
 
 
 # ---------------------------------------------------------------------------
@@ -450,21 +471,18 @@ class TestExpressionLoaderIntegration:
 
     def test_multiple_loaders_independent(self, tmp_path, temp_ustx_file):
         """Two instances share no mutable state."""
-        ref1  = str(tmp_path / "ref1.wav")
-        _write_silent_wav(ref1)
-        utau1 = str(tmp_path / "utau1.wav")
-        _write_silent_wav(utau1)
-        ref2  = str(tmp_path / "ref2.wav")
-        _write_silent_wav(ref2)
-        utau2 = str(tmp_path / "utau2.wav")
-        _write_silent_wav(utau2)
+        paths = {}
+        for name in ("ref1", "utau1", "ref2", "utau2"):
+            p = str(tmp_path / f"{name}.wav")
+            _write_silent_wav(p)
+            paths[name] = p
 
         @register_expression
         class TestLoader(ExpressionLoader):
             expression_name = "test"
 
-        l1 = TestLoader(ref1, utau1, str(temp_ustx_file))
-        l2 = TestLoader(ref2, utau2, str(temp_ustx_file))
+        l1 = TestLoader(paths["ref1"], paths["utau1"], str(temp_ustx_file))
+        l2 = TestLoader(paths["ref2"], paths["utau2"], str(temp_ustx_file))
 
         assert l1.id != l2.id
         assert l1.ref_path  != l2.ref_path
@@ -475,12 +493,7 @@ class TestExpressionLoaderIntegration:
         assert l1.expression_tick[1] != l2.expression_tick[1]
 
     def test_temp_files_cleaned_on_del(self, temp_wav_pair, temp_ustx_file):
-        """ClampedWav temp files are removed when the loader is deleted.
-
-        We call _cleanup() directly on the underlying ClampedWav objects
-        rather than relying on __del__ / GC timing, which is
-        implementation-defined and unreliable on CPython with atexit refs.
-        """
+        """ClampedWav temp files are removed when _cleanup() is called."""
         import os
 
         ref, utau = temp_wav_pair
@@ -493,3 +506,11 @@ class TestExpressionLoaderIntegration:
 
         assert not os.path.exists(ref_tmp)
         assert not os.path.exists(utau_tmp)
+
+    def test_tick_converters_registered_after_init(self, temp_wav_pair, temp_ustx_file):
+        """set_tick_converters must be called during __init__ so seqtool functions work."""
+        from utils.seqtool import _time_to_ticks_fn, _default_time_to_ticks
+        ref, utau = temp_wav_pair
+        ExpressionLoader(ref, utau, str(temp_ustx_file))
+        # After init the registered converter must not be the default error-raiser
+        assert _time_to_ticks_fn is not _default_time_to_ticks

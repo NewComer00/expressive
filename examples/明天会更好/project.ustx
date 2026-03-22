@@ -213,11 +213,11 @@ expressions:
 exp_selectors:
 - dyn
 - pitd
-- clr
 - tenc
+- clr
 - voic
-exp_primary: 0
-exp_secondary: 1
+exp_primary: 1
+exp_secondary: 0
 key: 0
 time_signatures:
 - bar_position: 0
@@ -231,7 +231,7 @@ tracks:
   phonemizer: OpenUtau.Core.DiffSinger.DiffSingerChinesePhonemizer
   renderer_settings:
     renderer: DIFFSINGER
-  track_name: Track1
+  track_name: main
   track_color: Blue
   mute: false
   solo: false
@@ -245,9 +245,20 @@ tracks:
   - 04:Whisper
   - 05:Joyful
   - 06:Classic
+- phonemizer: OpenUtau.Core.DefaultPhonemizer
+  renderer_settings: {}
+  track_name: reference
+  track_color: Blue
+  mute: true
+  solo: false
+  volume: 0
+  pan: 0
+  track_expressions: []
+  voice_color_names:
+  - ""
 voice_parts:
 - duration: 48960
-  name: New Part
+  name: main
   comment: ""
   track_no: 0
   position: 0
@@ -1061,4 +1072,12 @@ voice_parts:
     phoneme_expressions: []
     phoneme_overrides: []
   curves: []
-wave_parts: []
+wave_parts:
+- name: reference.wav
+  comment: ""
+  track_no: 1
+  position: 0
+  relative_path: reference.wav
+  file_duration_ms: 29787.7324
+  skip_ms: 0
+  trim_ms: 0
