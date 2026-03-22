@@ -50,12 +50,23 @@ def temp_ustx_file(temp_dir):
   - bpm: 120
     position: 0
 time_signatures:
-  - bar_index: 0
+  - bar_position: 0
     beat_per_bar: 4
     beat_unit: 4
+tracks:
+  - track_name: Track 1
+    track_color: Blue
+    singer: ""
+    phonemizer: ""
+    mute: false
+    solo: false
+    volume: 0.0
+    pan: 0.0
 voice_parts:
   - name: Track 1
     track_no: 0
+    position: 0
+    duration: 1920
     notes: []
     curves: []
 """
@@ -72,12 +83,26 @@ def sample_ustx_dict():
             {'bpm': 120, 'position': 0}
         ],
         'time_signatures': [
-            {'bar_index': 0, 'beat_per_bar': 4, 'beat_unit': 4}
+            {'bar_position': 0, 'beat_per_bar': 4, 'beat_unit': 4}
+        ],
+        'tracks': [
+            {
+                'track_name': 'Track 1',
+                'track_color': 'Blue',
+                'singer': '',
+                'phonemizer': '',
+                'mute': False,
+                'solo': False,
+                'volume': 0.0,
+                'pan': 0.0,
+            }
         ],
         'voice_parts': [
             {
                 'name': 'Track 1',
                 'track_no': 0,
+                'position': 0,
+                'duration': 1920,
                 'notes': [
                     {
                         'pos': 0,
@@ -96,6 +121,13 @@ def sample_ustx_dict():
             }
         ]
     }
+
+
+@pytest.fixture
+def sample_project(sample_ustx_dict):
+    """Return a parsed UProject built from sample_ustx_dict"""
+    from utils.ustx import UProject
+    return UProject.from_dict(sample_ustx_dict)
 
 
 @pytest.fixture(autouse=True)

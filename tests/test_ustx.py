@@ -1,383 +1,603 @@
+"""
+Tests for utils/ustx.py.
+
+The public API under test:
+  - load_ustx(path) -> UProject
+  - save_ustx(project, path) -> None
+  - UProject / UVoicePart / UCurve / UTrack / UTempo / UTimeSignature
+  - TimeAxis  (tick ↔ ms ↔ seconds conversions)
+  - UstxEditor  (context-manager editing session)
+"""
+
 import pytest
 import numpy as np
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-from utils.ustx import load_ustx, save_ustx, edit_ustx_expression_curve
+from utils.ustx import (
+    load_ustx,
+    save_ustx,
+    UProject,
+    UVoicePart,
+    UCurve,
+    UTrack,
+    UTempo,
+    UTimeSignature,
+    TimeAxis,
+    UstxEditor,
+    RESOLUTION,
+    SUPPORTED_EXPRESSIONS,
+)
 
+
+# ===========================================================================
+# load_ustx / save_ustx
+# ===========================================================================
 
 class TestLoadUSTX:
-    """Test USTX file loading"""
+    """Test USTX file loading."""
 
-    def test_load_ustx_basic(self, temp_ustx_file):
-        """Test loading a basic USTX file"""
-        result = load_ustx(str(temp_ustx_file))
+    def test_load_returns_uproject(self, temp_ustx_file):
+        project = load_ustx(str(temp_ustx_file))
+        assert isinstance(project, UProject)
 
-        assert isinstance(result, dict)
-        assert "tempos" in result
-        assert "voice_parts" in result
-        assert result["tempos"][0]["bpm"] == 120
+    def test_load_tempos(self, temp_ustx_file):
+        project = load_ustx(str(temp_ustx_file))
+        assert len(project.tempos) == 1
+        assert project.tempos[0].bpm == 120
 
-    def test_load_ustx_with_utf8_bom(self, temp_dir):
-        """Test loading USTX file with UTF-8 BOM"""
-        ustx_content = """tempos:
-  - bpm: 140
-    position: 0
-voice_parts:
-  - name: Track 1
-"""
-        ustx_path = temp_dir / "test_bom.ustx"
-        ustx_path.write_text(ustx_content, encoding='utf-8-sig')
+    def test_load_voice_parts(self, temp_ustx_file):
+        project = load_ustx(str(temp_ustx_file))
+        assert len(project.voice_parts) == 1
+        assert project.voice_parts[0].name == "Track 1"
 
-        result = load_ustx(str(ustx_path))
-        assert result["tempos"][0]["bpm"] == 140
+    def test_load_utf8_bom(self, temp_dir):
+        content = (
+            "tempos:\n  - bpm: 140\n    position: 0\n"
+            "time_signatures:\n  - bar_position: 0\n    beat_per_bar: 4\n    beat_unit: 4\n"
+            "tracks: []\n"
+            "voice_parts:\n  - name: BOM Track\n    track_no: 0\n    position: 0\n    duration: 960\n"
+            "    notes: []\n    curves: []\n"
+        )
+        path = temp_dir / "bom.ustx"
+        path.write_text(content, encoding="utf-8-sig")
+        project = load_ustx(str(path))
+        assert project.tempos[0].bpm == 140
 
-    def test_load_ustx_nonexistent_file(self):
-        """Test loading non-existent file raises error"""
+    def test_load_nonexistent_file(self):
         with pytest.raises(FileNotFoundError):
             load_ustx("nonexistent_file.ustx")
 
-    def test_load_ustx_preserves_structure(self, sample_ustx_dict, temp_dir):
-        """Test that loading preserves USTX structure"""
-        ustx_path = temp_dir / "test_structure.ustx"
-        save_ustx(sample_ustx_dict, str(ustx_path))
+    def test_load_preserves_voice_part_count(self, sample_ustx_dict, temp_dir):
+        path = temp_dir / "counts.ustx"
+        project = UProject.from_dict(sample_ustx_dict)
+        save_ustx(project, str(path))
+        loaded = load_ustx(str(path))
+        assert len(loaded.voice_parts) == len(project.voice_parts)
 
-        loaded = load_ustx(str(ustx_path))
-
-        assert "tempos" in loaded
-        assert "time_signatures" in loaded
-        assert "voice_parts" in loaded
-        assert len(loaded["voice_parts"]) == len(sample_ustx_dict["voice_parts"])
+    def test_resolution_always_480(self, temp_ustx_file):
+        project = load_ustx(str(temp_ustx_file))
+        assert project.resolution == RESOLUTION == 480
 
 
 class TestSaveUSTX:
-    """Test USTX file saving"""
+    """Test USTX file saving."""
 
-    def test_save_ustx_basic(self, sample_ustx_dict, temp_dir):
-        """Test saving a basic USTX file"""
-        ustx_path = temp_dir / "output.ustx"
+    def test_save_creates_file(self, sample_project, temp_dir):
+        path = temp_dir / "out.ustx"
+        assert not path.exists()
+        save_ustx(sample_project, str(path))
+        assert path.exists()
 
-        save_ustx(sample_ustx_dict, str(ustx_path))
+    def test_save_nonempty(self, sample_project, temp_dir):
+        path = temp_dir / "out.ustx"
+        save_ustx(sample_project, str(path))
+        assert path.stat().st_size > 0
 
-        assert ustx_path.exists()
-        # Verify file is not empty
-        assert ustx_path.stat().st_size > 0
+    def test_save_overwrites_existing(self, sample_project, temp_dir):
+        path = temp_dir / "existing.ustx"
+        path.write_text("old content", encoding="utf-8-sig")
+        save_ustx(sample_project, str(path))
+        loaded = load_ustx(str(path))
+        assert loaded.tempos[0].bpm == 120
 
-    def test_save_ustx_creates_file(self, sample_ustx_dict, temp_dir):
-        """Test that save creates new file if it doesn't exist"""
-        ustx_path = temp_dir / "new_file.ustx"
-
-        assert not ustx_path.exists()
-        save_ustx(sample_ustx_dict, str(ustx_path))
-        assert ustx_path.exists()
-
-    def test_save_ustx_overwrites_existing(self, sample_ustx_dict, temp_dir):
-        """Test that save overwrites existing file"""
-        ustx_path = temp_dir / "existing.ustx"
-
-        # Create initial file
-        ustx_path.write_text("old content", encoding='utf-8-sig')
-
-        # Save new content
-        save_ustx(sample_ustx_dict, str(ustx_path))
-
-        # Verify content was overwritten
-        loaded = load_ustx(str(ustx_path))
-        assert loaded["tempos"][0]["bpm"] == 120
-
-    def test_save_ustx_utf8_bom(self, sample_ustx_dict, temp_dir):
-        """Test that saved file uses UTF-8 with BOM"""
-        ustx_path = temp_dir / "test_encoding.ustx"
-
-        save_ustx(sample_ustx_dict, str(ustx_path))
-
-        # Read raw bytes to check for BOM
-        with open(ustx_path, 'rb') as f:
-            first_bytes = f.read(3)
-            # UTF-8 BOM is EF BB BF
-            assert first_bytes == b'\xef\xbb\xbf'
+    def test_save_utf8_bom(self, sample_project, temp_dir):
+        path = temp_dir / "encoding.ustx"
+        save_ustx(sample_project, str(path))
+        assert path.read_bytes()[:3] == b"\xef\xbb\xbf"
 
 
 class TestSaveLoadRoundtrip:
-    """Test save and load roundtrip consistency"""
+    """Save → load roundtrip consistency."""
 
-    def test_roundtrip_basic(self, sample_ustx_dict, temp_dir):
-        """Test basic save/load roundtrip"""
-        ustx_path = temp_dir / "roundtrip.ustx"
+    def test_roundtrip_bpm(self, sample_project, temp_dir):
+        path = temp_dir / "rt.ustx"
+        save_ustx(sample_project, str(path))
+        loaded = load_ustx(str(path))
+        assert loaded.tempos[0].bpm == sample_project.tempos[0].bpm
 
-        # Save
-        save_ustx(sample_ustx_dict, str(ustx_path))
+    def test_roundtrip_voice_part_count(self, sample_project, temp_dir):
+        path = temp_dir / "rt.ustx"
+        save_ustx(sample_project, str(path))
+        loaded = load_ustx(str(path))
+        assert len(loaded.voice_parts) == len(sample_project.voice_parts)
 
-        # Load
-        loaded = load_ustx(str(ustx_path))
+    def test_roundtrip_voice_part_name(self, sample_project, temp_dir):
+        path = temp_dir / "rt.ustx"
+        save_ustx(sample_project, str(path))
+        loaded = load_ustx(str(path))
+        assert loaded.voice_parts[0].name == sample_project.voice_parts[0].name
 
-        # Verify key fields
-        assert loaded["tempos"][0]["bpm"] == sample_ustx_dict["tempos"][0]["bpm"]
-        assert len(loaded["voice_parts"]) == len(sample_ustx_dict["voice_parts"])
-        assert loaded["voice_parts"][0]["name"] == sample_ustx_dict["voice_parts"][0]["name"]
+    def test_roundtrip_with_curves(self, sample_project, temp_dir):
+        path = temp_dir / "curves_rt.ustx"
+        part = sample_project.voice_parts[0]
+        part.set_curve("dyn", np.array([0, 480, 960]), np.array([0.0, 50.0, 100.0]))
+        save_ustx(sample_project, str(path))
 
-    def test_roundtrip_preserves_order(self, temp_dir):
-        """Test that roundtrip preserves key order"""
-        # Create dict with specific order
-        ustx_dict = {
+        loaded = load_ustx(str(path))
+        curve = loaded.voice_parts[0].get_curve("dyn")
+        assert curve is not None
+        assert curve.xs == [0, 480, 960]
+        assert curve.ys == [0, 50, 100]
+
+
+# ===========================================================================
+# UProject
+# ===========================================================================
+
+class TestUProject:
+    """Test UProject data model."""
+
+    def test_from_dict_tempos(self, sample_ustx_dict):
+        project = UProject.from_dict(sample_ustx_dict)
+        assert isinstance(project.tempos[0], UTempo)
+        assert project.tempos[0].bpm == 120
+
+    def test_from_dict_time_signatures(self, sample_ustx_dict):
+        project = UProject.from_dict(sample_ustx_dict)
+        ts = project.time_signatures[0]
+        assert isinstance(ts, UTimeSignature)
+        assert ts.bar_position == 0
+        assert ts.beat_per_bar == 4
+        assert ts.beat_unit == 4
+
+    def test_from_dict_tracks(self, sample_ustx_dict):
+        project = UProject.from_dict(sample_ustx_dict)
+        assert len(project.tracks) == 1
+        assert isinstance(project.tracks[0], UTrack)
+
+    def test_from_dict_voice_parts(self, sample_ustx_dict):
+        project = UProject.from_dict(sample_ustx_dict)
+        assert len(project.voice_parts) == 1
+        assert isinstance(project.voice_parts[0], UVoicePart)
+
+    def test_from_dict_legacy_bpm_fallback(self):
+        """A dict with no ``tempos`` key but a top-level ``bpm`` is accepted."""
+        d = {"bpm": 90.0, "voice_parts": []}
+        project = UProject.from_dict(d)
+        assert project.tempos[0].bpm == 90.0
+
+    def test_from_dict_legacy_time_sig_fallback(self):
+        d = {
             "tempos": [{"bpm": 120, "position": 0}],
-            "time_signatures": [{"bar_index": 0, "beat_per_bar": 4, "beat_unit": 4}],
-            "voice_parts": [{"name": "Track 1"}]
+            "beat_per_bar": 3,
+            "beat_unit": 4,
+            "voice_parts": [],
         }
+        project = UProject.from_dict(d)
+        assert project.time_signatures[0].beat_per_bar == 3
 
-        ustx_path = temp_dir / "order_test.ustx"
+    def test_get_track_valid(self, sample_project):
+        track = sample_project.get_track(0)
+        assert isinstance(track, UTrack)
 
-        # Save and load
-        save_ustx(ustx_dict, str(ustx_path))
-        loaded = load_ustx(str(ustx_path))
+    def test_get_track_out_of_range(self, sample_project):
+        with pytest.raises(IndexError):
+            sample_project.get_track(99)
 
-        # Verify keys exist (order checking is harder in Python dicts)
-        assert "tempos" in loaded
-        assert "time_signatures" in loaded
-        assert "voice_parts" in loaded
+    def test_get_parts_for_track(self, sample_project):
+        parts = sample_project.get_parts_for_track(0)
+        assert len(parts) == 1
+        assert all(p.track_no == 0 for p in parts)
 
-    def test_roundtrip_with_curves(self, sample_ustx_dict, temp_dir):
-        """Test roundtrip with expression curves"""
-        # Add curves to sample dict
-        sample_ustx_dict["voice_parts"][0]["curves"] = [
-            {
-                "abbr": "dyn",
-                "xs": [0, 480, 960],
-                "ys": [0, 50, 100]
-            }
+    def test_get_parts_for_track_sorted(self, sample_ustx_dict):
+        # Add a second part with an earlier position
+        sample_ustx_dict["voice_parts"].append({
+            "name": "Early",
+            "track_no": 0,
+            "position": 0,
+            "duration": 480,
+            "notes": [],
+            "curves": [],
+        })
+        sample_ustx_dict["voice_parts"][0]["position"] = 960
+        project = UProject.from_dict(sample_ustx_dict)
+        parts = project.get_parts_for_track(0)
+        positions = [p.position for p in parts]
+        assert positions == sorted(positions)
+
+    def test_resolution_fixed(self, sample_project):
+        assert sample_project.resolution == 480
+
+    def test_to_dict_roundtrip_keys(self, sample_project):
+        d = sample_project.to_dict()
+        assert "tempos" in d
+        assert "time_signatures" in d
+        assert "voice_parts" in d
+
+
+# ===========================================================================
+# UCurve / UVoicePart curve helpers
+# ===========================================================================
+
+class TestUCurve:
+    """Test UCurve and UVoicePart curve helpers."""
+
+    def test_get_curve_existing(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.curves.append(UCurve(abbr="dyn", xs=[0], ys=[0]))
+        assert part.get_curve("dyn") is not None
+
+    def test_get_curve_missing(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        assert part.get_curve("dyn") is None
+
+    def test_get_or_create_curve_creates(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        curve = part.get_or_create_curve("dyn")
+        assert curve.abbr == "dyn"
+        assert len(part.curves) == 1
+
+    def test_get_or_create_curve_reuses(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        c1 = part.get_or_create_curve("dyn")
+        c2 = part.get_or_create_curve("dyn")
+        assert c1 is c2
+        assert len(part.curves) == 1
+
+    def test_set_curve_basic(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.set_curve("dyn", np.array([0, 480, 960]), np.array([0.0, 50.0, 100.0]))
+        curve = part.get_curve("dyn")
+        assert curve.xs == [0, 480, 960]
+        assert curve.ys == [0, 50, 100]
+
+    def test_set_curve_filters_nan(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.set_curve("dyn",
+                       np.array([0, 480, 960, 1440]),
+                       np.array([0.0, np.nan, 100.0, 75.0]))
+        curve = part.get_curve("dyn")
+        assert 480 not in curve.xs
+        assert curve.xs == [0, 960, 1440]
+        assert curve.ys == [0, 100, 75]
+
+    def test_set_curve_all_nan(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.set_curve("dyn", np.array([0, 480]), np.array([np.nan, np.nan]))
+        curve = part.get_curve("dyn")
+        assert curve.xs == []
+        assert curve.ys == []
+
+    def test_set_curve_rounds_values(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.set_curve("dyn", np.array([0, 480]), np.array([10.7, 50.3]))
+        assert part.get_curve("dyn").ys == [11, 50]
+
+    def test_set_curve_negative_values(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.set_curve("dyn", np.array([0, 480]), np.array([-10.0, -20.0]))
+        assert part.get_curve("dyn").ys == [-10, -20]
+
+    def test_set_curve_overwrites(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.set_curve("dyn", np.array([0, 480]), np.array([0.0, 50.0]))
+        part.set_curve("dyn", np.array([0, 960]), np.array([100.0, 200.0]))
+        assert len(part.curves) == 1
+        assert part.get_curve("dyn").xs == [0, 960]
+
+    @pytest.mark.parametrize("abbr", sorted(SUPPORTED_EXPRESSIONS))
+    def test_set_curve_supported_expressions(self, abbr):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        part.set_curve(abbr, np.array([0, 480]), np.array([0.0, 50.0]))
+        assert part.get_curve(abbr) is not None
+
+    def test_set_curve_unsupported_expression(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        with pytest.raises(ValueError, match="Unsupported expression"):
+            part.set_curve("invalid_expr", np.array([0]), np.array([0.0]))
+
+    def test_set_curve_multiple_expressions(self):
+        part = UVoicePart(track_no=0, position=0, duration=960)
+        for abbr in SUPPORTED_EXPRESSIONS:
+            part.set_curve(abbr, np.array([0, 480]), np.array([0.0, 50.0]))
+        assert len(part.curves) == len(SUPPORTED_EXPRESSIONS)
+
+
+# ===========================================================================
+# TimeAxis
+# ===========================================================================
+
+class TestTimeAxis:
+    """Test TimeAxis tick ↔ ms ↔ seconds conversions."""
+
+    @pytest.fixture
+    def axis_120bpm(self):
+        tempos = [UTempo(position=0, bpm=120.0)]
+        time_sigs = [UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4)]
+        return TimeAxis.build(tempos, time_sigs)
+
+    # --- basic scalar conversions ---
+
+    def test_tick_to_ms_zero(self, axis_120bpm):
+        assert axis_120bpm.tick_pos_to_ms(0) == pytest.approx(0.0)
+
+    def test_tick_to_ms_one_beat(self, axis_120bpm):
+        # 120 BPM → 500 ms/beat → 480 ticks/beat → 500 ms
+        assert axis_120bpm.tick_pos_to_ms(480) == pytest.approx(500.0)
+
+    def test_ms_to_tick_zero(self, axis_120bpm):
+        assert axis_120bpm.ms_pos_to_tick(0.0) == pytest.approx(0.0)
+
+    def test_ms_to_tick_500ms(self, axis_120bpm):
+        assert axis_120bpm.ms_pos_to_tick(500.0) == pytest.approx(480.0)
+
+    def test_ms_between_ticks(self, axis_120bpm):
+        assert axis_120bpm.ms_between_ticks(0, 480) == pytest.approx(500.0)
+
+    # --- vectorised API ---
+
+    def test_ticks_to_ms_array(self, axis_120bpm):
+        result = axis_120bpm.ticks_to_ms(np.array([0, 480, 960]))
+        assert_array_almost_equal(result, [0.0, 500.0, 1000.0])
+
+    def test_ms_to_ticks_array(self, axis_120bpm):
+        result = axis_120bpm.ms_to_ticks(np.array([0.0, 500.0, 1000.0]))
+        assert_array_equal(result, [0, 480, 960])
+
+    def test_ms_to_ticks_unique(self, axis_120bpm):
+        result = axis_120bpm.ms_to_ticks(np.array([0.0, 0.0, 500.0]), unique=True)
+        assert_array_equal(result, [0, 480])
+
+    # --- seconds wrappers ---
+
+    def test_ticks_to_seconds(self, axis_120bpm):
+        result = axis_120bpm.ticks_to_seconds(np.array([0, 480, 960]))
+        assert_array_almost_equal(result, [0.0, 0.5, 1.0])
+
+    def test_seconds_to_ticks(self, axis_120bpm):
+        result = axis_120bpm.seconds_to_ticks(np.array([0.0, 0.5, 1.0]))
+        assert_array_equal(result, [0, 480, 960])
+
+    def test_seconds_to_ticks_unique(self, axis_120bpm):
+        result = axis_120bpm.seconds_to_ticks(np.array([0.0, 0.0, 1.0]), unique=True)
+        assert_array_equal(result, [0, 960])
+
+    # --- roundtrip ---
+
+    def test_roundtrip_tick_ms(self, axis_120bpm):
+        original = np.array([0, 240, 480, 720, 960], dtype=float)
+        ms = axis_120bpm.ticks_to_ms(original)
+        recovered = axis_120bpm.ms_to_ticks(ms)
+        assert_array_equal(recovered, original.astype(int))
+
+    def test_roundtrip_precision(self, axis_120bpm):
+        """Round-trip error ≤ half a tick duration."""
+        original = np.linspace(0, 10, 500)          # seconds
+        ticks = axis_120bpm.seconds_to_ticks(original)
+        recovered = axis_120bpm.ticks_to_seconds(ticks)
+        tick_duration_s = 60 / (120 * RESOLUTION)
+        assert np.all(np.abs(original - recovered) <= tick_duration_s / 2 + 1e-12)
+
+    # --- tempo change ---
+
+    def test_tempo_change_boundary(self):
+        """After a tempo change the ms position must reflect the new BPM."""
+        tempos = [
+            UTempo(position=0,    bpm=120.0),
+            UTempo(position=1920, bpm=60.0),   # 4 beats in at 120 BPM
         ]
+        time_sigs = [UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4)]
+        axis = TimeAxis.build(tempos, time_sigs)
 
-        ustx_path = temp_dir / "curves_test.ustx"
+        # First 1920 ticks at 120 BPM = 2000 ms
+        assert axis.tick_pos_to_ms(1920) == pytest.approx(2000.0)
+        # Next 480 ticks at 60 BPM (1000 ms/beat) = 1000 ms more
+        assert axis.tick_pos_to_ms(2400) == pytest.approx(3000.0)
 
-        # Save and load
-        save_ustx(sample_ustx_dict, str(ustx_path))
-        loaded = load_ustx(str(ustx_path))
+    # --- shift_ticks_by_seconds ---
 
-        # Verify curves preserved
-        assert "curves" in loaded["voice_parts"][0]
-        assert len(loaded["voice_parts"][0]["curves"]) == 1
-        assert loaded["voice_parts"][0]["curves"][0]["abbr"] == "dyn"
+    def test_shift_ticks_by_seconds_positive(self, axis_120bpm):
+        ticks = np.array([0, 480, 960])
+        shifted = axis_120bpm.shift_ticks_by_seconds(ticks, 0.5)
+        # 0.5 s = 480 ticks at 120 BPM
+        assert_array_equal(shifted, [480, 960, 1440])
 
+    def test_shift_ticks_by_seconds_zero(self, axis_120bpm):
+        ticks = np.array([0, 480, 960])
+        shifted = axis_120bpm.shift_ticks_by_seconds(ticks, 0.0)
+        assert_array_equal(shifted, ticks)
 
-class TestEditUSTXExpressionCurve:
-    """Test editing expression curves in USTX"""
+    def test_shift_ticks_by_seconds_negative(self, axis_120bpm):
+        ticks = np.array([960, 1440])
+        shifted = axis_120bpm.shift_ticks_by_seconds(ticks, -0.5)
+        assert_array_equal(shifted, [480, 960])
 
-    def test_edit_expression_curve_new_curve(self, sample_ustx_dict):
-        """Test adding a new expression curve"""
-        tick_seq = np.array([0, 480, 960, 1440])
-        exp_seq = np.array([0.0, 50.0, 100.0, 75.0])
+    # --- build validation ---
 
-        edit_ustx_expression_curve(
-            sample_ustx_dict,
-            ustx_track_number=1,
-            expression="dyn",
-            tick_seq=tick_seq,
-            exp_seq=exp_seq
-        )
-
-        # Verify curve was added
-        assert "curves" in sample_ustx_dict["voice_parts"][0]
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        assert len(curves) == 1
-        assert curves[0]["abbr"] == "dyn"
-        assert curves[0]["xs"] == [0, 480, 960, 1440]
-        assert curves[0]["ys"] == [0, 50, 100, 75]
-
-    def test_edit_expression_curve_update_existing(self, sample_ustx_dict):
-        """Test updating an existing expression curve"""
-        # Add initial curve
-        sample_ustx_dict["voice_parts"][0]["curves"] = [
-            {"xs": [0, 480], "ys": [0, 50], "abbr": "dyn"}
-        ]
-
-        # Update curve
-        tick_seq = np.array([0, 960])
-        exp_seq = np.array([100.0, 200.0])
-
-        edit_ustx_expression_curve(
-            sample_ustx_dict,
-            ustx_track_number=1,
-            expression="dyn",
-            tick_seq=tick_seq,
-            exp_seq=exp_seq
-        )
-
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        # Should still have only one curve (updated)
-        assert len(curves) == 1
-        assert curves[0]["xs"] == [0, 960]
-        assert curves[0]["ys"] == [100, 200]
-
-    def test_edit_expression_curve_with_nan(self, sample_ustx_dict):
-        """Test that NaN values are filtered out"""
-        tick_seq = np.array([0, 480, 960, 1440])
-        exp_seq = np.array([0.0, np.nan, 100.0, 75.0])
-
-        edit_ustx_expression_curve(
-            sample_ustx_dict,
-            ustx_track_number=1,
-            expression="dyn",
-            tick_seq=tick_seq,
-            exp_seq=exp_seq
-        )
-
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        # NaN value should be filtered
-        assert len(curves[0]["xs"]) == 3
-        assert 480 not in curves[0]["xs"]  # NaN position filtered
-        assert curves[0]["xs"] == [0, 960, 1440]
-        assert curves[0]["ys"] == [0, 100, 75]
-
-    def test_edit_expression_curve_all_nan(self, sample_ustx_dict):
-        """Test with all NaN values"""
-        tick_seq = np.array([0, 480, 960])
-        exp_seq = np.array([np.nan, np.nan, np.nan])
-
-        edit_ustx_expression_curve(
-            sample_ustx_dict,
-            ustx_track_number=1,
-            expression="dyn",
-            tick_seq=tick_seq,
-            exp_seq=exp_seq
-        )
-
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        # Should create curve but with empty data
-        assert len(curves) == 1
-        assert curves[0]["xs"] == []
-        assert curves[0]["ys"] == []
-
-    def test_edit_expression_curve_multiple_expressions(self, sample_ustx_dict):
-        """Test adding multiple different expressions"""
-        # Add dyn
-        edit_ustx_expression_curve(
-            sample_ustx_dict, 1, "dyn",
-            np.array([0, 480]), np.array([0.0, 50.0])
-        )
-
-        # Add pitd
-        edit_ustx_expression_curve(
-            sample_ustx_dict, 1, "pitd",
-            np.array([0, 480]), np.array([10.0, 20.0])
-        )
-
-        # Add tenc
-        edit_ustx_expression_curve(
-            sample_ustx_dict, 1, "tenc",
-            np.array([0, 480]), np.array([30.0, 40.0])
-        )
-
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        assert len(curves) == 3
-
-        # Verify each expression
-        abbrs = [c["abbr"] for c in curves]
-        assert "dyn" in abbrs
-        assert "pitd" in abbrs
-        assert "tenc" in abbrs
-
-    @pytest.mark.parametrize("expression", ["dyn", "pitd", "tenc"])
-    def test_edit_expression_curve_supported_types(self, sample_ustx_dict, expression):
-        """Test all supported expression types"""
-        tick_seq = np.array([0, 480])
-        exp_seq = np.array([0.0, 50.0])
-
-        edit_ustx_expression_curve(
-            sample_ustx_dict, 1, expression,
-            tick_seq, exp_seq
-        )
-
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        assert len(curves) == 1
-        assert curves[0]["abbr"] == expression
-
-    def test_edit_expression_curve_invalid_type(self, sample_ustx_dict):
-        """Test that invalid expression type raises error"""
-        with pytest.raises(ValueError, match="Unsupported expression type"):
-            edit_ustx_expression_curve(
-                sample_ustx_dict, 1, "invalid_expr",
-                np.array([0]), np.array([0])
+    def test_build_requires_tempos(self):
+        with pytest.raises(ValueError, match="tempo"):
+            TimeAxis.build(
+                [],
+                [UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4)],
             )
 
-    def test_edit_expression_curve_rounding(self, sample_ustx_dict):
-        """Test that values are rounded to integers"""
-        tick_seq = np.array([0, 480])
-        exp_seq = np.array([10.7, 50.3])
+    def test_build_requires_time_signatures(self):
+        with pytest.raises(ValueError, match="time.signature"):
+            TimeAxis.build([UTempo(position=0, bpm=120)], [])
 
-        edit_ustx_expression_curve(
-            sample_ustx_dict, 1, "dyn",
-            tick_seq, exp_seq
+    def test_build_requires_first_time_sig_at_bar_0(self):
+        with pytest.raises(ValueError):
+            TimeAxis.build(
+                [UTempo(position=0, bpm=120)],
+                [UTimeSignature(bar_position=1, beat_per_bar=4, beat_unit=4)],
+            )
+
+
+# ===========================================================================
+# UstxEditor
+# ===========================================================================
+
+class TestUstxEditor:
+    """Test UstxEditor context-manager and expression helpers."""
+
+    def test_context_manager_saves_on_clean_exit(self, temp_ustx_file):
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            editor.project.voice_parts[0].name = "Edited"
+        # Reload and check
+        reloaded = load_ustx(str(temp_ustx_file))
+        assert reloaded.voice_parts[0].name == "Edited"
+
+    def test_context_manager_no_save_on_exception(self, temp_ustx_file):
+        original_name = load_ustx(str(temp_ustx_file)).voice_parts[0].name
+        with pytest.raises(RuntimeError):
+            with UstxEditor(str(temp_ustx_file)) as editor:
+                editor.project.voice_parts[0].name = "Should Not Save"
+                raise RuntimeError("deliberate error")
+        reloaded = load_ustx(str(temp_ustx_file))
+        assert reloaded.voice_parts[0].name == original_name
+
+    def test_add_expression_to_part(self, temp_ustx_file):
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            part = editor.voice_parts[0]
+            editor.add_expression_to_part(
+                part, "dyn",
+                np.array([0, 480, 960]),
+                np.array([0.0, 50.0, 100.0]),
+            )
+        reloaded = load_ustx(str(temp_ustx_file))
+        curve = reloaded.voice_parts[0].get_curve("dyn")
+        assert curve is not None
+        assert curve.xs == [0, 480, 960]
+
+    def test_add_expression_to_track_basic(self, temp_ustx_file):
+        """Absolute ticks within part window are written as relative ticks."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            # part starts at 0, duration 1920
+            editor.add_expression_to_track(
+                0, "dyn",
+                np.array([0, 480, 960]),
+                np.array([0.0, 50.0, 100.0]),
+            )
+        reloaded = load_ustx(str(temp_ustx_file))
+        curve = reloaded.voice_parts[0].get_curve("dyn")
+        assert curve is not None
+        assert curve.xs == [0, 480, 960]
+
+    def test_add_expression_to_track_clips_to_part_window(self, temp_ustx_file):
+        """Ticks outside [part.position, part.position + part.duration) are dropped."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            # Part has position=0, duration=1920; tick 2400 is outside
+            editor.add_expression_to_track(
+                0, "dyn",
+                np.array([0, 960, 2400]),
+                np.array([10.0, 20.0, 30.0]),
+            )
+        reloaded = load_ustx(str(temp_ustx_file))
+        curve = reloaded.voice_parts[0].get_curve("dyn")
+        assert 2400 not in curve.xs
+
+    def test_add_expression_to_track_relative_ticks(self, temp_dir):
+        """Ticks stored in the curve must be relative to part.position."""
+        content = (
+            "tempos:\n  - bpm: 120\n    position: 0\n"
+            "time_signatures:\n  - bar_position: 0\n    beat_per_bar: 4\n    beat_unit: 4\n"
+            "tracks:\n  - track_name: T\n    track_color: Blue\n    singer: ''\n"
+            "    phonemizer: ''\n    mute: false\n    solo: false\n    volume: 0.0\n    pan: 0.0\n"
+            "voice_parts:\n  - name: P\n    track_no: 0\n    position: 480\n    duration: 960\n"
+            "    notes: []\n    curves: []\n"
         )
+        path = temp_dir / "offset.ustx"
+        path.write_text(content, encoding="utf-8-sig")
 
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        # Values should be rounded
-        assert curves[0]["ys"] == [11, 50]
+        with UstxEditor(str(path)) as editor:
+            # absolute ticks 480–1439 fall inside the part (offset 480)
+            editor.add_expression_to_track(
+                0, "dyn",
+                np.array([480, 960, 1439]),
+                np.array([10.0, 20.0, 30.0]),
+            )
+        reloaded = load_ustx(str(path))
+        curve = reloaded.voice_parts[0].get_curve("dyn")
+        # Stored as relative: 480-480=0, 960-480=480, 1439-480=959
+        assert curve.xs == [0, 480, 959]
 
-    def test_edit_expression_curve_negative_values(self, sample_ustx_dict):
-        """Test with negative values"""
-        tick_seq = np.array([0, 480])
-        exp_seq = np.array([-10.0, -20.0])
+    def test_add_expression_to_track_no_parts_raises(self, temp_ustx_file):
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            with pytest.raises(ValueError, match="No voice parts"):
+                editor.add_expression_to_track(
+                    99, "dyn",
+                    np.array([0]), np.array([0.0]),
+                )
 
-        edit_ustx_expression_curve(
-            sample_ustx_dict, 1, "dyn",
-            tick_seq, exp_seq
-        )
+    def test_manual_save_and_close(self, temp_ustx_file):
+        editor = UstxEditor(str(temp_ustx_file))
+        editor.project.voice_parts[0].name = "Manual"
+        editor.save()
+        editor.close()
+        reloaded = load_ustx(str(temp_ustx_file))
+        assert reloaded.voice_parts[0].name == "Manual"
 
-        curves = sample_ustx_dict["voice_parts"][0]["curves"]
-        assert curves[0]["ys"] == [-10, -20]
+    def test_build_time_axis_returns_time_axis(self, temp_ustx_file):
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            axis = editor.build_time_axis()
+        assert isinstance(axis, TimeAxis)
 
-    def test_edit_expression_curve_track_number(self, sample_ustx_dict):
-        """Test that track number is correctly handled (1-indexed)"""
-        # Add a second track
-        sample_ustx_dict["voice_parts"].append({
-            "name": "Track 2",
-            "track_no": 1,
-            "notes": [],
-            "curves": []
-        })
+    def test_tracks_property(self, temp_ustx_file):
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            assert editor.tracks is editor.project.tracks
 
-        # Edit track 2 (1-indexed)
-        edit_ustx_expression_curve(
-            sample_ustx_dict, 2, "dyn",
-            np.array([0, 480]), np.array([0.0, 50.0])
-        )
+    def test_voice_parts_property(self, temp_ustx_file):
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            assert editor.voice_parts is editor.project.voice_parts
 
-        # Verify curve was added to track 2 (index 1)
-        assert "curves" in sample_ustx_dict["voice_parts"][1]
-        assert len(sample_ustx_dict["voice_parts"][1]["curves"]) == 1
 
-        # Track 1 should not have curves
-        assert "curves" not in sample_ustx_dict["voice_parts"][0] or \
-               len(sample_ustx_dict["voice_parts"][0]["curves"]) == 0
-
+# ===========================================================================
+# Integration
+# ===========================================================================
 
 class TestIntegration:
-    """Integration tests combining multiple operations"""
+    """End-to-end workflows."""
 
-    def test_full_workflow(self, sample_ustx_dict, temp_dir):
-        """Test complete workflow: load, edit, save, load again"""
-        ustx_path = temp_dir / "workflow.ustx"
+    def test_full_workflow_via_editor(self, temp_ustx_file):
+        """Load → edit via UstxEditor → verify persisted curve."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            axis = editor.build_time_axis()
+            ticks = axis.seconds_to_ticks(np.array([0.0, 0.5, 1.0]))
+            editor.add_expression_to_track(
+                0, "dyn", ticks, np.array([0.0, 50.0, 100.0])
+            )
 
-        # Save initial file
-        save_ustx(sample_ustx_dict, str(ustx_path))
+        final = load_ustx(str(temp_ustx_file))
+        curve = final.voice_parts[0].get_curve("dyn")
+        assert curve is not None
+        assert len(curve.xs) == 3
 
-        # Load file
-        loaded = load_ustx(str(ustx_path))
+    def test_multiple_expressions_persist(self, temp_ustx_file):
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            ticks = np.array([0, 480, 960])
+            for abbr in sorted(SUPPORTED_EXPRESSIONS):
+                editor.add_expression_to_part(
+                    editor.voice_parts[0], abbr, ticks, np.array([1.0, 2.0, 3.0])
+                )
 
-        # Edit expression
-        edit_ustx_expression_curve(
-            loaded, 1, "dyn",
-            np.array([0, 480, 960]),
-            np.array([0.0, 50.0, 100.0])
-        )
+        final = load_ustx(str(temp_ustx_file))
+        for abbr in SUPPORTED_EXPRESSIONS:
+            assert final.voice_parts[0].get_curve(abbr) is not None
 
-        # Save modified file
-        save_ustx(loaded, str(ustx_path))
-
-        # Load again and verify
-        final = load_ustx(str(ustx_path))
-
-        assert "curves" in final["voice_parts"][0]
-        curves = final["voice_parts"][0]["curves"]
-        assert len(curves) == 1
-        assert curves[0]["abbr"] == "dyn"
-        assert curves[0]["xs"] == [0, 480, 960]
-        assert curves[0]["ys"] == [0, 50, 100]
+    def test_time_axis_used_for_ticks(self, temp_ustx_file):
+        """Verify ticks produced by TimeAxis match expected values."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            axis = editor.build_time_axis()
+            ticks = axis.seconds_to_ticks(np.array([0.0, 0.5, 1.0, 1.5]))
+            # 120 BPM, 480 PPQN → 960 ticks/second
+            assert_array_equal(ticks, [0, 480, 960, 1440])

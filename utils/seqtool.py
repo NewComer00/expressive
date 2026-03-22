@@ -1,42 +1,65 @@
 from itertools import accumulate
+from typing import Callable
 
 import numpy as np
-from fastdtw import fastdtw # type: ignore
-from scipy.stats import zscore
+from fastdtw import fastdtw  # type: ignore
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter1d
+from scipy.stats import zscore
 
 
-def time_to_ticks(time, tempo, ppqn=480, unique=True):
-    """Convert time in seconds to MIDI ticks.
+# ---------------------------------------------------------------------------
+# Tick converter registry
+# ---------------------------------------------------------------------------
+# Defaults raise clearly if to_ticks=True is used before registration.
+# Call set_tick_converters() once at startup to wire up tempo-map-aware ones,
+# e.g.:
+#     axis = editor.build_time_axis()
+#     set_tick_converters(axis.seconds_to_ticks, axis.ticks_to_seconds)
+
+def _default_time_to_ticks(time: np.ndarray, unique: bool = True) -> np.ndarray:
+    raise RuntimeError(
+        "No tick converter registered. "
+        "Call set_tick_converters() before using to_ticks=True."
+    )
+
+def _default_ticks_to_time(ticks: np.ndarray) -> np.ndarray:
+    raise RuntimeError(
+        "No tick converter registered. "
+        "Call set_tick_converters() before using to_ticks=True."
+    )
+
+_time_to_ticks_fn: Callable = _default_time_to_ticks
+_ticks_to_time_fn: Callable = _default_ticks_to_time
+
+
+def set_tick_converters(
+    time_to_ticks_fn: Callable[[np.ndarray], np.ndarray],
+    ticks_to_time_fn: Callable[[np.ndarray], np.ndarray],
+) -> None:
+    """Register tempo-map-aware tick converters for this module.
+
+    Must be called before any function that uses ``to_ticks=True``.
 
     Args:
-        time (float or array-like): Time values in seconds.
-        tempo (float): Tempo in beats per minute (BPM).
-        ppqn (int, optional): Pulses per quarter note (MIDI resolution). Defaults to 480.
-        unique (bool, optional): If ``True``, return sorted deduplicated integer
-            ticks. If ``False``, return rounded integer ticks preserving the original shape.
-
-    Returns:
-        numpy.ndarray: Integer MIDI tick values, deduplicated and sorted if ``unique=True``.
+        time_to_ticks_fn:   ``(times: ndarray) -> ticks: ndarray``
+        ticks_to_time_fn:   ``(ticks: ndarray) -> times: ndarray``
     """
-    ticks = np.round((np.array(time) * tempo * ppqn) / 60).astype(int)
-    return np.unique(ticks) if unique else ticks
+    global _time_to_ticks_fn, _ticks_to_time_fn
+    _time_to_ticks_fn = time_to_ticks_fn
+    _ticks_to_time_fn = ticks_to_time_fn
 
 
-def ticks_to_time(ticks, tempo, ppqn=480):
-    """Convert MIDI ticks to time in seconds.
+def reset_tick_converters() -> None:
+    """Restore the default (error-raising) tick converters."""
+    global _time_to_ticks_fn, _ticks_to_time_fn
+    _time_to_ticks_fn = _default_time_to_ticks
+    _ticks_to_time_fn = _default_ticks_to_time
 
-    Args:
-        ticks (int or array-like): MIDI tick values.
-        tempo (float): Tempo in beats per minute (BPM).
-        ppqn (int, optional): Pulses per quarter note. Defaults to 480.
 
-    Returns:
-        numpy.ndarray: Corresponding time values in seconds.
-    """
-    return (np.array(ticks) * 60) / (tempo * ppqn)
-
+# ---------------------------------------------------------------------------
+# Sequence utilities
+# ---------------------------------------------------------------------------
 
 def sequence_interval_intersection(seqs):
     """Find the intersection of multiple sequences.
@@ -76,41 +99,41 @@ def sequence_interval_union(seqs):
     return np.unique(np.concatenate(seqs)).tolist()
 
 
-def unify_sequence_time(seq_times, seq_vals, to_ticks=False, tempo=120, ppqn=480):
+def unify_sequence_time(seq_times, seq_vals, to_ticks=False):
     """Unify multiple sequences to a common time base.
 
-    This function aligns multiple sequences to a common time base by interpolating values.
+    Aligns multiple sequences to a common time base by interpolating values.
+    When ``to_ticks=True``, uses the converters registered via
+    :func:`set_tick_converters`.
 
     Args:
         seq_times (list of array-like): List of time sequences. Shape: (n_sequences, n_time_points).
-        seq_vals (list of array-like): List of value sequences. Shape: (n_sequences, n_time_points).
-        to_ticks (bool, optional): Whether to convert time to MIDI ticks. Defaults to False.
-        tempo (float, optional): Tempo in beats per minute (BPM). Defaults to 120.
-        ppqn (int, optional): Pulses per quarter note (MIDI resolution). Defaults to 480.
+        seq_vals (list of array-like):  List of value sequences. Shape: (n_sequences, n_time_points).
+        to_ticks (bool, optional):      Convert unified time to MIDI ticks. Defaults to ``False``.
 
     Returns:
-        tuple: (unified_time, unified_seqs), where:
-            - unified_time (numpy.ndarray): Unified time points. Shape: (n_time_points).
-            - unified_seqs (tuple): Unified sequences. Shape: (n_sequences, n_time_points).
+        tuple: ``(unified_time, unified_seqs)`` where
+
+        - **unified_time** (*ndarray*): Unified time points (seconds or ticks).
+        - **unified_seqs** (*tuple of ndarray*): Interpolated sequences.
     """
-    unified_seq_time = np.array(sequence_interval_union(seq_times))
+    unified_seq_time = np.asarray(sequence_interval_union(seq_times))
+
     if not to_ticks:
         unified_seq_time = np.unique(unified_seq_time)
         unified_seqs_val = [
-            interp1d(st, sv, fill_value="extrapolate")(unified_seq_time) # type: ignore
+            interp1d(st, sv, fill_value="extrapolate")(unified_seq_time)  # type: ignore
             for (st, sv) in zip(seq_times, seq_vals, strict=False)
         ]
         return unified_seq_time, tuple(unified_seqs_val)
 
-    else:
-        unified_seq_ticks = time_to_ticks(unified_seq_time, tempo, ppqn, unique=True)
-
-        time_mapping = ticks_to_time(unified_seq_ticks, tempo, ppqn)
-        unified_seqs_val = [
-            interp1d(st, sv, fill_value="extrapolate")(time_mapping) # type: ignore
-            for (st, sv) in zip(seq_times, seq_vals, strict=False)
-        ]
-        return unified_seq_ticks, tuple(unified_seqs_val)
+    unified_seq_ticks = _time_to_ticks_fn(unified_seq_time)
+    time_mapping = _ticks_to_time_fn(unified_seq_ticks)
+    unified_seqs_val = [
+        interp1d(st, sv, fill_value="extrapolate")(time_mapping)  # type: ignore
+        for (st, sv) in zip(seq_times, seq_vals, strict=False)
+    ]
+    return unified_seq_ticks, tuple(unified_seqs_val)
 
 
 def gaussian_filter1d_with_nan(seq, sigma, **kwargs):
@@ -139,28 +162,26 @@ def gaussian_filter1d_with_nan(seq, sigma, **kwargs):
 
 
 def align_sequence_tick(
-    query_time, queries, reference_time, references, tempo=120, ppqn=480, align_radius=1
+    query_time, queries, reference_time, references, align_radius=1
 ):
-    """Align sequences to a common MIDI tick time base.
+    """Align sequences to a common MIDI tick time base using dynamic time warping.
 
-    This function aligns sequences to a common MIDI tick time base using dynamic time warping.
+    Requires tick converters to be registered via :func:`set_tick_converters`.
 
     Args:
-        query_time (numpy.ndarray): Time values for the query sequences. Shape: (n_time_points).
-        queries (tuple): Query sequences to align. Shape: (n_sequences, n_time_points).
-        reference_time (numpy.ndarray): Time values for the reference sequences. Shape: (n_time_points).
-        references (tuple): Reference sequences to align. Shape: (n_sequences, n_time_points).
-        tempo (float, optional): Tempo in beats per minute (BPM). Defaults to 120.
-        ppqn (int, optional): Pulses per quarter note (MIDI resolution). Defaults to 480.
-        align_radius (int, optional): Radius for dynamic time warping. Defaults to 1.
+        query_time (numpy.ndarray):     Time values for the query sequences.
+        queries (tuple):                Query sequences to align.
+        reference_time (numpy.ndarray): Time values for the reference sequences.
+        references (tuple):             Reference sequences to align.
+        align_radius (int, optional):   DTW radius. Defaults to 1.
 
     Returns:
         tuple: (unified_tick, aligned_queries, unified_references), where:
-            - unified_tick (numpy.ndarray): Unified MIDI tick time base. Shape: (n_time_points).
-            - aligned_queries (tuple): Aligned query sequences. Shape: (n_sequences, n_time_points).
-            - unified_references (tuple): Unified reference sequences. Shape: (n_sequences, n_time_points).
+            - unified_tick (numpy.ndarray):    Unified MIDI tick time base. Shape: (n_time_points).
+            - aligned_queries (tuple):         Aligned query sequences. Shape: (n_sequences, n_time_points).
+            - unified_references (tuple):      Unified reference sequences. Shape: (n_sequences, n_time_points).
     """
-    query_times = [query_time] * len(queries)
+    query_times     = [query_time]     * len(queries)
     reference_times = [reference_time] * len(references)
 
     # Unify time and sequences
@@ -168,18 +189,16 @@ def align_sequence_tick(
         (*query_times, *reference_times),
         (*queries, *references),
         to_ticks=True,
-        tempo=tempo,
-        ppqn=ppqn,
     )
-    unified_queries = list(seqs)[: len(queries)]
-    unified_references = list(seqs)[len(queries) :]
+    unified_queries    = list(seqs)[: len(queries)]
+    unified_references = list(seqs)[len(queries):]
 
     # Align sequences using dynamic time warping
     qs_nonan = np.nan_to_num(zscore(unified_queries, axis=1, nan_policy="omit"))
     rs_nonan = np.nan_to_num(zscore(unified_references, axis=1, nan_policy="omit"))
-    distance, path = fastdtw(
-        list(map(tuple, zip(*qs_nonan, strict=False))),
-        list(map(tuple, zip(*rs_nonan, strict=False))),
+    _, path = fastdtw(
+        list(map(tuple, zip(*qs_nonan,  strict=False))),
+        list(map(tuple, zip(*rs_nonan,  strict=False))),
         radius=align_radius,
     )
 
@@ -188,8 +207,8 @@ def align_sequence_tick(
     aligned_queries = []
     for q in unified_queries:
         aligned_tick = np.interp(path[:, 1], np.arange(len(unified_tick)), unified_tick)
-        aligned_seq = np.interp(path[:, 0], np.arange(len(q)), q)
-        interp_seq = interp1d(aligned_tick, aligned_seq, fill_value="extrapolate") # type: ignore
+        aligned_seq  = np.interp(path[:, 0], np.arange(len(q)), q)
+        interp_seq   = interp1d(aligned_tick, aligned_seq, fill_value="extrapolate")  # type: ignore
         aligned_queries.append(interp_seq(unified_tick))
 
     return unified_tick, tuple(aligned_queries), tuple(unified_references)
@@ -200,7 +219,8 @@ def seq_dynamics_trends(seq, n_order=3):
     This function computes the gradients and cumulative sums of a sequence.
     Args:
         seq (numpy.ndarray): Input sequence. Shape: (n_time_points,).
-        n_order (int, optional): Order of the features to extract. Defaults to 3.
+        n_order (int, optional): Order of features to extract. Defaults to 3.
+
     Returns:
         numpy.ndarray: Extracted features, including gradients and cumulative sums. Shape: (2 * n_order, n_time_points).
     """
@@ -219,6 +239,7 @@ def seq_rcr(seq):
     This function calculates the relative change rate of a sequence, which is useful for analyzing dynamics.
     Args:
         seq (numpy.ndarray): Input sequence. Shape: (n_time_points,).
+
     Returns:
         numpy.ndarray: Relative change rate of the sequence. Shape: (n_time_points,).
     """

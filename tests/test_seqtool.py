@@ -3,8 +3,8 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 from utils.seqtool import (
-    time_to_ticks,
-    ticks_to_time,
+    set_tick_converters,
+    reset_tick_converters,
     sequence_interval_intersection,
     sequence_interval_union,
     unify_sequence_time,
@@ -15,412 +15,389 @@ from utils.seqtool import (
 )
 
 
-class TestTimeConversion:
-    """Test time and MIDI tick conversion functions"""
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-    def test_time_to_ticks_basic(self):
-        """Test basic time to tick conversion"""
-        # 120 BPM, 480 PPQN
-        # 1 second = 120/60 * 480 = 960 ticks
-        result = time_to_ticks(1.0, tempo=120, ppqn=480, unique=False)
-        assert result == 960
+def _make_tick_converters(tempo=120, ppqn=480):
+    """Return a (time_to_ticks, ticks_to_time) pair for a constant tempo map."""
+    ticks_per_second = tempo / 60 * ppqn
 
-    def test_time_to_ticks_array(self):
-        """Test array input"""
-        times = [0, 0.5, 1.0, 2.0]
-        result = time_to_ticks(times, tempo=120, ppqn=480, unique=False)
-        expected = np.array([0, 480, 960, 1920])
-        assert_array_equal(result, expected)
+    def time_to_ticks(times: np.ndarray, unique: bool = True) -> np.ndarray:
+        ticks = np.round(np.asarray(times, dtype=float) * ticks_per_second).astype(int)
+        return np.unique(ticks) if unique else ticks
 
-    def test_time_to_ticks_unique(self):
-        """Test that unique=True deduplicates and sorts ticks"""
-        times = [0.0, 0.0, 1.0, 1.0, 2.0]
-        result = time_to_ticks(times, tempo=120, ppqn=480, unique=True)
-        expected = np.array([0, 960, 1920])
-        assert_array_equal(result, expected)
+    def ticks_to_time(ticks: np.ndarray) -> np.ndarray:
+        return np.asarray(ticks, dtype=float) / ticks_per_second
 
-    def test_ticks_to_time_basic(self):
-        """Test basic tick to time conversion"""
-        result = ticks_to_time(960, tempo=120, ppqn=480)
-        assert result == 1
+    return time_to_ticks, ticks_to_time
 
-    def test_time_tick_roundtrip(self):
-        """Test roundtrip conversion consistency"""
-        original_time = np.array([0.5, 1.0, 1.5, 2.0])
-        ticks = time_to_ticks(original_time, tempo=120, ppqn=480, unique=False)
-        recovered_time = ticks_to_time(ticks, tempo=120, ppqn=480)
-        assert_array_almost_equal(original_time, recovered_time)
 
-    @pytest.mark.parametrize("time,tempo,ppqn,expected", [
-        (1.0, 120, 480, 960),      # Standard case
-        (0.5, 120, 480, 480),      # Half second
-        (2.0, 120, 480, 1920),     # Two seconds
-        (1.0, 60, 480, 480),       # Slower tempo
-        (1.0, 240, 480, 1920),     # Faster tempo
-        (1.0, 120, 960, 1920),     # Higher resolution
+@pytest.fixture()
+def tick_converters_120bpm():
+    """Register 120 BPM / 480 PPQN converters, then reset after the test."""
+    t2t, t2s = _make_tick_converters(tempo=120, ppqn=480)
+    set_tick_converters(t2t, t2s)
+    yield t2t, t2s
+    reset_tick_converters()
+
+
+# ---------------------------------------------------------------------------
+# Tick converter registry
+# ---------------------------------------------------------------------------
+
+class TestTickConverterRegistry:
+    """Test the set_tick_converters / reset_tick_converters machinery."""
+
+    def test_raises_before_registration(self):
+        reset_tick_converters()
+        with pytest.raises(RuntimeError, match="No tick converter registered"):
+            unify_sequence_time(
+                [np.array([0.0, 1.0])],
+                [np.array([0.0, 1.0])],
+                to_ticks=True,
+            )
+
+    def test_set_and_reset(self):
+        t2t, t2s = _make_tick_converters()
+        set_tick_converters(t2t, t2s)
+        # Should not raise
+        unify_sequence_time(
+            [np.array([0.0, 1.0])],
+            [np.array([0.0, 1.0])],
+            to_ticks=True,
+        )
+        reset_tick_converters()
+        with pytest.raises(RuntimeError):
+            unify_sequence_time(
+                [np.array([0.0, 1.0])],
+                [np.array([0.0, 1.0])],
+                to_ticks=True,
+            )
+
+    def test_converter_values(self):
+        """Registered converters should produce correct tick values."""
+        t2t, t2s = _make_tick_converters(tempo=120, ppqn=480)
+        set_tick_converters(t2t, t2s)
+
+        # 120 BPM, 480 PPQN → 960 ticks/second
+        assert t2t(np.array([1.0]), unique=False)[0] == 960
+        assert t2s(np.array([960]))[0] == pytest.approx(1.0)
+
+        reset_tick_converters()
+
+    @pytest.mark.parametrize("tempo,ppqn,time,expected_ticks", [
+        (120, 480, 1.0,  960),
+        ( 60, 480, 1.0,  480),
+        (240, 480, 1.0, 1920),
+        (120, 960, 1.0, 1920),
+        (120, 480, 0.5,  480),
+        (120, 480, 2.0, 1920),
+        (120, 480, 0.0,    0),
     ])
-    def test_time_to_ticks_parametrized(self, time, tempo, ppqn, expected):
-        """Test time_to_ticks with multiple parameter combinations"""
-        result = time_to_ticks(time, tempo, ppqn, unique=False)
-        assert result == expected
+    def test_converter_parametrized(self, tempo, ppqn, time, expected_ticks):
+        t2t, _ = _make_tick_converters(tempo=tempo, ppqn=ppqn)
+        result = t2t(np.array([time]), unique=False)
+        assert result[0] == expected_ticks
 
-    def test_time_to_ticks_zero(self):
-        """Test with zero time"""
-        result = time_to_ticks(0, tempo=120, ppqn=480, unique=False)
-        assert result == 0
+    def test_converter_roundtrip(self):
+        t2t, t2s = _make_tick_converters(tempo=120, ppqn=480)
+        original = np.array([0.5, 1.0, 1.5, 2.0])
+        ticks = t2t(original, unique=False)
+        recovered = t2s(ticks)
+        assert_array_almost_equal(original, recovered)
 
-    def test_time_to_ticks_negative(self):
-        """Test with negative time"""
-        result = time_to_ticks(-1.0, tempo=120, ppqn=480, unique=False)
-        assert result == -960
+    def test_converter_roundtrip_precision(self):
+        """Round-trip error must stay within half a tick duration."""
+        t2t, t2s = _make_tick_converters(tempo=120, ppqn=480)
+        original = np.linspace(0, 10, 1000)
+        ticks = t2t(original, unique=False)
+        recovered = t2s(ticks)
+        tick_duration = 60 / (120 * 480)
+        max_error = tick_duration / 2
+        assert np.all(np.abs(original - recovered) <= max_error + 1e-12)
 
+    def test_converter_unique_deduplicates(self):
+        t2t, _ = _make_tick_converters(tempo=120, ppqn=480)
+        times = np.array([0.0, 0.0, 1.0, 1.0, 2.0])
+        result = t2t(times, unique=True)
+        assert_array_equal(result, np.array([0, 960, 1920]))
+
+    def test_converter_zero(self):
+        t2t, _ = _make_tick_converters(tempo=120, ppqn=480)
+        assert t2t(np.array([0.0]), unique=False)[0] == 0
+
+    def test_converter_negative(self):
+        t2t, _ = _make_tick_converters(tempo=120, ppqn=480)
+        assert t2t(np.array([-1.0]), unique=False)[0] == -960
+
+
+# ---------------------------------------------------------------------------
+# Sequence interval operations
+# ---------------------------------------------------------------------------
 
 class TestSequenceOperations:
-    """Test sequence operation functions"""
+    """Test sequence_interval_intersection and sequence_interval_union."""
 
-    def test_sequence_interval_intersection_basic(self):
-        """Test sequence intersection - basic case"""
+    def test_intersection_basic(self):
         seqs = [[0, 1, 2, 3], [1.0, 1.1, 2.0, 4.0, 5.0]]
         result = sequence_interval_intersection(seqs)
-        # Intersection range is [1.0, 3.0]
-        expected = [1.0, 1.1, 2.0, 3.0]
-        assert result == expected
+        assert result == [1.0, 1.1, 2.0, 3.0]
 
-    def test_sequence_interval_intersection_no_overlap(self):
-        """Test sequences with no overlap"""
+    def test_intersection_no_overlap(self):
         seqs = [[0, 1, 2], [5, 6, 7]]
         result = sequence_interval_intersection(seqs)
         assert result == []
 
-    def test_sequence_interval_intersection_complete_overlap(self):
-        """Test sequences with complete overlap"""
+    def test_intersection_complete_overlap(self):
         seqs = [[1, 2, 3], [1, 2, 3]]
         result = sequence_interval_intersection(seqs)
         assert result == [1, 2, 3]
 
     @pytest.mark.parametrize("seq1,seq2,expected_len", [
-        ([0, 1, 2], [1, 2, 3], 2),           # Overlap: [1, 2]
-        ([0, 1, 2], [5, 6, 7], 0),           # No overlap
-        ([0, 1, 2, 3, 4], [2, 3, 4, 5], 3),  # Overlap: [2, 3, 4]
-        ([1, 2, 3], [1, 2, 3], 3),           # Complete overlap
+        ([0, 1, 2],       [1, 2, 3],       2),
+        ([0, 1, 2],       [5, 6, 7],       0),
+        ([0, 1, 2, 3, 4], [2, 3, 4, 5],    3),
+        ([1, 2, 3],       [1, 2, 3],       3),
     ])
-    def test_sequence_intersection_parametrized(self, seq1, seq2, expected_len):
-        """Test sequence intersection with various inputs"""
+    def test_intersection_parametrized(self, seq1, seq2, expected_len):
         result = sequence_interval_intersection([seq1, seq2])
         assert len(result) == expected_len
 
-    def test_sequence_interval_union_basic(self):
-        """Test sequence union - basic case"""
+    def test_union_basic(self):
         seqs = [[0, 1, 2, 3], [1.0, 1.1, 2.0, 4.0, 5.0]]
         result = sequence_interval_union(seqs)
-        expected = [0.0, 1.0, 1.1, 2.0, 3.0, 4.0, 5.0]
-        assert result == expected
+        assert result == [0.0, 1.0, 1.1, 2.0, 3.0, 4.0, 5.0]
 
-    def test_sequence_interval_union_duplicates(self):
-        """Test union removes duplicates"""
+    def test_union_deduplicates(self):
         seqs = [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
         result = sequence_interval_union(seqs)
-        expected = [1, 2, 3, 4, 5]
-        assert result == expected
+        assert result == [1, 2, 3, 4, 5]
 
-    def test_sequence_interval_union_sorted(self):
-        """Test union returns sorted result"""
+    def test_union_sorted(self):
         seqs = [[5, 3, 1], [4, 2, 0]]
         result = sequence_interval_union(seqs)
-        expected = [0, 1, 2, 3, 4, 5]
-        assert result == expected
+        assert result == [0, 1, 2, 3, 4, 5]
 
+
+# ---------------------------------------------------------------------------
+# unify_sequence_time
+# ---------------------------------------------------------------------------
 
 class TestUnifySequenceTime:
-    """Test sequence time unification function"""
+    """Test unify_sequence_time in both seconds and ticks mode."""
 
-    def test_unify_sequence_time_basic(self):
-        """Test basic sequence unification"""
-        seq_times = [
-            np.array([0, 1, 2]),
-            np.array([0, 1, 2])
-        ]
-        seq_vals = [
-            np.array([10, 20, 30]),
-            np.array([15, 25, 35])
-        ]
+    def test_basic_same_length(self):
+        seq_times = [np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 2.0])]
+        seq_vals  = [np.array([10., 20., 30.]), np.array([15., 25., 35.])]
+        unified_time, (v0, v1) = unify_sequence_time(seq_times, seq_vals)
+        assert len(v0) == len(v1) == len(unified_time)
 
-        unified_time, unified_vals = unify_sequence_time(
-            seq_times, seq_vals, to_ticks=False
-        )
+    def test_different_lengths(self):
+        seq_times = [np.array([0.0, 1.0, 2.0]),
+                     np.array([0.0, 0.5, 1.0, 1.5, 2.0])]
+        seq_vals  = [np.array([10., 20., 30.]),
+                     np.array([15., 17., 22., 27., 32.])]
+        unified_time, (v0, v1) = unify_sequence_time(seq_times, seq_vals)
+        assert len(v0) == len(v1) == len(unified_time)
 
-        # All unified sequences should have same length
-        assert len(unified_vals[0]) == len(unified_vals[1])
-        assert len(unified_vals[0]) == len(unified_time)
+    def test_to_ticks_output_dtype(self, tick_converters_120bpm):
+        seq_times = [np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 2.0])]
+        seq_vals  = [np.array([10., 20., 30.]), np.array([15., 25., 35.])]
+        unified_ticks, (v0, v1) = unify_sequence_time(seq_times, seq_vals, to_ticks=True)
+        assert np.issubdtype(unified_ticks.dtype, np.integer)
+        assert len(v0) == len(v1) == len(unified_ticks)
 
-    def test_unify_sequence_time_different_lengths(self):
-        """Test unifying sequences with different lengths"""
-        seq_times = [
-            np.array([0, 1, 2]),
-            np.array([0, 0.5, 1, 1.5, 2])
-        ]
-        seq_vals = [
-            np.array([10, 20, 30]),
-            np.array([15, 17, 22, 27, 32])
-        ]
+    def test_to_ticks_values(self, tick_converters_120bpm):
+        """Unified ticks should match the registered converter's output."""
+        seq_times = [np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 2.0])]
+        seq_vals  = [np.array([0., 1., 2.]), np.array([0., 1., 2.])]
+        unified_ticks, _ = unify_sequence_time(seq_times, seq_vals, to_ticks=True)
+        # 120 BPM, 480 PPQN → 0 s=0 ticks, 1 s=960, 2 s=1920
+        assert_array_equal(unified_ticks, np.array([0, 960, 1920]))
 
-        unified_time, unified_vals = unify_sequence_time(
-            seq_times, seq_vals, to_ticks=False
-        )
+    def test_to_ticks_requires_registration(self):
+        reset_tick_converters()
+        with pytest.raises(RuntimeError):
+            unify_sequence_time(
+                [np.array([0.0, 1.0])],
+                [np.array([0.0, 1.0])],
+                to_ticks=True,
+            )
 
-        # All unified sequences should have same length
-        assert len(unified_vals[0]) == len(unified_vals[1])
-        assert len(unified_vals[0]) == len(unified_time)
 
-    def test_unify_sequence_time_to_ticks(self):
-        """Test unification with tick conversion"""
-        seq_times = [
-            np.array([0, 1, 2]),
-            np.array([0, 1, 2])
-        ]
-        seq_vals = [
-            np.array([10, 20, 30]),
-            np.array([15, 25, 35])
-        ]
-
-        unified_ticks, unified_vals = unify_sequence_time(
-            seq_times, seq_vals, to_ticks=True, tempo=120, ppqn=480
-        )
-
-        # Result should be in ticks (integers)
-        assert unified_ticks.dtype == np.int64 or unified_ticks.dtype == np.int32
-        assert len(unified_vals[0]) == len(unified_vals[1])
-
+# ---------------------------------------------------------------------------
+# gaussian_filter1d_with_nan
+# ---------------------------------------------------------------------------
 
 class TestGaussianFilter:
-    """Test Gaussian filter with NaN handling"""
+    """Test gaussian_filter1d_with_nan."""
 
-    def test_gaussian_filter_no_nan(self):
-        """Test without NaN values"""
-        seq = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    def test_no_nan(self):
+        seq = np.array([1., 2., 3., 4., 5.])
         result = gaussian_filter1d_with_nan(seq, sigma=1.0)
-
         assert result.shape == seq.shape
         assert not np.any(np.isnan(result))
-        # Result should be smoothed
         assert np.var(result) < np.var(seq)
 
-    def test_gaussian_filter_with_nan(self):
-        """Test with NaN values"""
-        seq = np.array([1.0, 2.0, np.nan, 4.0, 5.0])
+    def test_with_nan(self):
+        seq = np.array([1., 2., np.nan, 4., 5.])
         result = gaussian_filter1d_with_nan(seq, sigma=1.0)
-
         assert result.shape == seq.shape
-        # Non-NaN positions should have reasonable values
-        assert not np.isnan(result[0])
-        assert not np.isnan(result[1])
-        assert not np.isnan(result[3])
-        assert not np.isnan(result[4])
+        for i in [0, 1, 3, 4]:
+            assert not np.isnan(result[i])
 
-    def test_gaussian_filter_zero_sigma(self):
-        """Test with sigma=0 (no filtering)"""
-        seq = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    def test_zero_sigma_identity(self):
+        seq = np.array([1., 2., 3., 4., 5.])
         result = gaussian_filter1d_with_nan(seq, sigma=0)
-
-        # Should return original sequence
         assert_array_equal(result, seq)
 
-    def test_gaussian_filter_all_nan(self):
-        """Test with all NaN values"""
+    def test_all_nan(self):
         seq = np.array([np.nan, np.nan, np.nan])
         result = gaussian_filter1d_with_nan(seq, sigma=1.0)
-
-        # Result should also be all NaN
         assert np.all(np.isnan(result))
 
-    @pytest.mark.parametrize("sigma,should_smooth", [
-        (0, False),    # No smoothing
-        (0.5, True),   # Light smoothing
-        (1.0, True),   # Medium smoothing
-        (2.0, True),   # Heavy smoothing
-    ])
-    def test_gaussian_filter_smoothing_levels(self, sigma, should_smooth):
-        """Test different smoothing levels"""
-        # Create a noisy signal
-        seq = np.array([1.0, 5.0, 2.0, 6.0, 3.0])
-        result = gaussian_filter1d_with_nan(seq, sigma)
-
-        if should_smooth:
-            # Result should be smoother (less variance)
-            assert np.var(result) < np.var(seq)
-        else:
-            # No smoothing, should be identical
-            assert_array_almost_equal(result, seq)
-
-
-class TestSeqDynamicsTrends:
-    """Test dynamics and trends extraction"""
-
-    def test_seq_dynamics_trends_basic(self):
-        """Test basic dynamics trends extraction"""
-        seq = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-        result = seq_dynamics_trends(seq, n_order=3)
-
-        # Should return 2 * n_order features
-        assert result.shape[0] == 6  # 2 * 3
-        assert result.shape[1] == len(seq)
-
-    def test_seq_dynamics_trends_constant(self):
-        """Test with constant sequence"""
-        seq = np.array([5.0, 5.0, 5.0, 5.0, 5.0])
-        result = seq_dynamics_trends(seq, n_order=2)
-
-        # Gradients should be near zero
-        assert np.allclose(result[0], 0, atol=1e-10)
-
-    def test_seq_dynamics_trends_linear(self):
-        """Test with linear sequence"""
-        seq = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-        result = seq_dynamics_trends(seq, n_order=2)
-
-        # First gradient should be constant (all 1s)
-        assert np.allclose(result[0], 1.0, atol=0.1)
-
-    def test_seq_dynamics_trends_different_orders(self):
-        """Test with different orders"""
-        seq = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-
-        for n_order in [1, 2, 3, 4]:
-            result = seq_dynamics_trends(seq, n_order=n_order)
-            assert result.shape[0] == 2 * n_order
-
-
-class TestSeqRCR:
-    """Test relative change rate calculation"""
-
-    def test_seq_rcr_basic(self):
-        """Test basic RCR calculation"""
-        seq = np.array([1.0, 2.0, 4.0, 8.0])
-        result = seq_rcr(seq)
-
-        assert result.shape == seq.shape
-        # First value should be duplicated
-        assert result[0] == result[1]
-
-    def test_seq_rcr_constant(self):
-        """Test with constant sequence"""
-        seq = np.array([5.0, 5.0, 5.0, 5.0])
-        result = seq_rcr(seq)
-
-        # RCR should be near zero for constant sequence
-        assert np.all(result < 0.01)
-
-    def test_seq_rcr_zero_values(self):
-        """Test with zero values (should handle epsilon)"""
-        seq = np.array([0.0, 1.0, 2.0])
-        result = seq_rcr(seq)
-
-        # Should not produce inf or nan
-        assert not np.any(np.isnan(result))
-        assert not np.any(np.isinf(result))
-
-    def test_seq_rcr_negative_values(self):
-        """Test with negative values"""
-        seq = np.array([-1.0, -2.0, -3.0])
-        result = seq_rcr(seq)
-
-        # Should handle negative values
-        assert not np.any(np.isnan(result))
-        assert not np.any(np.isinf(result))
-
-
-class TestAlignSequenceTick:
-    """Test sequence alignment with DTW"""
-
-    @pytest.mark.slow
-    def test_align_sequence_tick_basic(self):
-        """Test basic sequence alignment"""
-        # Create two similar sequences with slight time shift
-        query_time = np.linspace(0, 5, 50)
-        reference_time = np.linspace(0, 5, 50)
-
-        query_seq = np.sin(2 * np.pi * query_time)
-        reference_seq = np.sin(2 * np.pi * reference_time)
-
-        unified_tick, aligned_queries, unified_refs = align_sequence_tick(
-            query_time,
-            (query_seq,),
-            reference_time,
-            (reference_seq,),
-            tempo=120,
-            ppqn=480,
-            align_radius=1
-        )
-
-        # Check output shapes
-        assert len(aligned_queries) == 1
-        assert len(unified_refs) == 1
-        assert len(aligned_queries[0]) == len(unified_tick)
-        assert len(unified_refs[0]) == len(unified_tick)
-
-    @pytest.mark.slow
-    def test_align_sequence_tick_multiple_features(self):
-        """Test alignment with multiple features"""
-        query_time = np.linspace(0, 5, 50)
-        reference_time = np.linspace(0, 5, 50)
-
-        # Multiple features
-        query_seq1 = np.sin(2 * np.pi * query_time)
-        query_seq2 = np.cos(2 * np.pi * query_time)
-        reference_seq1 = np.sin(2 * np.pi * reference_time)
-        reference_seq2 = np.cos(2 * np.pi * reference_time)
-
-        unified_tick, aligned_queries, unified_refs = align_sequence_tick(
-            query_time,
-            (query_seq1, query_seq2),
-            reference_time,
-            (reference_seq1, reference_seq2),
-            tempo=120,
-            ppqn=480,
-            align_radius=1
-        )
-
-        # Check output shapes
-        assert len(aligned_queries) == 2
-        assert len(unified_refs) == 2
-
-
-class TestNumericalStability:
-    """Test numerical stability and precision"""
-
-    def test_time_tick_roundtrip_precision(self):
-        """Test precision in roundtrip conversion.
-
-        time_to_ticks rounds to the nearest integer tick, so the round-trip
-        cannot recover sub-tick precision.  The maximum quantization error is
-        half a tick duration:  60 / (tempo * ppqn * 2).
-        """
-        original_times = np.linspace(0, 10, 1000)
-        ticks = time_to_ticks(original_times, tempo=120, ppqn=480, unique=False)
-        recovered_times = ticks_to_time(ticks, tempo=120, ppqn=480)
-
-        tick_duration = 60 / (120 * 480)          # ~0.001042 s — one full tick
-        max_error = tick_duration / 2              # ~0.000521 s — half tick (worst case)
-
-        abs_diff = np.abs(original_times - recovered_times)
-        assert np.all(abs_diff <= max_error + 1e-12), (
-            f"Max error {abs_diff.max():.6f}s exceeds half-tick bound {max_error:.6f}s"
-        )
-
-    def test_gaussian_filter_preserves_mean(self):
-        """Test that Gaussian filter approximately preserves mean"""
+    def test_preserves_mean(self):
         np.random.seed(42)
         seq = np.random.randn(100) + 10
         result = gaussian_filter1d_with_nan(seq, sigma=2.0)
-
-        # Mean should be approximately preserved
         assert abs(np.mean(result) - np.mean(seq)) < 0.5
 
-    def test_seq_rcr_with_very_small_values(self):
-        """Test RCR with very small values"""
-        seq = np.array([1e-10, 2e-10, 3e-10])
-        result = seq_rcr(seq)
+    @pytest.mark.parametrize("sigma,should_smooth", [
+        (0,   False),
+        (0.5, True),
+        (1.0, True),
+        (2.0, True),
+    ])
+    def test_smoothing_levels(self, sigma, should_smooth):
+        seq = np.array([1., 5., 2., 6., 3.])
+        result = gaussian_filter1d_with_nan(seq, sigma)
+        if should_smooth:
+            assert np.var(result) < np.var(seq)
+        else:
+            assert_array_almost_equal(result, seq)
 
-        # Should not produce inf or nan
+
+# ---------------------------------------------------------------------------
+# seq_dynamics_trends
+# ---------------------------------------------------------------------------
+
+class TestSeqDynamicsTrends:
+    """Test seq_dynamics_trends."""
+
+    def test_output_shape(self):
+        seq = np.array([1., 2., 3., 4., 5.])
+        result = seq_dynamics_trends(seq, n_order=3)
+        assert result.shape == (6, len(seq))  # 2 * n_order rows
+
+    def test_constant_sequence_zero_gradient(self):
+        seq = np.array([5., 5., 5., 5., 5.])
+        result = seq_dynamics_trends(seq, n_order=2)
+        assert np.allclose(result[0], 0, atol=1e-10)
+
+    def test_linear_sequence_unit_gradient(self):
+        seq = np.array([1., 2., 3., 4., 5.])
+        result = seq_dynamics_trends(seq, n_order=2)
+        assert np.allclose(result[0], 1.0, atol=0.1)
+
+    @pytest.mark.parametrize("n_order", [1, 2, 3, 4])
+    def test_various_orders(self, n_order):
+        seq = np.array([1., 2., 3., 4., 5.])
+        result = seq_dynamics_trends(seq, n_order=n_order)
+        assert result.shape[0] == 2 * n_order
+
+
+# ---------------------------------------------------------------------------
+# seq_rcr
+# ---------------------------------------------------------------------------
+
+class TestSeqRCR:
+    """Test seq_rcr (relative change rate)."""
+
+    def test_output_shape(self):
+        seq = np.array([1., 2., 4., 8.])
+        result = seq_rcr(seq)
+        assert result.shape == seq.shape
+
+    def test_first_value_duplicated(self):
+        seq = np.array([1., 2., 4., 8.])
+        result = seq_rcr(seq)
+        assert result[0] == result[1]
+
+    def test_constant_near_zero(self):
+        seq = np.array([5., 5., 5., 5.])
+        result = seq_rcr(seq)
+        assert np.all(result < 0.01)
+
+    def test_zero_values_no_nan_inf(self):
+        seq = np.array([0., 1., 2.])
+        result = seq_rcr(seq)
         assert not np.any(np.isnan(result))
         assert not np.any(np.isinf(result))
+
+    def test_negative_values_no_nan_inf(self):
+        seq = np.array([-1., -2., -3.])
+        result = seq_rcr(seq)
+        assert not np.any(np.isnan(result))
+        assert not np.any(np.isinf(result))
+
+    def test_very_small_values_no_nan_inf(self):
+        seq = np.array([1e-10, 2e-10, 3e-10])
+        result = seq_rcr(seq)
+        assert not np.any(np.isnan(result))
+        assert not np.any(np.isinf(result))
+
+
+# ---------------------------------------------------------------------------
+# align_sequence_tick
+# ---------------------------------------------------------------------------
+
+class TestAlignSequenceTick:
+    """Test align_sequence_tick (DTW-based alignment)."""
+
+    @pytest.mark.slow
+    def test_basic_alignment(self, tick_converters_120bpm):
+        query_time = np.linspace(0, 5, 50)
+        ref_time   = np.linspace(0, 5, 50)
+        query_seq  = np.sin(2 * np.pi * query_time)
+        ref_seq    = np.sin(2 * np.pi * ref_time)
+
+        unified_tick, aligned_queries, unified_refs = align_sequence_tick(
+            query_time, (query_seq,),
+            ref_time,   (ref_seq,),
+            align_radius=1,
+        )
+
+        assert len(aligned_queries) == 1
+        assert len(unified_refs)    == 1
+        assert len(aligned_queries[0]) == len(unified_tick)
+        assert len(unified_refs[0])    == len(unified_tick)
+
+    @pytest.mark.slow
+    def test_multiple_features(self, tick_converters_120bpm):
+        query_time = np.linspace(0, 5, 50)
+        ref_time   = np.linspace(0, 5, 50)
+        qs = (np.sin(2 * np.pi * query_time), np.cos(2 * np.pi * query_time))
+        rs = (np.sin(2 * np.pi * ref_time),   np.cos(2 * np.pi * ref_time))
+
+        unified_tick, aligned_queries, unified_refs = align_sequence_tick(
+            query_time, qs, ref_time, rs, align_radius=1,
+        )
+
+        assert len(aligned_queries) == 2
+        assert len(unified_refs)    == 2
+        for aq in aligned_queries:
+            assert len(aq) == len(unified_tick)
+        for ur in unified_refs:
+            assert len(ur) == len(unified_tick)
+
+    @pytest.mark.slow
+    def test_requires_registration(self):
+        reset_tick_converters()
+        query_time = np.linspace(0, 2, 20)
+        ref_time   = np.linspace(0, 2, 20)
+        with pytest.raises(RuntimeError, match="No tick converter registered"):
+            align_sequence_tick(
+                query_time, (np.ones(20),),
+                ref_time,   (np.ones(20),),
+            )

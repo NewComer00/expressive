@@ -330,9 +330,8 @@ class TestProcessExpressionsIntegration:
 
         assert Path(ustx_output).exists()
         from utils.ustx import load_ustx
-        ustx_dict = load_ustx(ustx_output)
-        assert "curves" in ustx_dict["voice_parts"][0]
-        assert any(c["abbr"] == "dyn" for c in ustx_dict["voice_parts"][0]["curves"])
+        project = load_ustx(ustx_output)
+        assert any(c.abbr == "dyn" for c in project.voice_parts[0].curves)
 
     @patch('expressive.copy')
     @patch('expressive.getExpressionLoader')

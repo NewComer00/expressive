@@ -67,9 +67,9 @@ def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
 
     Returns:
         tuple: (time, frequency, confidence), where:
-            - time (list of float): Time points in seconds. Shape: (n_time_points).
-            - frequency (list of float): Detected pitch frequencies in Hz. Shape: (n_time_points).
-            - confidence (list of float): Confidence values for the detected pitches. Shape: (n_time_points).
+            - time (np.ndarray of float): Time points in seconds. Shape: (n_time_points).
+            - frequency (np.ndarray of float): Detected pitch frequencies in Hz. Shape: (n_time_points).
+            - confidence (np.ndarray of float): Confidence values for the detected pitches. Shape: (n_time_points).
     """
     _SUPPORTED_BACKENDS = ("crepe", "swift-f0")
     if backend not in _SUPPORTED_BACKENDS:
@@ -121,7 +121,7 @@ def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
                     writer.writerow([t, f, c])
             print(_("F0 data saved to cache file: '{}'").format(cache_path))
 
-    return time, frequency, confidence
+    return np.asarray(time), np.asarray(frequency), np.asarray(confidence)
 
 
 def extract_wav_rms(wav_path, mask_silence=True):
