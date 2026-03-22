@@ -7,6 +7,68 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.6.0 (2026-03-22)
+
+### Bug Fixes
+
+- **wavtool**: Extract_wav_frequency now returns np.ndarray instead of
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+### Documentation
+
+- **readme**: Improve demo presentation and add collapsible video
+  ([`b6a64e0`](https://github.com/NewComer00/expressive/commit/b6a64e019222559cbcf1a8b4b0acd6a43d3303d3))
+
+### Features
+
+- **base**: Register tick converters from ustx_time_axis in
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **dyn,pitd,tenc**: Drop tempo/ppqn kwargs from align_sequence_tick
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **examples**: Add テトリス and Прекрасное Далеко examples with
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **seqtool**: Replace time_to_ticks/ticks_to_time with a
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **ustx**: Add TimeAxis — piecewise tick ↔ ms converter replicating
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **ustx**: Add UProject, UVoicePart, UCurve, UTrack, UTempo,
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **ustx**: Add UstxEditor — RAII context manager with exclusive
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **ustx,seqtool,base**: Replace flat-dict USTX API with typed datamodel and multi-tempo support
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+### Testing
+
+- **base**: Replace loader.tempo with ustx_time_axis assertions; remove
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **expressive**: Fix integration test to use UProject attribute access
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **seqtool**: Replace TestTimeConversion with TestTickConverterRegistry
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **ustx**: Replace dict-based assertions with UProject attribute
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+- **wavtool**: Fix list → ndarray type assertions for
+  ([`83d33f0`](https://github.com/NewComer00/expressive/commit/83d33f0c766c9e55ebd66e7e6065c1f1ad723ba3))
+
+### Breaking Changes
+
+- **ustx,seqtool,base**: Load_ustx() now returns UProject instead of dict; save_ustx() now accepts
+  UProject instead of dict; edit_ustx_expression_curve() is removed — use UstxEditor or
+  UVoicePart.set_curve() instead.
+
+
 ## v0.5.0 (2026-03-13)
 
 ### Bug Fixes
