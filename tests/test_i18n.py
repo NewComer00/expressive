@@ -158,44 +158,34 @@ def locale_dir(tmp_path):
 
 class TestNormalizeLocale:
     def test_bcp47_hyphen(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("en-US") == "en_US"
 
     def test_posix_underscore(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("zh_CN") == "zh_CN"
 
     def test_lowercase_region(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("zh-cn") == "zh_CN"
 
     def test_bare_language(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("fr") == "fr"
 
     def test_uppercase_input(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("FR_FR") == "fr_FR"
 
     def test_three_part_truncates_to_two(self):
         """Script subtags (zh-Hans-CN) are truncated to the first two parts."""
-        from utils.i18n import normalize_locale
         assert normalize_locale("zh-Hans-CN") == "zh_HANS"
 
     def test_empty_returns_empty(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("") == ""
 
     def test_underscore_only_returns_empty(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("_") == ""
 
     def test_hyphen_only_returns_empty(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("-") == ""
 
     def test_whitespace_stripped(self):
-        from utils.i18n import normalize_locale
         assert normalize_locale("  en_US  ") == "en_US"
 
 
@@ -363,7 +353,7 @@ class TestDetectPreferredLangs:
         mock_windll = MagicMock()
         mock_windll.kernel32.GetUserDefaultUILanguage.return_value = 1033  # en_US
         with patch("sys.platform", "win32"), \
-             patch("ctypes.windll", mock_windll), \
+             patch("ctypes.windll", mock_windll, create=True), \
              patch.dict("os.environ", {"LANGUAGE": "ja_JP"}, clear=False):
             result = detect_preferred_langs()
             assert result[0] == "ja_JP"
@@ -421,7 +411,7 @@ class TestDetectPreferredLangs:
         mock_windll = MagicMock()
         mock_windll.kernel32.GetUserDefaultUILanguage.return_value = 1033
         with patch("sys.platform", "win32"), \
-             patch("ctypes.windll", mock_windll), \
+             patch("ctypes.windll", mock_windll, create=True), \
              patch.dict("os.environ", {"LANG": "fr_FR.UTF-8"}, clear=True):
             result = detect_preferred_langs()
             assert result[0] == "fr_FR"
@@ -447,7 +437,7 @@ class TestDetectPreferredLangs:
         mock_windll = MagicMock()
         mock_windll.kernel32.GetUserDefaultUILanguage.return_value = 1033  # en_US
         with patch("sys.platform", "win32"), \
-             patch("ctypes.windll", mock_windll), \
+             patch("ctypes.windll", mock_windll, create=True), \
              patch.dict("locale.windows_locale", {1033: "en_US"}), \
              patch.dict("os.environ", {}, clear=True):
             result = detect_preferred_langs()
@@ -457,7 +447,7 @@ class TestDetectPreferredLangs:
         mock_windll = MagicMock()
         mock_windll.kernel32.GetUserDefaultUILanguage.return_value = 9999
         with patch("sys.platform", "win32"), \
-             patch("ctypes.windll", mock_windll), \
+             patch("ctypes.windll", mock_windll, create=True), \
              patch.dict("locale.windows_locale", {}, clear=True), \
              patch.dict("os.environ", {}, clear=True):
             result = detect_preferred_langs()
