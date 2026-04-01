@@ -22,7 +22,7 @@ def _make_context(**overrides) -> WorkerContext:
         logger_exp_name="test_exp",
         formatter_app=logging.Formatter("%(message)s"),
         formatter_exp=logging.Formatter("%(message)s"),
-        lang="en",
+        lang=["en_US", "en"],
         locale_dir="/fake/locales",
         domain="app",
     )
@@ -89,9 +89,9 @@ class TestWorkerContextDataclass:
         ctx = WorkerContext()
         assert isinstance(ctx.formatter_exp, logging.Formatter)
 
-    def test_lang_default_is_en(self):
+    def test_lang_default_is_en_US_and_en(self):
         ctx = WorkerContext()
-        assert ctx.lang == "en"
+        assert ctx.lang == ["en_US", "en"]
 
     def test_domain_default_is_app(self):
         ctx = WorkerContext()

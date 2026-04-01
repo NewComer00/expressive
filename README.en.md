@@ -17,9 +17,13 @@ The current version supports importing the following expression parameters:
 * `Pitch Deviation (curve)`
 * `Tension (curve)`
 
-<p align="middle">
-  <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> 
-</p>
+<div align="center">
+
+| **Working with OpenUtau** | **Data Viewer** |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/ef97aa6a-5938-42f1-bd4a-78f268109db8" width="100%" /> |
+
+</div>
 
 > - *OpenUtau version from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
 > - *Singer model from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
@@ -29,6 +33,7 @@ The current version supports importing the following expression parameters:
 >   <summary><b>👉 Click to expand the full voiced demo video 👈</b></summary>
 >
 >   <p align="center"><video src="https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b"></video></p>
+>   <p align="center"><video src="https://github.com/user-attachments/assets/4076eb8b-07eb-48e6-bdec-4abeac6258c7"></video></p>
 >
 > </details>
 
@@ -120,9 +125,23 @@ pip install -e ".[gpu,gui]"
 >   - `dev`: Development dependencies (e.g., pytest testing framework)
 >   - `all`: Install all of the above
 
-After installation, you can use the `expressive` and `expressive-gui` entry points to run the command-line interface and graphical user interface.
+After installation, you can use the `expressive` and `expressive-gui` entry points to run the **command-line interface** and **graphical user interface**.
 
 ## 📖 Usage
+
+> [!TIP]
+> All commands described in this section (as well as the executable files installed via the installer) will automatically adapt to your system language. If you need a different language interface, you can set the [`LANGUAGE` or `LANG` environment variable](https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html) to override the default.
+>
+> For example, in Windows PowerShell:
+> ```powershell
+> $env:LANGUAGE = "en_US"
+> expressive-gui
+> ```
+>
+> In Linux shell:
+> ```bash
+> LANGUAGE="en_US" expressive-gui
+> ```
 
 ### Command Line Interface (CLI)
 
@@ -163,17 +182,31 @@ The output project file will be saved to `examples/明天会更好/output.ustx`.
 
 ### Graphical User Interface (GUI)
 
-Launch in English:
+Launch GUI:
 ```bash
-expressive-gui --lang en
+expressive-gui
 ```
 
 > [!IMPORTANT]
 > Due to framework limitations, the GUI launched via the `expressive-gui` command currently **does not support drag-and-drop**. To use drag-and-drop, please [install directly](#-direct-install), or run `expressive_gui.py` as a script:
 >
 > ```bash
-> python expressive_gui.py --lang en
+> python expressive_gui.py
 > ```
+
+### Viewer
+
+Launch the expression curve viewer:
+```bash
+expressive-viewer
+```
+
+You can launch this tool at any time. While it is running, expression curves extracted by `expressive` and `expressive-gui` will be sent to it in real time for visualization.
+
+You can inspect the details of the expression curves in `expressive-viewer`, analyze the extraction results, and adjust parameters as needed to regenerate the curves.
+
+> [!TIP]
+> If you want to view multiple expression curves simultaneously, you can launch multiple instances of `expressive-viewer`, and each instance will independently display the received data.
 
 ## 📂 Examples
 
@@ -263,7 +296,7 @@ The two confidence thresholds in the PITD extractor are set **too high**, causin
 Try lowering both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
 
 #### Future Plan
-Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)). Add visualization of intermediate results.
+Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)).
 
 ### PITD expression curve has sudden jumps or spikes at certain positions
 
@@ -277,4 +310,4 @@ The two confidence thresholds in the PITD extractor are set **too low**, causing
 Try increasing both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
 
 #### Future Plan
-Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)). Add visualization of intermediate results.
+Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)).

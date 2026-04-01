@@ -825,7 +825,7 @@ class TestExtractWavFrequency(unittest.TestCase):
 
         with patch.dict("sys.modules", {"crepe": fake_crepe_mod}), \
              patch("utils.wavtool.add_cuda_to_path", create=True), \
-             patch("utils.wavtool.wavfile") as mock_wavfile:
+             patch("scipy.io.wavfile") as mock_wavfile:
             mock_wavfile.read.return_value = (22050, np.zeros(44100, dtype=np.float32))
             time, freq, conf = extract_wav_frequency(self.wav, backend="crepe", use_cache=False)
 
@@ -837,7 +837,7 @@ class TestExtractWavFrequency(unittest.TestCase):
     def test_cache_file_written_when_use_cache_true(self):
         tmp_cache_dir = tempfile.mkdtemp()
         with self._patch_swift(), \
-             patch("utils.wavtool.CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
              patch("utils.wavtool.calculate_file_hash", return_value="testhash"):
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=True)
 
@@ -858,7 +858,7 @@ class TestExtractWavFrequency(unittest.TestCase):
             writer.writerow([0.5, 440.0, 0.95])
 
         with self._patch_swift() as mock_swift_cls, \
-             patch("utils.wavtool.CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
              patch("utils.wavtool.calculate_file_hash", return_value=fake_hash):
             time, freq, conf = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=True)
             # The SwiftF0 class must never have been instantiated
@@ -876,7 +876,7 @@ class TestExtractWavFrequency(unittest.TestCase):
     def test_no_cache_written_when_use_cache_false(self):
         tmp_cache_dir = tempfile.mkdtemp()
         with self._patch_swift(), \
-             patch("utils.wavtool.CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
              patch("utils.wavtool.calculate_file_hash", return_value="abc123"):
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
 

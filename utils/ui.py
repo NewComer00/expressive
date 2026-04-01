@@ -2,7 +2,7 @@ import os
 import json
 import uuid
 import ctypes
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Literal, Optional
 
 import webview
 from nicegui import ui, app
@@ -746,6 +746,93 @@ class WaveSurferRangeSelector(ui.element):
         from nicegui.binding import bind
         bind(self, 'end', target_object, target_name)
         return self
+
+
+# ---------------------------------------------------------------------------
+# Closable tabs
+# ---------------------------------------------------------------------------
+
+class ClosableTabs(ui.tabs):
+    def __init__(
+        self,
+        *args,
+        on_close: Callable[[ui.tab], bool] | None = None,
+        close_button_position: Literal['left', 'right'] = 'right',
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self._panel_map: dict[str, tuple[ui.tab, ui.tab_panel]] = {}
+        self._on_close = on_close
+        self._close_button_position = close_button_position
+
+    def add_closable_tab(
+        self,
+        name: str,
+        label: str,
+        panel: ui.tab_panel,
+        tooltip_text: str | None = None,
+    ) -> ui.tab:
+        with self:
+            tab = ui.tab(name=name, label="")  # empty label: content rendered manually
+            with tab:
+                with ui.row().classes("w-full items-center no-wrap group"):
+                    if self._close_button_position == 'left':
+                        self._close_button(tab)
+                    with ui.label(label).classes("flex-grow truncate"):
+                        if tooltip_text:
+                            ui.tooltip(tooltip_text)
+                    if self._close_button_position == 'right':
+                        self._close_button(tab)
+
+        self._panel_map[name] = (tab, panel)
+        return tab
+
+    def _close_button(self, tab: ui.tab) -> None:
+        ui.button(icon="close") \
+            .props('flat round dense size=xs') \
+            .classes(
+                "opacity-0 group-hover:opacity-100 "
+                "transition-opacity duration-150"
+            ) \
+            .on('click.stop', lambda: self._close(tab))  # stop event propagation to avoid tab focus change
+
+    def _close(self, tab: ui.tab) -> None:
+        if self._on_close and not self._on_close(tab):
+            return
+
+        name_active = self.value
+        name_close = tab._props['name']
+        if name_close not in self._panel_map:
+            return
+
+        keys = list(self._panel_map.keys())
+        idx = keys.index(name_close)
+        remaining = [k for k in keys if k != name_close]
+
+        # Only switch focus if the closed tab is currently active,
+        # or if it's the last tab (no choice but to move focus).
+        is_active = name_active == name_close
+        if is_active or not remaining:
+            # Prefer the left neighbour; fall back to the right if closing the first tab.
+            if idx > 0:
+                fallback_name = keys[idx - 1]
+            elif remaining:
+                fallback_name = remaining[0]
+            else:
+                # No tabs left after this close.
+                fallback_name = None
+        else:
+            # Closing a background tab — reaffirm focus on the current tab in case
+            # the framework blurs it internally during remove().
+            fallback_name = name_active if name_active in self._panel_map else None
+
+        _, panel = self._panel_map.pop(name_close)
+        panel.delete()
+
+        self.remove(tab)
+
+        if fallback_name:
+            self.set_value(fallback_name)
 
 
 # ---------------------------------------------------------------------------

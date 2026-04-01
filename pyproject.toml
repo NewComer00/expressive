@@ -27,6 +27,8 @@ dependencies = [
     "rich-argparse",
     "rich",
     "filelock",
+    "plotly",
+    "watchfiles",
 ]
 
 [project.optional-dependencies]
@@ -48,7 +50,7 @@ gui = [
     "markdown",
 ]
 dev = [
-    "pyinstaller==6.11.1",
+    "pyinstaller>=6.19",
     "backports.tarfile; python_version<'3.12'",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -65,7 +67,8 @@ all = [
 
 [project.scripts]
 expressive = "expressive:main"
-expressive-gui = "expressive_gui:main"  # Intentional; for commandline interaction
+expressive-gui = "expressive_gui:main"        # Intentional; for commandline interaction
+expressive-viewer = "expressive_viewer:main"  # Intentional; for commandline interaction
 
 [tool.hatch.build.hooks.custom]
 path = "build/hatch_build.py"
@@ -80,6 +83,7 @@ packages = ["expressions", "utils"]
 include = [
     "expressive.py",
     "expressive_gui.py",
+    "expressive_viewer.py",
 ]
 
 [tool.hatch.metadata]
@@ -94,7 +98,7 @@ pattern = ["tests/**.py", "dist/**.py", "build/**.py"]
 method = "python"
 pattern = "**.py"
 encoding = "utf-8"
-keywords = ["_", "_l", "_lf"]
+keywords = ["_", "_l", "_lf", "_lt:1"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -154,6 +158,9 @@ ignore = [
     "E402",  # allow dynamic imports
     "E731",  # allow lambda assignment
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"build/expressive.spec" = ["F821"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 30

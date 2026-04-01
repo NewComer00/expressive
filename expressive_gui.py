@@ -27,31 +27,29 @@ from utils.monkeypatch import (
     patch_nicegui_json,
 )
 from __version__ import VERSION
-from utils.i18n import _, init_gettext
 from expressive import process_expressions
+from utils.i18n import _, init_gettext, detect_preferred_langs
 from utils.wavtool import get_wav_end_ts, validate_timestamp
 from utils.worker import WorkerContext, setup_worker_context
 from expressions.base import getExpressionLoader, get_registered_expressions
 
 
-FORMATTER_APP = logging.Formatter(
-    "%(asctime)s %(levelname)s [%(name)s]: %(message)s", datefmt="%H:%M:%S"
-)
-FORMATTER_EXP = logging.Formatter(
-    "%(asctime)s %(levelname)s [%(expression)s]: %(message)s", datefmt="%H:%M:%S"
-)
+FORMATTER_APP   = logging.Formatter("%(asctime)s %(levelname)s [%(name)s]: %(message)s", datefmt="%H:%M:%S")
+FORMATTER_EXP   = logging.Formatter("%(asctime)s %(levelname)s [%(expression)s]: %(message)s", datefmt="%H:%M:%S")
 LOGGER_APP_NAME = splitext(basename(__file__))[0]
 LOGGER_EXP_NAME = getExpressionLoader(None).__name__
-LOCALE_DIR = os.path.join(os.path.dirname(__file__), 'locales')
-LOCALE_DOMAIN = "app"
+LANG            = detect_preferred_langs()
+LOCALE_DIR      = os.path.join(os.path.dirname(__file__), 'locales')
+LOCALE_DOMAIN   = "app"
 
 worker_context = WorkerContext(
-    formatter_app=FORMATTER_APP,
-    formatter_exp=FORMATTER_EXP,
-    logger_app_name=LOGGER_APP_NAME,
-    logger_exp_name=LOGGER_EXP_NAME,
-    locale_dir=LOCALE_DIR,
-    domain=LOCALE_DOMAIN,
+    formatter_app   = FORMATTER_APP,
+    formatter_exp   = FORMATTER_EXP,
+    logger_app_name = LOGGER_APP_NAME,
+    logger_exp_name = LOGGER_EXP_NAME,
+    lang            = LANG,
+    locale_dir      = LOCALE_DIR,
+    domain          = LOCALE_DOMAIN,
 )
 
 general_args = getExpressionLoader(None).args
@@ -722,17 +720,16 @@ def create_gui():  # noqa: C901
 
 
 def main():
+    init_gettext(lang=LANG, locale_dir=LOCALE_DIR, domain=LOCALE_DOMAIN)
+
     parser = argparse.ArgumentParser(
-        description="Migrate expressions from real singers to DiffSingers (GUI)",
+        description=_("Migrate expressions from real singers to DiffSingers (GUI)"),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument('--lang', default='en', help='Set language for localization (e.g. zh_CN, en)')
     parser.add_argument("--version", action="version", version=f"%(prog)s v{VERSION}")
 
     # Parse only the known arguments for frozen script with multiprocessing
     args, unknown = parser.parse_known_args()
-    init_gettext(args.lang, LOCALE_DIR, LOCALE_DOMAIN)
-    worker_context.lang = args.lang
 
     # Patch NiceGUI's JSON serializer to handle LazyString
     patch_nicegui_json()
@@ -745,6 +742,7 @@ def main():
         "reload": False,
         "window_size": (600, 640),
         "reconnect_timeout": 60,
+        "language": LANG[0].replace('_', '-') if LANG else 'en-US',
     }
     try:
         # Deal with different running mode of this nicegui app

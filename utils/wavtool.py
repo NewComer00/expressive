@@ -8,13 +8,9 @@ from pathlib import Path
 
 import librosa
 import numpy as np
-import soundfile as sf
-from scipy.io import wavfile
-from sklearn.decomposition import PCA
-from skimage.filters import threshold_otsu
 
 from utils.i18n import _
-from utils.cache import CACHE_DIR, calculate_file_hash
+from utils.fs import APP_CACHE_DIR, calculate_file_hash
 
 
 def extract_wav_mfcc(wav_path, n_feat=6, n_mfcc=13):
@@ -45,6 +41,7 @@ def extract_wav_mfcc(wav_path, n_feat=6, n_mfcc=13):
     mfcc = np.vstack([_mfcc, delta_mfcc, delta2_mfcc])
 
     # PCA to reduce dimensionality
+    from sklearn.decomposition import PCA
     pca = PCA(n_components=n_feat)
     mfcc = pca.fit_transform(mfcc.T).T
     return mfcc_time, mfcc
@@ -78,7 +75,7 @@ def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
     time = []
     frequency = []
     confidence = []
-    cache_dir = Path(CACHE_DIR) / "pitd"
+    cache_dir = Path(APP_CACHE_DIR) / "pitd"
     # Try reading data from cache
     if use_cache:
         os.makedirs(cache_dir, exist_ok=True)
@@ -101,6 +98,7 @@ def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
         if backend == "crepe":
             import crepe
             from utils.gpu import add_cuda_to_path
+            from scipy.io import wavfile
             add_cuda_to_path(skip_missing=True)
             sr, audio = wavfile.read(file_path)
             time, frequency, confidence, _unused = crepe.predict(audio, sr, viterbi=True)
@@ -143,6 +141,7 @@ def extract_wav_rms(wav_path, mask_silence=True):
     rms = librosa.feature.rms(y=y)[0]
     rms_time = librosa.times_like(rms, sr=sr)
     if mask_silence:
+        from skimage.filters import threshold_otsu
         threshold   = threshold_otsu(rms)
         is_silent   = rms < threshold
         start_frame = np.argmax(~is_silent)
@@ -278,6 +277,8 @@ class ClampedWav:
                 the end of the file.
             logger: Optional logger for clamp warnings.
         """
+        import soundfile as sf
+
         total_duration = librosa.get_duration(path=wav_path)
 
         start_sec = timestamp2sec(ts_start) if ts_start is not None else 0.0

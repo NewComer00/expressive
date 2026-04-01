@@ -4,11 +4,18 @@ from types import SimpleNamespace
 from dataclasses import dataclass
 
 import numpy as np
+from filelock import FileLock
 
+from utils.plot import Plot
 from utils.i18n import _, _l
 from utils.ustx import UstxEditor
+from utils.fs import APP_RUNTIME_PATH
 from utils.seqtool import set_tick_converters
 from utils.wavtool import ClampedWav, sec2timestamp
+from utils.relay import Collector, history_cleanup, set_relay_dir, ExpressionLoaderCollectorNaming
+
+
+set_relay_dir(APP_RUNTIME_PATH / "relay")
 
 
 @dataclass
@@ -45,6 +52,8 @@ class ExpressionLoader():
         expression_info (str):  Human-readable description of the expression.
         args (SimpleNamespace): Declared CLI / GUI arguments for this loader.
                                 Each value is an :class:`Args` instance.
+        plots (SimpleNamespace): Declared plot names for this loader.
+                                Each value is a :class:`Plot` instance.
 
     USTX attributes:
         ustx_path (str):              Path to the ``.ustx`` project file.
@@ -69,6 +78,10 @@ class ExpressionLoader():
     _id_counter: int = 0
     expression_name: str = ""
     expression_info: str = ""
+    _init_lock: FileLock = FileLock(
+        APP_RUNTIME_PATH / "expressionloader_init.lock",
+        thread_local=False, is_singleton=True, timeout=-1,
+    )
     args = SimpleNamespace(
         ref_path     = Args(name="ref_path"    , type=str, default=""  , help=_l("Path to the **reference** audio file")),  # noqa: E501
         utau_path    = Args(name="utau_path"   , type=str, default=""  , help=_l("Path to the **UTAU** audio file")),  # noqa: E501
@@ -79,6 +92,9 @@ class ExpressionLoader():
         utau_start   = Args(name="utau_start"  , type=str, default=None, help=_l("**Start time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit to specify the beginning")),  # noqa: E501
         utau_end     = Args(name="utau_end"    , type=str, default=None, help=_l("**End time** of the **UTAU** audio (format `M:S`, e.g. `0:10.01`). Omit to specify the ending")),  # noqa: E501
     )
+    plots = SimpleNamespace(
+        expression = Plot(tag="expression", title=expression_info, x_label="Tick", y_label=expression_name, legends=[expression_name]),  # noqa: E501
+    )
 
     @classmethod
     def get_args_dict(cls) -> dict[str, Args]:
@@ -87,14 +103,21 @@ class ExpressionLoader():
     def __init__(self, ref_path: str, utau_path: str, ustx_path: str,
                  ref_start: str | None = None, ref_end: str | None = None,
                  utau_start: str | None = None, utau_end: str | None = None):
-        # Identify this loader instance
-        ExpressionLoader._id_counter += 1
-        self.id = ExpressionLoader._id_counter
+
+        # Identify this loader instance and clean up plots history
+        with ExpressionLoader._init_lock:
+            ExpressionLoader._id_counter += 1
+            self.id = ExpressionLoader._id_counter
+            if self.id == 1:
+                history_cleanup()
 
         # Set up logging
         self.logger = logging.getLogger(f"{ExpressionLoader.__name__}.{self.expression_name}.{self.id}")
         self.logger = logging.LoggerAdapter(self.logger, {"expression": self.expression_name})
         self.logger.setLevel(logging.DEBUG)
+
+        # Init relay collector
+        self.collector = Collector(ExpressionLoaderCollectorNaming.make(self.expression_name, self.id))
 
         # Init USTX editor (with exclusive file lock)
         self.ustx_path = ustx_path
@@ -129,9 +152,11 @@ class ExpressionLoader():
         self.logger.info(_("Initialization complete."))
 
     def __del__(self):
+        self.collector.flush()
         self.ustx_editor.close()
 
     def get_expression(self, *args, **kwargs):
+        self.collect_plot(self.plots.expression, (self.expression_tick, self.expression_val))
         return self.expression_tick, self.expression_val
 
     def load_to_ustx(self, track_number: int):
@@ -151,6 +176,9 @@ class ExpressionLoader():
             self.logger.info(_("Expression written to USTX file: '{}'").format(self.ustx_path))
         else:
             self.logger.warning(_("Expression result is empty. Skipping USTX update."))
+
+    def collect_plot(self, plot: "Plot", *series: tuple) -> None:
+        self.collector.register(**plot.fig(*series))
 
 
 # Dictionary to hold registered expression loader classes

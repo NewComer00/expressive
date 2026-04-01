@@ -1,17 +1,24 @@
+import os
 import logging
 import argparse
-import tempfile
 from shutil import copy
+from pathlib import Path
 from datetime import datetime
 from contextlib import contextmanager
 from os.path import splitext, basename
 
+from utils.i18n import init_gettext, _
+from utils.fs import APP_LOG_DIR
 from __version__ import VERSION
 from utils.cli import (
     add_expression_args_group,
     ArgumentDefaultsWrappedTextRichHelpFormatter,
 )
 from expressions.base import getExpressionLoader, get_registered_expressions
+
+
+LOCALE_DIR    = os.path.join(os.path.dirname(__file__), "locales")
+LOCALE_DOMAIN = "app"
 
 
 def process_expressions(
@@ -76,7 +83,7 @@ expressions = [
         exp_type = exp["expression"]
 
         if exp_type not in get_registered_expressions():
-            raise ValueError(f"Expression '{exp_type}' is not supported.")
+            raise ValueError(_("Expression '{exp_type}' is not supported.").format(exp_type=exp_type))
 
         loader = getExpressionLoader(exp_type)(
             ref_wav, utau_wav, ustx_output,
@@ -93,13 +100,9 @@ expressions = [
 
 @contextmanager
 def setup_loggers():
-    log_file = tempfile.NamedTemporaryFile(
-        delete=False,
-        prefix=f"expressive_cli_{datetime.now().strftime('%Y%m%d_%H%M%S')}_",
-        suffix=".log",
-    )
-    log_path = log_file.name
-    log_file.close()  # Close immediately; we'll reopen via FileHandler
+    log_dir = Path(APP_LOG_DIR) / "cli"
+    log_dir.mkdir(exist_ok=True, parents=True)
+    log_path = log_dir / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -126,7 +129,7 @@ def setup_loggers():
     try:
         yield logger_app, logger_exp, log_path
     finally:
-        logger_app.info(f"Logs saved to {log_path}")
+        logger_app.info(_("Logs saved to '{log_path}'").format(log_path=log_path))
         for logger in [logger_app, logger_exp]:
             for handler in logger.handlers[:]:
                 handler.close()
@@ -134,8 +137,10 @@ def setup_loggers():
 
 
 def main():
+    init_gettext(lang=None, locale_dir=LOCALE_DIR, domain=LOCALE_DOMAIN)
+
     parser = argparse.ArgumentParser(
-        description="Migrate expressions from real singers to DiffSingers (CLI)",
+        description=_("Migrate expressions from real singers to DiffSingers (CLI)"),
         formatter_class=ArgumentDefaultsWrappedTextRichHelpFormatter,
     )
 
@@ -144,7 +149,7 @@ def main():
     parser.add_argument("-u", "--utau_wav",     type=general_args.utau_path.type,    required=True, help=general_args.utau_path.help)  # noqa: E501
     parser.add_argument("-r", "--ref_wav",      type=general_args.ref_path.type,     required=True, help=general_args.ref_path.help)  # noqa: E501
     parser.add_argument("-i", "--ustx_input",   type=general_args.ustx_path.type,    required=True, help=general_args.ustx_path.help)  # noqa: E501
-    parser.add_argument("-o", "--ustx_output",  type=str,                            required=True, help="Path to save the processed `.ustx` file")  # noqa: E501
+    parser.add_argument("-o", "--ustx_output",  type=str,                            required=True, help=_("Path to save the processed `.ustx` file"))  # noqa: E501
     parser.add_argument("-t", "--track_number", type=general_args.track_number.type, required=True, help=general_args.track_number.help)  # noqa: E501
     parser.add_argument("--utau_start",         type=general_args.utau_start.type,   default=general_args.utau_start.default, help=general_args.utau_start.help)  # noqa: E501
     parser.add_argument("--utau_end",           type=general_args.utau_end.type,     default=general_args.utau_end.default,   help=general_args.utau_end.help)    # noqa: E501
@@ -152,7 +157,7 @@ def main():
     parser.add_argument("--ref_end",            type=general_args.ref_end.type,      default=general_args.ref_end.default,    help=general_args.ref_end.help)     # noqa: E501
  
     parser.add_argument("-e", "--expression", type=str, action="append", required=True, choices=get_registered_expressions(),
-                        help="**Expression(s)** to apply. Repeat the flag for multiple expressions (e.g., `-e dyn -e pitd`)")
+                        help=_("**Expression(s)** to apply. Repeat the flag for multiple expressions (e.g., `-e dyn -e pitd`)"))  # noqa: E501
     parser.add_argument("--version", action="version", version=f"%(prog)s v{VERSION}")
 
     # Expression-specific arguments
@@ -175,8 +180,8 @@ def main():
     ]
 
     # Process expressions
-    with setup_loggers() as (logger_app, _, _):
-        logger_app.info("Starting Expressive CLI...")
+    with setup_loggers() as (logger_app, _unused, _unused):
+        logger_app.info(_("Starting Expressive CLI..."))
         try:
             process_expressions(
                 args.utau_wav, args.ref_wav, args.ustx_input,
@@ -186,10 +191,10 @@ def main():
                 expressions,
             )
         except Exception as e:
-            logger_app.error(f"Error occurred during processing: {e}")
+            logger_app.error(_("Error occurred during processing: {e}").format(e=e))
             raise
         else:
-            logger_app.info("Processing completed successfully!")
+            logger_app.info(_("Processing completed successfully!"))
 
 
 if __name__ == "__main__":

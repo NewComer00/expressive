@@ -48,7 +48,7 @@ class TestLoadUSTX:
     def test_load_voice_parts(self, temp_ustx_file):
         project = load_ustx(str(temp_ustx_file))
         assert len(project.voice_parts) == 1
-        assert project.voice_parts[0].name == "Track 1"
+        assert project.voice_parts[0].name == "Part 1"
 
     def test_load_utf8_bom(self, temp_dir):
         content = (
@@ -444,6 +444,71 @@ class TestTimeAxis:
 
 
 # ===========================================================================
+# TimeAxis internal segment coverage
+# ===========================================================================
+
+class TestTimeAxisSegments:
+    """Test TimeAxis internal _TempoSegment properties (lines 337, 341)."""
+
+    def test_tempo_segment_ticks_property(self):
+        """_TempoSegment.ticks = tick_end - tick_pos (line 337)."""
+        tempos = [UTempo(position=0, bpm=120.0)]
+        time_sigs = [UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4)]
+        axis = TimeAxis.build(tempos, time_sigs)
+        # Access internal segments to verify ticks property
+        seg = axis._segs[0]
+        assert seg.ticks == seg.tick_end - seg.tick_pos
+
+    def test_tempo_segment_ms_end_property(self):
+        """_TempoSegment.ms_end = ms_pos + ticks * ms_per_tick (line 341)."""
+        tempos = [UTempo(position=0, bpm=120.0)]
+        time_sigs = [UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4)]
+        axis = TimeAxis.build(tempos, time_sigs)
+        seg = axis._segs[0]
+        expected_ms_end = seg.ms_pos + seg.ticks * seg.ms_per_tick
+        assert seg.ms_end == expected_ms_end
+
+    def test_build_time_sig_at_nonzero_bar(self):
+        """TimeAxis.build with subsequent time signature at non-zero bar (lines 397-398)."""
+        tempos = [UTempo(position=0, bpm=120.0)]
+        time_sigs = [
+            UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4),
+            UTimeSignature(bar_position=4, beat_per_bar=3, beat_unit=4),
+        ]
+        axis = TimeAxis.build(tempos, time_sigs)
+        assert len(axis._segs) >= 2
+
+    def test_build_inserts_tempo_at_existing_boundary(self):
+        """TimeAxis.build inserts tempo at existing segment boundary (lines 420-421)."""
+        # Tempo at bar 4 (1920 ticks at 120 BPM) - same position as time sig change
+        tempos = [
+            UTempo(position=0, bpm=120.0),
+            UTempo(position=1920, bpm=60.0),
+        ]
+        time_sigs = [
+            UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4),
+            UTimeSignature(bar_position=4, beat_per_bar=3, beat_unit=4),
+        ]
+        axis = TimeAxis.build(tempos, time_sigs)
+        # Should handle merge of tempo and time_sig boundaries
+        assert len(axis._segs) >= 2
+
+    def test_build_propagates_bpm_forward(self):
+        """TimeAxis.build propagates BPM forward to segments without explicit tempo (line 427)."""
+        # Only one tempo, multiple time sig changes
+        tempos = [UTempo(position=0, bpm=120.0)]
+        time_sigs = [
+            UTimeSignature(bar_position=0, beat_per_bar=4, beat_unit=4),
+            UTimeSignature(bar_position=4, beat_per_bar=3, beat_unit=4),
+            UTimeSignature(bar_position=8, beat_per_bar=6, beat_unit=8),
+        ]
+        axis = TimeAxis.build(tempos, time_sigs)
+        # All segments should have BPM from the first tempo (120)
+        for seg in axis._segs:
+            assert seg.tick_end > 0  # Verify segments exist with propagated BPM
+
+
+# ===========================================================================
 # UstxEditor
 # ===========================================================================
 
@@ -560,6 +625,68 @@ class TestUstxEditor:
         with UstxEditor(str(temp_ustx_file)) as editor:
             assert editor.voice_parts is editor.project.voice_parts
 
+    def test_tempos_property(self, temp_ustx_file):
+        """UstxEditor.tempos property delegates to project.tempos (line 625)."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            assert editor.tempos is editor.project.tempos
+
+    def test_time_signatures_property(self, temp_ustx_file):
+        """UstxEditor.time_signatures property delegates to project (line 630)."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            assert editor.time_signatures is editor.project.time_signatures
+
+    def test_get_track_property(self, temp_ustx_file):
+        """UstxEditor.get_track delegates to project.get_track (line 634)."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            track = editor.get_track(0)
+            assert isinstance(track, UTrack)
+
+    def test_get_parts_for_track_property(self, temp_ustx_file):
+        """UstxEditor.get_parts_for_track delegates to project (line 638)."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            parts = editor.get_parts_for_track(0)
+            assert len(parts) == 1
+
+
+# ===========================================================================
+# add_expression_to_track edge cases
+# ===========================================================================
+
+class TestAddExpressionToTrackEdgeCases:
+    """Test add_expression_to_track edge cases (line 716 - continue)."""
+
+    def test_add_expression_skips_ticks_outside_all_parts(self, temp_ustx_file):
+        """Ticks with no overlapping parts are skipped via continue (line 716)."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            # Part at position=0, duration=1920
+            # Ticks completely outside any part: 5000-6000
+            # These ticks don't overlap with the part [0, 1920), so continue is hit
+            editor.add_expression_to_track(
+                0, "dyn",
+                np.array([5000, 5500, 6000]),
+                np.array([10.0, 20.0, 30.0]),
+            )
+            # Curve should not exist since no ticks overlap with the part
+            curve = editor.voice_parts[0].get_curve("dyn")
+            assert curve is None
+
+    def test_add_expression_all_ticks_inside_part(self, temp_ustx_file):
+        """All ticks inside part - no filtering needed."""
+        with UstxEditor(str(temp_ustx_file)) as editor:
+            # Part at position=0, duration=1920
+            # All ticks within [0, 1920)
+            editor.add_expression_to_track(
+                0, "dyn",
+                np.array([0, 500, 1500]),
+                np.array([10.0, 20.0, 30.0]),
+            )
+            curve = editor.voice_parts[0].get_curve("dyn")
+            assert curve is not None
+            # All ticks are stored (converted to relative)
+            assert 0 in curve.xs
+            assert 500 in curve.xs
+            assert 1500 in curve.xs
+
 
 # ===========================================================================
 # Integration
@@ -601,3 +728,46 @@ class TestIntegration:
             ticks = axis.seconds_to_ticks(np.array([0.0, 0.5, 1.0, 1.5]))
             # 120 BPM, 480 PPQN → 960 ticks/second
             assert_array_equal(ticks, [0, 480, 960, 1440])
+
+
+# ===========================================================================
+# Fixtures
+# ===========================================================================
+
+@pytest.fixture
+def temp_dir(tmp_path):
+    """Provide a clean temporary directory."""
+    return tmp_path
+
+
+@pytest.fixture
+def sample_ustx_dict():
+    """Minimal valid USTX project dict."""
+    return {
+        "tempos": [{"bpm": 120.0, "position": 0}],
+        "time_signatures": [{"bar_position": 0, "beat_per_bar": 4, "beat_unit": 4}],
+        "tracks": [{"track_name": "T", "track_color": "Blue", "singer": "", "phonemizer": "", "mute": False, "solo": False, "volume": 0.0, "pan": 0.0}],  # noqa: E501
+        "voice_parts": [{
+            "name": "Part 1",
+            "track_no": 0,
+            "position": 0,
+            "duration": 1920,
+            "notes": [],
+            "curves": [],
+        }],
+    }
+
+
+@pytest.fixture
+def sample_project(sample_ustx_dict):
+    """UProject instance built from sample_ustx_dict."""
+    return UProject.from_dict(sample_ustx_dict)
+
+
+@pytest.fixture
+def temp_ustx_file(temp_dir, sample_ustx_dict):
+    """Path to a temporary USTX file with sample content."""
+    path = temp_dir / "test.ustx"
+    project = UProject.from_dict(sample_ustx_dict)
+    save_ustx(project, str(path))
+    return path

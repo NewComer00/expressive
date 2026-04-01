@@ -327,7 +327,7 @@ class TestAddExpressionArgsGroup:
         """Patch getExpressionLoader and call add_expression_args_group."""
         loader = _make_expression_loader(args_dict, info=exp_info)
         parser = argparse.ArgumentParser()
-        with patch("utils.cli.getExpressionLoader", return_value=loader):
+        with patch("expressions.base.getExpressionLoader", return_value=loader):
             add_expression_args_group(parser, exp_name)
         return parser, loader
 
@@ -351,7 +351,7 @@ class TestAddExpressionArgsGroup:
     def test_get_expression_loader_called_with_exp_name(self):
         loader = _make_expression_loader({})
         parser = argparse.ArgumentParser()
-        with patch("utils.cli.getExpressionLoader", return_value=loader) as mock_get:
+        with patch("expressions.base.getExpressionLoader", return_value=loader) as mock_get:
             add_expression_args_group(parser, "testexp")
         mock_get.assert_called_with("testexp")
 

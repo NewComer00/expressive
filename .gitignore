@@ -17,7 +17,8 @@ static/vendor/*
 *PitchLoader Output*.ustx
 *output*.ustx
 settings.json
-Expressive-GUI.spec
+/*.spec
+!/build/*.spec
 .pytest_cache/
 .coverage
 coverage.xml

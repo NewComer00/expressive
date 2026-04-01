@@ -1,5 +1,6 @@
 """Tests for expressive.py — process_expressions and setup_loggers."""
 
+from datetime import datetime
 import logging
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -455,7 +456,7 @@ class TestSetupLoggers:
         with setup_loggers() as (logger_app, logger_exp, log_path):
             assert isinstance(logger_app, logging.Logger)
             assert isinstance(logger_exp, logging.Logger)
-            assert isinstance(log_path, str)
+            assert isinstance(log_path, Path)
         Path(log_path).unlink()
 
     def test_setup_loggers_configures_handlers(self):
@@ -507,7 +508,7 @@ class TestSetupLoggers:
     def test_setup_loggers_log_file_naming(self):
         with setup_loggers() as (_, __, log_path):
             log_filename = Path(log_path).name
-            assert log_filename.startswith("expressive_cli_")
+            assert log_filename.startswith(datetime.now().strftime('%Y%m%d_'))
             assert log_filename.endswith(".log")
         Path(log_path).unlink()
 
@@ -515,7 +516,7 @@ class TestSetupLoggers:
         with setup_loggers() as (_, __, log_path):
             pass
         log_content = Path(log_path).read_text(encoding='utf-8-sig')
-        assert f"Logs saved to {log_path}" in log_content
+        assert f"Logs saved to '{log_path}'" in log_content
         Path(log_path).unlink()
 
     def test_setup_loggers_file_encoding(self):

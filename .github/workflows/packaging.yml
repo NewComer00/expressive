@@ -55,22 +55,7 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller --noconfirm --onedir --windowed \
-            --icon assets/icons/app.ico \
-            --name Expressive-GUI \
-            --contents-directory "." \
-            --splash assets/splash/big.png \
-            --collect-data crepe \
-            --collect-data nicegui \
-            --collect-data swift_f0 \
-            --add-data "examples;examples/" \
-            --add-data "assets;assets/" \
-            --add-data "locales;locales/" \
-            --add-data "static;static/" \
-            --add-data "README.md;." \
-            --add-data "LICENSE;." \
-            --additional-hooks-dir build/hooks \
-            expressive_gui.py
+          pyinstaller --noconfirm build/expressive.spec
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -80,7 +65,7 @@ jobs:
 
       - name: Generate SHA256 checksum
         run: |
-          INSTALLER="dist/Expressive-GUI-$VERSION-Windows-x64-${{ matrix.variant }}.exe"
+          INSTALLER="dist/Expressive-$VERSION-Windows-x64-${{ matrix.variant }}.exe"
           sha256sum "$INSTALLER" > "$INSTALLER.sha256"
           cat "$INSTALLER.sha256"
 
@@ -88,5 +73,5 @@ jobs:
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           files: |
-            dist/Expressive-GUI-${{ env.VERSION }}-Windows-x64-${{ matrix.variant }}.exe
-            dist/Expressive-GUI-${{ env.VERSION }}-Windows-x64-${{ matrix.variant }}.exe.sha256
+            dist/Expressive-${{ env.VERSION }}-Windows-x64-${{ matrix.variant }}.exe
+            dist/Expressive-${{ env.VERSION }}-Windows-x64-${{ matrix.variant }}.exe.sha256
