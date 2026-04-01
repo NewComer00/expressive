@@ -7,6 +7,41 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.7.0 (2026-04-01)
+
+### Bug Fixes
+
+- **test_i18n**: Add create=True to ctypes.windll patches for Linux CI compatibility
+  ([`2a0b90d`](https://github.com/NewComer00/expressive/commit/2a0b90d5a240f5c2e567243ac0a232e3a297a10e))
+
+### Documentation
+
+- **README,README.en**: Add Data Viewer screenshot alongside workflow
+  ([`23bb533`](https://github.com/NewComer00/expressive/commit/23bb533308929100a8660d7ca55b60cbf5c2e4f1))
+
+### Features
+
+- **build**: Replace inline PyInstaller flags with
+  ([`23bb533`](https://github.com/NewComer00/expressive/commit/23bb533308929100a8660d7ca55b60cbf5c2e4f1))
+
+- **ui**: Add ClosableTabs component extending ui.tabs with per-tab
+  ([`23bb533`](https://github.com/NewComer00/expressive/commit/23bb533308929100a8660d7ca55b60cbf5c2e4f1))
+
+- **viewer**: Add `expressive-viewer` — real-time expression curve
+  ([`23bb533`](https://github.com/NewComer00/expressive/commit/23bb533308929100a8660d7ca55b60cbf5c2e4f1))
+
+- **viewer,build,ui,docs**: Add expression curve viewer, spec-based build, and closable tabs
+  ([`23bb533`](https://github.com/NewComer00/expressive/commit/23bb533308929100a8660d7ca55b60cbf5c2e4f1))
+
+### Refactoring
+
+- **wavtool**: Defer heavy imports (sklearn, skimage, soundfile,
+  ([`23bb533`](https://github.com/NewComer00/expressive/commit/23bb533308929100a8660d7ca55b60cbf5c2e4f1))
+
+- **worker**: Change `lang` field type from `str` to
+  ([`23bb533`](https://github.com/NewComer00/expressive/commit/23bb533308929100a8660d7ca55b60cbf5c2e4f1))
+
+
 ## v0.6.0 (2026-03-22)
 
 ### Bug Fixes
