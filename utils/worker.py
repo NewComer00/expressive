@@ -1,7 +1,8 @@
 import logging
-from dataclasses import dataclass
+from typing import List
 from multiprocessing import Queue
 from logging.handlers import QueueHandler
+from dataclasses import dataclass, field
 from os.path import splitext, basename, join, dirname
 
 from utils.i18n import init_gettext
@@ -20,7 +21,7 @@ class WorkerContext:
     formatter_exp: logging.Formatter = logging.Formatter(
     "%(asctime)s %(levelname)s [%(expression)s]: %(message)s", datefmt="%H:%M:%S"
 )
-    lang: str = "en"
+    lang: str | List[str] | None = field(default_factory=lambda: ["en_US", "en"])
     locale_dir: str = join(dirname(__file__), 'locales')
     domain: str = "app"
 

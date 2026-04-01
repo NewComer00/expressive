@@ -1,11 +1,18 @@
 import os
 import shutil
 import hashlib
+from pathlib import Path
 
-from platformdirs import user_cache_dir
+from platformdirs import user_cache_dir, user_log_dir, user_runtime_dir
 
 
-CACHE_DIR = user_cache_dir(appname="expressive", appauthor="newcomer00")
+APP_CACHE_DIR = user_cache_dir(appname="expressive", appauthor="newcomer00")
+APP_LOG_DIR = user_log_dir(appname="expressive", appauthor="newcomer00")
+APP_RUNTIME_DIR = user_runtime_dir(appname="expressive", appauthor="newcomer00")
+
+APP_CACHE_PATH = Path(APP_CACHE_DIR)
+APP_LOG_PATH = Path(APP_LOG_DIR)
+APP_RUNTIME_PATH = Path(APP_RUNTIME_DIR)
 
 
 def calculate_file_hash(file_path):
@@ -31,5 +38,5 @@ def clear_cache():
 
     Removes all cached pitch extraction data.
     """
-    if os.path.exists(CACHE_DIR):
-        shutil.rmtree(CACHE_DIR)
+    if os.path.exists(APP_CACHE_DIR):
+        shutil.rmtree(APP_CACHE_DIR)

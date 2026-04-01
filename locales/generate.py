@@ -54,6 +54,7 @@ def update_po(pot_file: Path, locales_dir: Path, locale: str, po_file: Path) -> 
         "--output-dir", locales_dir,
         "--locale", locale,
         "--output-file", po_file,
+        "--no-fuzzy-matching",
     ])
 
 

@@ -3,14 +3,19 @@ from types import SimpleNamespace
 import numpy as np
 from scipy.stats import zscore
 
-from .base import Args, ExpressionLoader, register_expression
-from utils.i18n import _, _l
+from .base import (
+    Args,
+    Plot,
+    ExpressionLoader,
+    register_expression
+)
 from utils.seqtool import (
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
     seq_dynamics_trends,
 )
+from utils.i18n import _, _l
 from utils.wavtool import extract_wav_rms
 
 
@@ -23,6 +28,11 @@ class DynLoader(ExpressionLoader):
         align_radius    = Args(name="align_radius", type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
         smoothness      = Args(name="smoothness"  , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
         scaler          = Args(name="scaler"      , type=float, default=1.5 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
+    )
+    plots = SimpleNamespace(
+        expression  = Plot(tag=expression_info    , title=expression_info    , x_label=_l("Tick")    , y_label=expression_name, legends=[expression_name]            ),  # noqa: E501
+        raw_rms     = Plot(tag=_l("raw_rms")      , title=_l("Raw RMS")      , x_label=_l("Time (s)"), y_label=_l("RMS")      , legends=[_l("Reference"), _l("UTAU")]),  # noqa: E501
+        aligned_rms = Plot(tag=_l("aligned_rms")  , title=_l("Aligned RMS")  , x_label=_l("Tick")    , y_label=_l("RMS")      , legends=[_l("Reference"), _l("UTAU")]),  # noqa: E501
     )
 
     def get_expression(
@@ -57,6 +67,11 @@ class DynLoader(ExpressionLoader):
 
         # Generate expression curve
         dyn_val = get_experssion_dynamics(time_aligned_ref_rms, smoothness, scaler)
+
+        # Collect plots
+        self.collect_plot(self.plots.expression,  (dyn_tick, dyn_val))
+        self.collect_plot(self.plots.raw_rms,     (ref_time,  ref_rms), (utau_time, utau_rms))
+        self.collect_plot(self.plots.aligned_rms, (dyn_tick, time_aligned_ref_rms), (dyn_tick,  time_unified_utau_rms))
 
         self.expression_tick, self.expression_val = dyn_tick, dyn_val
         self.logger.info(_("Expression extraction complete."))

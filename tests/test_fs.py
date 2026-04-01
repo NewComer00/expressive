@@ -1,8 +1,8 @@
-"""Tests for cache utilities."""
+"""Tests for fs utilities."""
 
 import pytest
 
-from utils.cache import CACHE_DIR, calculate_file_hash, clear_cache
+from utils.fs import APP_CACHE_DIR, calculate_file_hash, clear_cache
 
 
 class TestCalculateFileHash:
@@ -90,7 +90,7 @@ class TestClearCache:
 
     def test_clear_cache_when_exists(self, tmp_path, monkeypatch):
         """Test clearing cache when directory exists."""
-        # Mock CACHE_DIR to use temp directory
+        # Mock APP_CACHE_DIR to use temp directory
         mock_cache_dir = tmp_path / "cache"
         mock_cache_dir.mkdir()
 
@@ -98,8 +98,8 @@ class TestClearCache:
         (mock_cache_dir / "file1.txt").write_text("data1")
         (mock_cache_dir / "file2.txt").write_text("data2")
 
-        # Patch CACHE_DIR
-        monkeypatch.setattr("utils.cache.CACHE_DIR", str(mock_cache_dir))
+        # Patch APP_CACHE_DIR
+        monkeypatch.setattr("utils.fs.APP_CACHE_DIR", str(mock_cache_dir))
 
         # Clear cache
         clear_cache()
@@ -111,8 +111,8 @@ class TestClearCache:
         """Test clearing cache when directory doesn't exist."""
         mock_cache_dir = tmp_path / "nonexistent_cache"
 
-        # Patch CACHE_DIR
-        monkeypatch.setattr("utils.cache.CACHE_DIR", str(mock_cache_dir))
+        # Patch APP_CACHE_DIR
+        monkeypatch.setattr("utils.fs.APP_CACHE_DIR", str(mock_cache_dir))
 
         # Should not raise error
         clear_cache()
@@ -131,8 +131,8 @@ class TestClearCache:
         (subdir / "nested_file.txt").write_text("nested data")
         (mock_cache_dir / "root_file.txt").write_text("root data")
 
-        # Patch CACHE_DIR
-        monkeypatch.setattr("utils.cache.CACHE_DIR", str(mock_cache_dir))
+        # Patch APP_CACHE_DIR
+        monkeypatch.setattr("utils.fs.APP_CACHE_DIR", str(mock_cache_dir))
 
         # Clear cache
         clear_cache()
@@ -143,12 +143,12 @@ class TestClearCache:
 
 
 class TestCacheDir:
-    """Test CACHE_DIR constant."""
+    """Test APP_CACHE_DIR constant."""
 
     def test_cache_dir_is_string(self):
-        """Test that CACHE_DIR is a string."""
-        assert isinstance(CACHE_DIR, str)
+        """Test that APP_CACHE_DIR is a string."""
+        assert isinstance(APP_CACHE_DIR, str)
 
     def test_cache_dir_contains_appname(self):
-        """Test that CACHE_DIR contains the app name."""
-        assert "expressive" in CACHE_DIR.lower()
+        """Test that APP_CACHE_DIR contains the app name."""
+        assert "expressive" in APP_CACHE_DIR.lower()

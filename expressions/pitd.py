@@ -4,7 +4,12 @@ import numpy as np
 from scipy.signal import medfilt
 from librosa import hz_to_midi
 
-from .base import Args, ExpressionLoader, register_expression
+from .base import (
+    Args,
+    Plot,
+    ExpressionLoader,
+    register_expression
+)
 from utils.i18n import _, _l, _lf
 from utils.seqtool import (
     unify_sequence_time,
@@ -35,6 +40,12 @@ class PitdLoader(ExpressionLoader):
         smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
         scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
     )
+    plots = SimpleNamespace(
+        expression    = Plot(tag=expression_info    , title=expression_info                   , x_label=_l("Tick")    , y_label=expression_name , legends=[expression_name]            ),  # noqa: E501
+        confidence    = Plot(tag=_l("confidence")   , title=_l("Pitch Extraction Confidence") , x_label=_l("Time (s)"), y_label=_l("Confidence"), legends=[_l("Reference"), _l("UTAU")]),  # noqa: E501
+        raw_pitch     = Plot(tag=_l("raw_pitch")    , title=_l("Raw Pitch")                   , x_label=_l("Time (s)"), y_label=_l("Pitch (Hz)"), legends=[_l("Reference"), _l("UTAU")]),  # noqa: E501
+        aligned_pitch = Plot(tag=_l("aligned_pitch"), title=_l("Aligned Pitch")               , x_label=_l("Tick")    , y_label=_l("Pitch (Hz)"), legends=[_l("Reference"), _l("UTAU")]),  # noqa: E501
+    )
 
     def get_expression(
         self,
@@ -56,11 +67,11 @@ class PitdLoader(ExpressionLoader):
 
         # Extract pitch features from WAV files
         with StreamToLogger(self.logger, tee=True):
-            utau_time, utau_pitch, utau_features = get_wav_features(
+            utau_time, utau_pitch, utau_confidence, utau_features = get_wav_features(
                 wav_path=self.utau_path, confidence_threshold=confidence_utau, backend=backend
             )
         with StreamToLogger(self.logger, tee=True):
-            ref_time, ref_pitch, ref_features = get_wav_features(
+            ref_time, ref_pitch, ref_confidence, ref_features = get_wav_features(
                 wav_path=self.ref_path, confidence_threshold=confidence_ref, backend=backend
             )
 
@@ -69,9 +80,9 @@ class PitdLoader(ExpressionLoader):
         pitd_tick, (time_aligned_ref_pitch, *_unused), (unified_utau_pitch, *_unused) = (
             align_sequence_tick(
                 query_time=ref_time,
-                queries=(ref_pitch, *ref_features),
+                queries=(ref_pitch, ref_confidence, *ref_features),
                 reference_time=utau_time,
-                references=(utau_pitch, *utau_features),
+                references=(utau_pitch, utau_confidence, *utau_features),
                 align_radius=align_radius,
             )
         )
@@ -92,6 +103,12 @@ class PitdLoader(ExpressionLoader):
             scaler=scaler,
         )
 
+        # Collect plots
+        self.collect_plot(self.plots.expression,    (pitd_tick, pitd_val))
+        self.collect_plot(self.plots.confidence,    (ref_time,  ref_confidence), (utau_time, utau_confidence))
+        self.collect_plot(self.plots.raw_pitch,     (ref_time,  ref_pitch), (utau_time, utau_pitch))
+        self.collect_plot(self.plots.aligned_pitch, (pitd_tick, time_pitch_aligned_ref_pitch), (pitd_tick, unified_utau_pitch))
+
         self.expression_tick, self.expression_val = pitd_tick, pitd_val
         self.logger.info(_("Expression extraction complete."))
         return self.expression_tick, self.expression_val
@@ -107,7 +124,7 @@ def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, con
         confidence_filter_size (int, optional): Size of the median filter for confidence. Defaults to 9.
 
     Returns:
-        tuple: (wav_time, wav_pitch, wav_features)
+        tuple: (wav_time, wav_pitch, wav_confidence, wav_features)
     """
     feature_times = []
     feature_vals  = []
@@ -123,6 +140,9 @@ def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, con
     pitch_time = time
     feature_times += [pitch_time]
     feature_vals  += [pitch]
+
+    feature_times += [pitch_time]
+    feature_vals  += [confidence]
 
     pitch_features = seq_dynamics_trends(pitch)
     feature_times += [pitch_time] * len(pitch_features)
@@ -140,10 +160,10 @@ def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, con
     feature_times += [rms_time] * len(rms_dynamics_trends)
     feature_vals  += list(rms_dynamics_trends)
 
-    wav_time, (wav_pitch, *wav_features) = unify_sequence_time(
+    wav_time, (wav_pitch, wav_confidence, *wav_features) = unify_sequence_time(
         seq_times=feature_times, seq_vals=feature_vals
     )
-    return wav_time, wav_pitch, wav_features
+    return wav_time, wav_pitch, wav_confidence, wav_features
 
 
 def align_sequence_pitch(query, reference, semitone_shift=None, smoothness=0):

@@ -17,9 +17,13 @@
 * `Pitch Deviation (curve)`
 * `Tension (curve)`
 
-<p align="middle">
-  <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> 
-</p>
+<div align="center">
+
+| **工作流程** | **数据可视化** |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/ef97aa6a-5938-42f1-bd4a-78f268109db8" width="100%" /> |
+
+</div>
 
 > - *OpenUtau 版本来自 [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
 > - *歌手模型来自 [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
@@ -29,6 +33,7 @@
 >   <summary><b>👉 点击展开完整有声演示视频 👈</b></summary>
 >
 >   <p align="center"><video src="https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b"></video></p>
+>   <p align="center"><video src="https://github.com/user-attachments/assets/4076eb8b-07eb-48e6-bdec-4abeac6258c7"></video></p>
 > 
 > </details>
 
@@ -74,6 +79,7 @@
 * [x] Linux 支持
 * [x] NVIDIA GPU 加速
 * [x] 参数配置导入 / 导出
+* [x] 表情曲线可视化
 * [x] `Pitch Deviation` 参数生成
 * [x] `Dynamics` 参数生成
 * [x] `Tension` 参数生成
@@ -82,13 +88,13 @@
 
 您可以直接在 [Releases](https://github.com/NewComer00/expressive/releases) 页面下载预编译的可执行文件:
 
-### `Expressive-GUI-<version>-Windows-x64-CPU.exe`
-适用于 x64 架构 Windows 的图形用户界面安装包。
+### `Expressive-<version>-Windows-x64-CPU.exe`
+适用于 x64 架构 Windows 的 Expressive CLI / GUI / Viewer 安装包。
 
 仅可使用 CPU，无 CUDA 运行时库。安装体积小，但选择 CREPE 后端提取音高时速度较慢。
 
-### `Expressive-GUI-<version>-Windows-x64-GPU.exe`
-带 GPU 支持的适用于 x64 架构 Windows 的图形用户界面安装包。
+### `Expressive-<version>-Windows-x64-GPU.exe`
+带 GPU 支持的适用于 x64 架构 Windows 的 Expressive CLI / GUI / Viewer 安装包。
 
 含 CUDA 运行时库。在配备 NVIDIA 显卡（驱动版本 >= 450）的电脑上使用时，会大幅提高 CREPE 后端的推理速度。
 
@@ -120,9 +126,25 @@ pip install -e ".[gpu,gui]"
 >   - `dev`：开发环境依赖（如测试框架 pytest）
 >   - `all`：安装上述所有依赖项
 
-安装完成后，您将能够使用 `expressive` 和 `expressive-gui` 两个入口点来运行命令行界面和图形用户界面。
+安装完成后，您将能够使用 `expressive` 和 `expressive-gui` 两个入口点来运行**命令行界面**和**图形用户界面**。
+
+此外，您还可以通过 `expressive-viewer` 命令启动一个独立的表情曲线可视化工具，来实时查看和分析 `expressive` 与 `expressive-gui` 提取出的表情曲线。
 
 ## 📖 使用方式
+
+> [!TIP]
+> 本节介绍的所有命令（以及您通过安装包安装的可执行文件）均会自动适配您的系统语言。如果您需要不同语言的界面，可以设置[环境变量 `LANGUAGE` 或 `LANG`](https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html) 来覆盖默认语言。
+> 
+> 例如，在 Windows PowerShell 中：
+> ```powershell
+> $env:LANGUAGE = "en_US"
+> expressive-gui
+> ```
+> 
+> 在 Linux Shell 中：
+> ```bash
+> LANGUAGE="en_US" expressive-gui
+> ```
 
 ### 命令行界面（CLI）
 
@@ -166,18 +188,33 @@ expressive \
 
 ### 图形用户界面（GUI）
 
-启动中文界面
+启动图形界面
 
 ```bash
-expressive-gui --lang zh_CN
+expressive-gui
 ```
 
 > [!IMPORTANT]
 > 由于框架限制，通过 `expressive-gui` 命令启动的图形界面目前**不支持文件拖放**功能。若需使用拖放功能，请[直接安装](#-直接安装)本应用，或以脚本方式运行 `expressive_gui.py`：
 > 
 > ```bash
-> python expressive_gui.py --lang zh_CN
+> python expressive_gui.py
 > ```
+
+### 可视化工具（Viewer）
+
+启动表情曲线可视化工具
+
+```bash
+expressive-viewer
+```
+
+您可以在任何时候启动这个工具。在其运行期间，`expressive` 与 `expressive-gui` 提取出的表情曲线会被实时发送到其中进行可视化展示。
+
+您可以在 `expressive-viewer` 中查看表情曲线的细节，分析提取结果，并根据需要调整参数，重新生成表情曲线。
+
+> [!TIP]
+> 如需同时浏览多个表情曲线，您可以同时启动多个 `expressive-viewer` 实例，每个实例都会独立显示接收到的数据。
 
 ## 📂 示例工程
 
@@ -267,7 +304,7 @@ PITD 表情提取器中，两个置信度阈值设置**过高**，许多音高�
 尝试降低两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
 
 #### 未来计划
-引入更好的 PITD 后端（如 [RMVPE](https://github.com/Dream-High/RMVPE)）。添加中间结果的可视化功能。
+引入更好的 PITD 后端（如 [RMVPE](https://github.com/Dream-High/RMVPE)）。
 
 ### PITD 表情曲线在某些位置变化过快，出现跳跃或毛刺
 
@@ -281,4 +318,4 @@ PITD 表情提取器中，两个置信度阈值设置**过低**，错误的识�
 尝试增加两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
 
 #### 未来计划
-引入更好的 PITD 后端（如 [RMVPE](https://github.com/Dream-High/RMVPE)）。添加中间结果的可视化功能。
+引入更好的 PITD 后端（如 [RMVPE](https://github.com/Dream-High/RMVPE)）。

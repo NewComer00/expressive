@@ -6,8 +6,6 @@ from rich.text import Text
 from rich.containers import Lines
 from rich_argparse import RichHelpFormatter
 
-from expressions.base import getExpressionLoader
-
 
 class WrappedTextRichHelpFormatter(RichHelpFormatter):
     """RichHelpFormatter that wraps long lines in help text while preserving rich formatting.
@@ -52,6 +50,8 @@ def add_expression_args_group(parser, exp_name: str):
         parser: The argument parser to add the group to.
         exp_name (str): The registered expression name.
     """
+    from expressions.base import getExpressionLoader
+
     exp_info = getExpressionLoader(exp_name).expression_info
     group = parser.add_argument_group(f"[{exp_name.upper()}] {exp_info} Expression")
     for arg_name, arg in getExpressionLoader(exp_name).get_args_dict().items():
