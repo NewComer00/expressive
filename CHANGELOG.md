@@ -7,6 +7,14 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.8.0 (2026-04-11)
+
+### Features
+
+- Add rmvpe-onnx as default pitch extraction backend
+  ([`86a152b`](https://github.com/NewComer00/expressive/commit/86a152b695d19b08ac1ae0a961ad44f33aa55f3a))
+
+
 ## v0.7.0 (2026-04-01)
 
 ### Bug Fixes
