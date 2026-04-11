@@ -21,7 +21,7 @@
 
 | **工作流程** | **数据可视化** |
 |:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/ef97aa6a-5938-42f1-bd4a-78f268109db8" width="100%" /> |
+| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/91ddadee-62cd-4420-abf0-dd9177e8f935" width="100%" /> |
 
 </div>
 
@@ -43,9 +43,9 @@
 * OpenUtau Beta（或支持 DiffSinger 的其他版本）
 * Python 3.10 \*
 
-本应用默认选择 [swift-f0](https://github.com/lars76/swift-f0)（基于 ONNX Runtime）作为音高提取后端，仅需 CPU 即可运行，可满足基础使用场景。
+本应用默认选择 [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) 作为音高提取后端，仅需 CPU 即可运行。[RMVPE](https://arxiv.org/abs/2306.15412v2) 是目前公开的效果最好的音高提取算法，且推理速度较快，可以满足绝大多数使用场景。
 
-也提供了经典的 [CREPE](https://github.com/marl/crepe)（依赖 TensorFlow）音高提取后端，适合更高要求的使用场景。若您的电脑配有 NVIDIA 显卡且支持 [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)（即显卡驱动版本 >= 450），使用 CREPE 后端时会自动启用 GPU 加速。
+应用也提供了 [swift-f0](https://github.com/lars76/swift-f0) 与 [CREPE](https://github.com/marl/crepe) 音高提取后端。前者仅依赖 CPU，效果一般，但速度最快。后者是业内的经典算法，速度较慢。在 CUDA 环境下，CREPE 后端会自动启用 GPU 加速。
 
 > \* 在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
 
@@ -146,6 +146,16 @@ pip install -e ".[gpu,gui]"
 > LANGUAGE="en_US" expressive-gui
 > ```
 
+> [!IMPORTANT]
+> 从源码安装的用户在运行 [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) 后端时，应用会自动从 Hugging Face 下载模型文件 [rmvpe.onnx（Copyright (c) 2022 lj1995 — MIT License）](https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.onnx)。
+>
+> 如果您希望提前下载模型文件，可在安装完成后运行以下命令：
+> ```bash
+> rmvpe-onnx download
+> ```
+>
+> 若您是通过安装包获取的本应用，安装包中已包含该模型文件，无需额外下载。
+
 ### 命令行界面（CLI）
 
 显示帮助信息
@@ -220,7 +230,7 @@ expressive-viewer
 
 项目的 [`examples/` 目录](examples/)下存放有多个示例。您可以在图形用户界面中导入相应示例的 `expressive_config.json` 配置文件，将预设的参数一键填写到应用中。
 
-若您是从安装包获取的本应用，安装完毕后示例目录的快捷方式 `Expressive-examples` 将出现在您的桌面，您也可以直接导入其中的配置文件。
+若您是从安装包获取的本应用，安装完毕后示例目录的快捷方式 `Expressive Examples` 将出现在您的桌面，您也可以直接导入其中的配置文件。
 
 ## 🔬 算法流程
 ```mermaid
@@ -301,10 +311,7 @@ NiceGUI 框架已经开始着手改进文件拖拽支持，应该在未来的版
 PITD 表情提取器中，两个置信度阈值设置**过高**，许多音高变化没有被采信。
 
 #### 解决方案
-尝试降低两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
-
-#### 未来计划
-引入更好的 PITD 后端（如 [RMVPE](https://github.com/Dream-High/RMVPE)）。
+请先尝试使用效果最好的 rmvpe-onnx 后端（默认置信度阈值）。若问题仍在，尝试降低两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
 
 ### PITD 表情曲线在某些位置变化过快，出现跳跃或毛刺
 
@@ -315,7 +322,4 @@ PITD 表情曲线在某些位置变化过快，出现非常大的跳跃或毛刺
 PITD 表情提取器中，两个置信度阈值设置**过低**，错误的识别结果被采信。
 
 #### 解决方案
-尝试增加两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
-
-#### 未来计划
-引入更好的 PITD 后端（如 [RMVPE](https://github.com/Dream-High/RMVPE)）。
+请先尝试使用效果最好的 rmvpe-onnx 后端（默认置信度阈值）。若问题仍在，尝试增加两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。

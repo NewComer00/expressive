@@ -53,6 +53,10 @@ jobs:
           pip install -e ".[${{ matrix.extras }}]"
           pip install pyinstaller
 
+      - name: Download rmvpe-onnx model
+        run: |
+          rmvpe-onnx download
+
       - name: Build executable with PyInstaller
         run: |
           pyinstaller --noconfirm build/expressive.spec

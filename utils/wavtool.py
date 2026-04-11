@@ -47,7 +47,7 @@ def extract_wav_mfcc(wav_path, n_feat=6, n_mfcc=13):
     return mfcc_time, mfcc
 
 
-def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
+def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
     """Extract pitch frequency from a WAV file.
 
     This function processes an audio file to extract pitch information.
@@ -56,10 +56,11 @@ def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
 
     Args:
         file_path (str): Path to the WAV file.
-        backend (str, optional): Pitch detection backend. One of "crepe" or "swift-f0".
+        backend (str, optional): Pitch detection backend. One of "crepe" or "swift-f0" or "rmvpe-onnx".
             "crepe" uses the CREPE model (requires TensorFlow, GPU-accelerated).
             "swift-f0" uses SwiftF0 (faster CPU inference, requires swift-f0 package).
-            Defaults to "swift-f0".
+            "rmvpe-onnx" uses RMVPE ONNX model (fast CPU inference, requires rmvpe-onnx package).
+            Defaults to "rmvpe-onnx".
         use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
 
     Returns:
@@ -68,7 +69,7 @@ def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
             - frequency (np.ndarray of float): Detected pitch frequencies in Hz. Shape: (n_time_points).
             - confidence (np.ndarray of float): Confidence values for the detected pitches. Shape: (n_time_points).
     """
-    _SUPPORTED_BACKENDS = ("crepe", "swift-f0")
+    _SUPPORTED_BACKENDS = ("crepe", "swift-f0", "rmvpe-onnx")
     if backend not in _SUPPORTED_BACKENDS:
         raise ValueError(f"Unknown backend '{backend}'. Choose from: {_SUPPORTED_BACKENDS}")
 
@@ -109,6 +110,15 @@ def extract_wav_frequency(file_path, backend="swift-f0", use_cache=True):
             time = result.timestamps.tolist()
             frequency = result.pitch_hz.tolist()
             confidence = result.confidence.tolist()
+        elif backend == "rmvpe-onnx":
+            from rmvpe_onnx import RMVPE
+            import soundfile as sf
+            audio, sr = sf.read(file_path)
+            rmvpe = RMVPE()
+            timestamp, frequency, confidence, _unused = rmvpe.predict(audio=audio, sr=sr)
+            time = timestamp.tolist()
+            frequency = frequency.tolist()
+            confidence = confidence.tolist()
 
         # Save data to cache
         if use_cache:

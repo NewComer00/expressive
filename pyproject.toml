@@ -13,6 +13,7 @@ dependencies = [
     "tensorflow==2.10",
     "crepe @ git+https://github.com/NewComer00/crepe.git@master",
     "swift-f0",
+    "rmvpe-onnx",
     "oyaml",
     "fastdtw",
     "scipy",
@@ -88,6 +89,12 @@ include = [
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.uv]
+environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
 
 [tool.babel]
 [[tool.babel.mappings]]

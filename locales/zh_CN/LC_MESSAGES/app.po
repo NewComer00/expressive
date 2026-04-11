@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  expressive\n"
 "Report-Msgid-Bugs-To: https://github.com/NewComer00/expressive/issues\n"
-"POT-Creation-Date: 2026-04-01 15:33+0800\n"
+"POT-Creation-Date: 2026-04-11 19:51+0800\n"
 "PO-Revision-Date: 2026-03-01 20:21+0800\n"
 "Last-Translator: NewComer00\n"
 "Language: zh_CN\n"
@@ -290,26 +290,26 @@ msgid ""
 "extracting expression"
 msgstr "在提取表情特征前，**剪除**音频开头与结尾的**静音部分**"
 
-#: expressions/dyn.py:28 expressions/pitd.py:38 expressions/tenc.py:28
+#: expressions/dyn.py:28 expressions/pitd.py:39 expressions/tenc.py:28
 msgid ""
 "**Radius** for the FastDTW alignment algorithm; larger values allow more "
 "flexible alignment but increase computation time"
 msgstr "FastDTW 对齐算法的**半径**；值越大对齐越灵活，但计算时间也越长"
 
-#: expressions/dyn.py:29 expressions/pitd.py:40 expressions/tenc.py:29
+#: expressions/dyn.py:29 expressions/pitd.py:41 expressions/tenc.py:29
 msgid ""
 "Controls the **smoothness** of the expression curve using Gaussian "
 "filtering. Higher values produce smoother curves but may lose fine detail"
 msgstr "通过高斯滤波控制表情曲线的**平滑度**；值越大曲线越平滑，但可能丢失细节"
 
-#: expressions/dyn.py:30 expressions/pitd.py:41 expressions/tenc.py:30
+#: expressions/dyn.py:30 expressions/pitd.py:42 expressions/tenc.py:30
 msgid ""
 "**Scaling factor** applied to the expression curve. Values >1 amplify the"
 " expression, =1 keeps original intensity, <1 reduces it"
 msgstr "应用于表情曲线的**缩放因子**；大于 1 则放大，等于 1 则保持原强度，小于 1 则缩小"
 
-#: expressions/dyn.py:33 expressions/dyn.py:35 expressions/pitd.py:44
-#: expressions/pitd.py:47 expressions/tenc.py:34 expressions/tenc.py:36
+#: expressions/dyn.py:33 expressions/dyn.py:35 expressions/pitd.py:45
+#: expressions/pitd.py:48 expressions/tenc.py:34 expressions/tenc.py:36
 msgid "Tick"
 msgstr "时间刻度（Tick）"
 
@@ -321,7 +321,7 @@ msgstr "原音频的 RMS"
 msgid "Raw RMS"
 msgstr "原音频的均方根能量（RMS）特征"
 
-#: expressions/dyn.py:34 expressions/pitd.py:45 expressions/pitd.py:46
+#: expressions/dyn.py:34 expressions/pitd.py:46 expressions/pitd.py:47
 #: expressions/tenc.py:35
 msgid "Time (s)"
 msgstr "时间（秒）"
@@ -331,14 +331,14 @@ msgstr "时间（秒）"
 msgid "RMS"
 msgstr "RMS"
 
-#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:45
-#: expressions/pitd.py:46 expressions/pitd.py:47 expressions/tenc.py:35
+#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:46
+#: expressions/pitd.py:47 expressions/pitd.py:48 expressions/tenc.py:35
 #: expressions/tenc.py:36
 msgid "Reference"
 msgstr "参考音频"
 
-#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:45
-#: expressions/pitd.py:46 expressions/pitd.py:47 expressions/tenc.py:35
+#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:46
+#: expressions/pitd.py:47 expressions/pitd.py:48 expressions/tenc.py:35
 #: expressions/tenc.py:36
 msgid "UTAU"
 msgstr "歌姬音频"
@@ -351,11 +351,11 @@ msgstr "对齐后的 RMS"
 msgid "Aligned RMS"
 msgstr "对齐后的均方根能量（RMS）特征"
 
-#: expressions/dyn.py:45 expressions/pitd.py:60 expressions/tenc.py:47
+#: expressions/dyn.py:45 expressions/pitd.py:61 expressions/tenc.py:47
 msgid "Extracting expression..."
 msgstr "正在提取表情参数..."
 
-#: expressions/dyn.py:77 expressions/pitd.py:113 expressions/tenc.py:79
+#: expressions/dyn.py:77 expressions/pitd.py:114 expressions/tenc.py:79
 msgid "Expression extraction complete."
 msgstr "表情参数提取完成。"
 
@@ -364,14 +364,18 @@ msgid "Pitch Deviation (curve)"
 msgstr "音高偏差曲线 Pitch Deviation (curve)"
 
 #: expressions/pitd.py:29
-msgid "fast, CPU-based (ONNX Runtime)"
-msgstr "快速，基于 CPU（ONNX Runtime）"
+msgid "finest accuracy, fast, CPU only (ONNX Runtime)"
+msgstr "精度最佳，较快，仅支持 CPU，基于 ONNX Runtime"
 
 #: expressions/pitd.py:30
-msgid "classic but slow, CPU & NVIDIA GPU (TensorFlow)"
-msgstr "经典但较慢，支持 CPU 和 NVIDIA GPU（TensorFlow）"
+msgid "fair accuracy, fastest, CPU only (ONNX Runtime)"
+msgstr "精度一般，最快，仅支持 CPU，基于 ONNX Runtime"
 
-#: expressions/pitd.py:35
+#: expressions/pitd.py:31
+msgid "good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"
+msgstr "精度较好，较慢，支持 CPU 和 NVIDIA GPU，基于 TensorFlow"
+
+#: expressions/pitd.py:36
 #, python-format
 msgid ""
 "**F0 detection backend** for extracting pitch from WAV files. Available "
@@ -385,7 +389,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:36
+#: expressions/pitd.py:37
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
@@ -400,7 +404,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:37
+#: expressions/pitd.py:38
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
@@ -415,46 +419,46 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:39
+#: expressions/pitd.py:40
 msgid ""
 "**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is"
 " an octave higher than the reference WAV, set to 12; if lower, set to "
 "-12. Omit to enable automatic shift estimation"
 msgstr "歌姬音频与参考音频之间的**半音偏移**；若歌姬比参考高一个八度则设为 12，低一个八度则设为 -12；忽略该参数则启用自动估算"
 
-#: expressions/pitd.py:45
+#: expressions/pitd.py:46
 msgid "confidence"
 msgstr "置信度"
 
-#: expressions/pitd.py:45
+#: expressions/pitd.py:46
 msgid "Pitch Extraction Confidence"
 msgstr "音高提取置信度"
 
-#: expressions/pitd.py:45
+#: expressions/pitd.py:46
 msgid "Confidence"
 msgstr "置信度"
 
-#: expressions/pitd.py:46
+#: expressions/pitd.py:47
 msgid "raw_pitch"
 msgstr "原音频的 Pitch"
 
-#: expressions/pitd.py:46
+#: expressions/pitd.py:47
 msgid "Raw Pitch"
 msgstr "原音频的音高（Pitch）特征"
 
-#: expressions/pitd.py:46 expressions/pitd.py:47
+#: expressions/pitd.py:47 expressions/pitd.py:48
 msgid "Pitch (Hz)"
 msgstr "音高（Hz）"
 
-#: expressions/pitd.py:47
+#: expressions/pitd.py:48
 msgid "aligned_pitch"
 msgstr "对齐后的 Pitch"
 
-#: expressions/pitd.py:47
+#: expressions/pitd.py:48
 msgid "Aligned Pitch"
 msgstr "对齐后的音高（Pitch）特征"
 
-#: expressions/pitd.py:189
+#: expressions/pitd.py:190
 #, python-brace-format
 msgid "Estimated Semitone-shift: {}"
 msgstr "估计的半音偏移：{}"
@@ -481,22 +485,22 @@ msgstr "选区循环播放"
 msgid "Zoom"
 msgstr "缩放"
 
-#: utils/wavtool.py:86
+#: utils/wavtool.py:87
 #, python-brace-format
 msgid "Loading F0 data from cache file: '{}'"
 msgstr "正在从缓存文件加载 F0 数据：'{}'"
 
-#: utils/wavtool.py:120
+#: utils/wavtool.py:130
 #, python-brace-format
 msgid "F0 data saved to cache file: '{}'"
 msgstr "F0 数据已保存到缓存文件：'{}'"
 
-#: utils/wavtool.py:294
+#: utils/wavtool.py:304
 #, python-brace-format
 msgid "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "开始时间 {:.3f}秒 被截取到 {:.3f}秒（完整时长：{:.3f}秒） "
 
-#: utils/wavtool.py:300
+#: utils/wavtool.py:310
 #, python-brace-format
 msgid "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "结束时间 {:.3f}秒 被截取到 {:.3f}秒（完整时长：{:.3f}秒） "
