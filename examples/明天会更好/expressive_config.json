@@ -18,9 +18,9 @@
         },
         "pitd": {
             "selected": true,
-            "backend": "swift-f0",
-            "confidence_utau": 0.9,
-            "confidence_ref": 0.93,
+            "backend": "rmvpe-onnx",
+            "confidence_utau": null,
+            "confidence_ref": null,
             "align_radius": 1,
             "semitone_shift": 0,
             "smoothness": 2,

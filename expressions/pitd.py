@@ -26,13 +26,14 @@ class PitdLoader(ExpressionLoader):
     expression_name = "pitd"
     expression_info = _l("Pitch Deviation (curve)")
     backend_choices = {
-        "swift-f0": _l("fast, CPU-based (ONNX Runtime)"),
-        "crepe": _l("classic but slow, CPU & NVIDIA GPU (TensorFlow)"),
+        "rmvpe-onnx": _l("finest accuracy, fast, CPU only (ONNX Runtime)"),
+        "swift-f0": _l("fair accuracy, fastest, CPU only (ONNX Runtime)"),
+        "crepe": _l("good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"),
     }
-    confidence_utau_recommended = {"swift-f0": 0.95, "crepe": 0.8}
-    confidence_ref_recommended  = {"swift-f0": 0.93, "crepe": 0.6}
+    confidence_utau_recommended = {"rmvpe-onnx": 0.03, "swift-f0": 0.95, "crepe": 0.80}
+    confidence_ref_recommended  = {"rmvpe-onnx": 0.03, "swift-f0": 0.93, "crepe": 0.60}
     args = SimpleNamespace(
-        backend         = Args(name="backend"        , type=str  , default="swift-f0", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
+        backend         = Args(name="backend"        , type=str  , default="rmvpe-onnx", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
         confidence_utau = Args(name="confidence_utau", type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **UTAU** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_utau_recommended.items()]))),  # noqa: E501
         confidence_ref  = Args(name="confidence_ref" , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **reference** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_ref_recommended.items()]))),  # noqa: E501
         align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
@@ -114,12 +115,12 @@ class PitdLoader(ExpressionLoader):
         return self.expression_tick, self.expression_val
 
 
-def get_wav_features(wav_path, backend="swift-f0", confidence_threshold=0.8, confidence_filter_size=9):
+def get_wav_features(wav_path, backend="rmvpe-onnx", confidence_threshold=0.8, confidence_filter_size=9):
     """Extract features from a WAV file.
 
     Args:
         wav_path (str): Path to the WAV file.
-        backend (str, optional): F0 detection backend ("crepe" or "swift-f0"). Defaults to "swift-f0".
+        backend (str, optional): F0 detection backend ("crepe" or "swift-f0" or "rmvpe-onnx"). Defaults to "rmvpe-onnx".
         confidence_threshold (float, optional): Confidence threshold for pitch detection. Defaults to 0.8.
         confidence_filter_size (int, optional): Size of the median filter for confidence. Defaults to 9.
 

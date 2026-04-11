@@ -1,7 +1,6 @@
 """Tests for wavtool.py — timestamp helpers and ClampedWav."""
 
 import argparse
-import atexit as _atexit
 import csv
 import os
 import tempfile
@@ -445,7 +444,7 @@ class TestClampedWav(unittest.TestCase):
 
     def test_atexit_registered(self):
         """_cleanup should be registered with atexit on construction."""
-        with patch.object(_atexit, "register") as mock_register:
+        with patch("utils.wavtool.atexit.register") as mock_register:
             cw = ClampedWav(self.wav, None, None)
             mock_register.assert_called_once_with(cw._cleanup)
             cw._cleanup()
@@ -746,6 +745,33 @@ class TestExtractWavFrequency(unittest.TestCase):
         mock_cls = MagicMock(return_value=mock_detector)
         return patch("swift_f0.SwiftF0", mock_cls, create=True)
 
+    def _patch_rmvpe(self):
+        """Patch RMVPE and soundfile so the rmvpe-onnx backend runs without
+        real model weights or audio I/O."""
+        import types
+
+        fake_timestamp = np.array(self._fake_times)
+        fake_frequency = np.array(self._fake_freqs)
+        fake_confidence = np.array(self._fake_confs)
+        fake_activation = np.zeros(len(self._fake_times))
+
+        fake_rmvpe_instance = MagicMock()
+        fake_rmvpe_instance.predict.return_value = (
+            fake_timestamp, fake_frequency, fake_confidence, fake_activation
+        )
+        fake_rmvpe_mod = types.ModuleType("rmvpe_onnx")
+        fake_rmvpe_mod.RMVPE = MagicMock(return_value=fake_rmvpe_instance)
+
+        fake_sf_mod = types.ModuleType("soundfile")
+        fake_sf_mod.read = MagicMock(
+            return_value=(np.zeros(44100, dtype=np.float32), 22050)
+        )
+
+        return patch.dict(
+            "sys.modules",
+            {"rmvpe_onnx": fake_rmvpe_mod, "soundfile": fake_sf_mod},
+        )
+
     # --- return types ---
 
     def test_returns_tuple_of_three(self):
@@ -810,6 +836,26 @@ class TestExtractWavFrequency(unittest.TestCase):
         with self._patch_swift():
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
 
+    def test_rmvpe_onnx_backend_accepted(self):
+        """rmvpe-onnx is the default backend and must be accepted (mocked)."""
+        with self._patch_rmvpe():
+            extract_wav_frequency(self.wav, backend="rmvpe-onnx", use_cache=False)
+
+    def test_rmvpe_onnx_is_default_backend(self):
+        """Calling extract_wav_frequency without backend= should use rmvpe-onnx."""
+        import inspect
+        sig = inspect.signature(extract_wav_frequency)
+        self.assertEqual(sig.parameters["backend"].default, "rmvpe-onnx")
+
+    def test_rmvpe_onnx_returns_correct_shapes(self):
+        with self._patch_rmvpe():
+            time, freq, conf = extract_wav_frequency(
+                self.wav, backend="rmvpe-onnx", use_cache=False
+            )
+        self.assertEqual(len(time), self._n)
+        self.assertEqual(len(freq), self._n)
+        self.assertEqual(len(conf), self._n)
+
     def test_crepe_backend_accepted(self):
         """crepe backend path should be accepted (mocked to avoid TF dependency)."""
         fake_time = np.linspace(0, 2, self._n)
@@ -824,7 +870,7 @@ class TestExtractWavFrequency(unittest.TestCase):
         )
 
         with patch.dict("sys.modules", {"crepe": fake_crepe_mod}), \
-             patch("utils.wavtool.add_cuda_to_path", create=True), \
+             patch("utils.gpu.add_cuda_to_path", create=True), \
              patch("scipy.io.wavfile") as mock_wavfile:
             mock_wavfile.read.return_value = (22050, np.zeros(44100, dtype=np.float32))
             time, freq, conf = extract_wav_frequency(self.wav, backend="crepe", use_cache=False)

@@ -21,7 +21,7 @@ The current version supports importing the following expression parameters:
 
 | **Working with OpenUtau** | **Data Viewer** |
 |:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/ef97aa6a-5938-42f1-bd4a-78f268109db8" width="100%" /> |
+| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/91ddadee-62cd-4420-abf0-dd9177e8f935" width="100%" /> |
 
 </div>
 
@@ -43,9 +43,9 @@ The current version supports importing the following expression parameters:
 * OpenUtau Beta (or other versions with DiffSinger support)
 * Python 3.10 \*
 
-By default, this application uses [swift-f0](https://github.com/lars76/swift-f0) (based on ONNX Runtime) as the pitch extraction backend, which runs on CPU only and satisfies basic usage scenarios.
+By default, this application uses [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) as the pitch extraction backend, which runs on CPU only. [RMVPE](https://arxiv.org/abs/2306.15412v2) is currently the best-performing publicly available pitch extraction algorithm, and its inference speed is fast enough to satisfy the vast majority of use cases.
 
-The classic [CREPE](https://github.com/marl/crepe) pitch extraction backend (depends on TensorFlow) is also available for scenarios with higher accuracy requirements. If your computer is equipped with an NVIDIA GPU and supports [CUDA 11.x](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html) (i.e., GPU driver version >= 450), the CREPE backend will automatically enable GPU acceleration.
+The [swift-f0](https://github.com/lars76/swift-f0) and [CREPE](https://github.com/marl/crepe) pitch extraction backends are also available. The former runs on CPU only and is the fastest option, though its accuracy is modest. The latter is a classic algorithm in the field and runs more slowly. In a CUDA environment, the CREPE backend will automatically enable GPU acceleration.
 
 > \* On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
 
@@ -79,6 +79,7 @@ A new USTX file with expression parameters added. The original project will not 
 * [x] Linux support
 * [x] NVIDIA GPU acceleration
 * [x] Parameter config import/export
+* [x] Expression curve visualization
 * [x] `Pitch Deviation` generation
 * [x] `Dynamics` generation
 * [x] `Tension` generation
@@ -87,15 +88,15 @@ A new USTX file with expression parameters added. The original project will not 
 
 You can download pre-compiled executable files directly from the [Releases](https://github.com/NewComer00/expressive/releases) page:
 
-### `Expressive-GUI-<version>-Windows-x64-CPU.exe`
+### `Expressive-<version>-Windows-x64-CPU.exe`
 
-GUI installer for Windows x64 architecture.
+Expressive CLI / GUI / Viewer installer for Windows x64 architecture.
 
 CPU-only, no CUDA runtime libraries included. Small installation size, but slower when using the CREPE backend for pitch extraction.
 
-### `Expressive-GUI-<version>-Windows-x64-GPU.exe`
+### `Expressive-<version>-Windows-x64-GPU.exe`
 
-GUI installer for Windows x64 architecture with GPU support.
+Expressive CLI / GUI / Viewer installer for Windows x64 architecture with GPU support.
 
 Includes CUDA runtime libraries. When used on a computer with an NVIDIA GPU (driver version >= 450), it significantly improves CREPE backend inference speed.
 
@@ -127,6 +128,8 @@ pip install -e ".[gpu,gui]"
 
 After installation, you can use the `expressive` and `expressive-gui` entry points to run the **command-line interface** and **graphical user interface**.
 
+You can also launch a standalone expression curve visualization tool via the `expressive-viewer` command to view and analyze expression curves extracted by `expressive` and `expressive-gui` in real time.
+
 ## 📖 Usage
 
 > [!TIP]
@@ -142,6 +145,16 @@ After installation, you can use the `expressive` and `expressive-gui` entry poin
 > ```bash
 > LANGUAGE="en_US" expressive-gui
 > ```
+
+> [!IMPORTANT]
+> For users who installed from source, when using the [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) backend, the application will automatically download the model file [rmvpe.onnx (Copyright (c) 2022 lj1995 — MIT License)](https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.onnx) from Hugging Face.
+>
+> If you wish to download the model file in advance, you can run the following command after installation:
+> ```bash
+> rmvpe-onnx download
+> ```
+>
+> If you installed the application via the installer, the model file is already included in the installation package, and no additional download is required.
 
 ### Command Line Interface (CLI)
 
@@ -212,7 +225,7 @@ You can inspect the details of the expression curves in `expressive-viewer`, ana
 
 The [`examples/` directory](examples/) contains several sample projects. You can import the `expressive_config.json` file from any example into the GUI to automatically populate all parameters with the preset values.
 
-If you installed the application from the installer, a shortcut named `Expressive-examples` pointing to the examples directory will appear on your desktop after installation — you can import the config files directly from there.
+If you installed the application from the installer, a shortcut named `Expressive Examples` pointing to the examples directory will appear on your desktop after installation — you can import the config files directly from there.
 
 ## 🔬 Algorithm Workflow
 ```mermaid
@@ -293,10 +306,7 @@ The extracted PITD expression curve is too flat, with almost no significant vari
 The two confidence thresholds in the PITD extractor are set **too high**, causing many pitch changes to be discarded.
 
 #### Solution
-Try lowering both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
-
-#### Future Plan
-Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)).
+First try using the best-performing rmvpe-onnx backend (with default confidence thresholds). If the issue persists, try lowering both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
 
 ### PITD expression curve has sudden jumps or spikes at certain positions
 
@@ -307,7 +317,4 @@ The PITD expression curve changes too rapidly at certain positions, with very la
 The two confidence thresholds in the PITD extractor are set **too low**, causing erroneous detection results to be accepted.
 
 #### Solution
-Try increasing both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
-
-#### Future Plan
-Introduce a better PITD backend (e.g., [RMVPE](https://github.com/Dream-High/RMVPE)).
+First try using the best-performing rmvpe-onnx backend (with default confidence thresholds). If the issue persists, try increasing both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.

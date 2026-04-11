@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  expressive\n"
 "Report-Msgid-Bugs-To: https://github.com/NewComer00/expressive/issues\n"
-"POT-Creation-Date: 2026-04-01 15:33+0800\n"
+"POT-Creation-Date: 2026-04-11 19:51+0800\n"
 "PO-Revision-Date: 2026-03-01 20:21+0800\n"
 "Last-Translator: NewComer00\n"
 "Language: en\n"
@@ -302,7 +302,7 @@ msgstr ""
 "**Trim silence** from the leading and trailing edges of the audio before "
 "extracting expression"
 
-#: expressions/dyn.py:28 expressions/pitd.py:38 expressions/tenc.py:28
+#: expressions/dyn.py:28 expressions/pitd.py:39 expressions/tenc.py:28
 msgid ""
 "**Radius** for the FastDTW alignment algorithm; larger values allow more "
 "flexible alignment but increase computation time"
@@ -310,7 +310,7 @@ msgstr ""
 "**Radius** for the FastDTW alignment algorithm; larger values allow more "
 "flexible alignment but increase computation time"
 
-#: expressions/dyn.py:29 expressions/pitd.py:40 expressions/tenc.py:29
+#: expressions/dyn.py:29 expressions/pitd.py:41 expressions/tenc.py:29
 msgid ""
 "Controls the **smoothness** of the expression curve using Gaussian "
 "filtering. Higher values produce smoother curves but may lose fine detail"
@@ -318,7 +318,7 @@ msgstr ""
 "Controls the **smoothness** of the expression curve using Gaussian "
 "filtering. Higher values produce smoother curves but may lose fine detail"
 
-#: expressions/dyn.py:30 expressions/pitd.py:41 expressions/tenc.py:30
+#: expressions/dyn.py:30 expressions/pitd.py:42 expressions/tenc.py:30
 msgid ""
 "**Scaling factor** applied to the expression curve. Values >1 amplify the"
 " expression, =1 keeps original intensity, <1 reduces it"
@@ -326,8 +326,8 @@ msgstr ""
 "**Scaling factor** applied to the expression curve. Values >1 amplify the"
 " expression, =1 keeps original intensity, <1 reduces it"
 
-#: expressions/dyn.py:33 expressions/dyn.py:35 expressions/pitd.py:44
-#: expressions/pitd.py:47 expressions/tenc.py:34 expressions/tenc.py:36
+#: expressions/dyn.py:33 expressions/dyn.py:35 expressions/pitd.py:45
+#: expressions/pitd.py:48 expressions/tenc.py:34 expressions/tenc.py:36
 msgid "Tick"
 msgstr "Tick"
 
@@ -339,7 +339,7 @@ msgstr "raw_rms"
 msgid "Raw RMS"
 msgstr "Raw RMS"
 
-#: expressions/dyn.py:34 expressions/pitd.py:45 expressions/pitd.py:46
+#: expressions/dyn.py:34 expressions/pitd.py:46 expressions/pitd.py:47
 #: expressions/tenc.py:35
 msgid "Time (s)"
 msgstr "Time (s)"
@@ -349,14 +349,14 @@ msgstr "Time (s)"
 msgid "RMS"
 msgstr "RMS"
 
-#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:45
-#: expressions/pitd.py:46 expressions/pitd.py:47 expressions/tenc.py:35
+#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:46
+#: expressions/pitd.py:47 expressions/pitd.py:48 expressions/tenc.py:35
 #: expressions/tenc.py:36
 msgid "Reference"
 msgstr "Reference"
 
-#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:45
-#: expressions/pitd.py:46 expressions/pitd.py:47 expressions/tenc.py:35
+#: expressions/dyn.py:34 expressions/dyn.py:35 expressions/pitd.py:46
+#: expressions/pitd.py:47 expressions/pitd.py:48 expressions/tenc.py:35
 #: expressions/tenc.py:36
 msgid "UTAU"
 msgstr "UTAU"
@@ -369,11 +369,11 @@ msgstr "aligned_rms"
 msgid "Aligned RMS"
 msgstr "Aligned RMS"
 
-#: expressions/dyn.py:45 expressions/pitd.py:60 expressions/tenc.py:47
+#: expressions/dyn.py:45 expressions/pitd.py:61 expressions/tenc.py:47
 msgid "Extracting expression..."
 msgstr "Extracting expression..."
 
-#: expressions/dyn.py:77 expressions/pitd.py:113 expressions/tenc.py:79
+#: expressions/dyn.py:77 expressions/pitd.py:114 expressions/tenc.py:79
 msgid "Expression extraction complete."
 msgstr "Expression extraction complete."
 
@@ -382,41 +382,28 @@ msgid "Pitch Deviation (curve)"
 msgstr "Pitch Deviation (curve)"
 
 #: expressions/pitd.py:29
-msgid "fast, CPU-based (ONNX Runtime)"
-msgstr "fast, CPU-based (ONNX Runtime)"
+msgid "finest accuracy, fast, CPU only (ONNX Runtime)"
+msgstr "finest accuracy, fast, CPU only (ONNX Runtime)"
 
 #: expressions/pitd.py:30
-msgid "classic but slow, CPU & NVIDIA GPU (TensorFlow)"
-msgstr "classic but slow, CPU & NVIDIA GPU (TensorFlow)"
+msgid "fair accuracy, fastest, CPU only (ONNX Runtime)"
+msgstr "fair accuracy, fastest, CPU only (ONNX Runtime)"
 
-#: expressions/pitd.py:35
-#, python-format
-msgid ""
-"**F0 detection backend** for extracting pitch from WAV files. Available "
-"options:\n"
-"\n"
-"%s\n"
-"\n"
-msgstr ""
-"**F0 detection backend** for extracting pitch from WAV files. Available "
-"options:\n"
-"\n"
-"%s\n"
-"\n"
+#: expressions/pitd.py:31
+msgid "good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"
+msgstr "good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"
 
 #: expressions/pitd.py:36
 #, python-format
 msgid ""
-"Minimum **confidence level** for keeping detected pitch values in the "
-"**UTAU** WAV. Lower values retain more frames but may include errors. "
-"Omit to use the recommended value for the selected backend:\n"
+"**F0 detection backend** for extracting pitch from WAV files. Available "
+"options:\n"
 "\n"
 "%s\n"
 "\n"
 msgstr ""
-"Minimum **confidence level** for keeping detected pitch values in the "
-"**UTAU** WAV. Lower values retain more frames but may include errors. "
-"Omit to use the recommended value for the selected backend:\n"
+"**F0 detection backend** for extracting pitch from WAV files. Available "
+"options:\n"
 "\n"
 "%s\n"
 "\n"
@@ -425,6 +412,23 @@ msgstr ""
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
+"**UTAU** WAV. Lower values retain more frames but may include errors. "
+"Omit to use the recommended value for the selected backend:\n"
+"\n"
+"%s\n"
+"\n"
+msgstr ""
+"Minimum **confidence level** for keeping detected pitch values in the "
+"**UTAU** WAV. Lower values retain more frames but may include errors. "
+"Omit to use the recommended value for the selected backend:\n"
+"\n"
+"%s\n"
+"\n"
+
+#: expressions/pitd.py:38
+#, python-format
+msgid ""
+"Minimum **confidence level** for keeping detected pitch values in the "
 "**reference** WAV. Lower values retain more frames but may include "
 "errors. Omit to use the recommended value for the selected backend:\n"
 "\n"
@@ -438,7 +442,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:39
+#: expressions/pitd.py:40
 msgid ""
 "**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is"
 " an octave higher than the reference WAV, set to 12; if lower, set to "
@@ -448,39 +452,39 @@ msgstr ""
 " an octave higher than the reference WAV, set to 12; if lower, set to "
 "-12. Omit to enable automatic shift estimation"
 
-#: expressions/pitd.py:45
+#: expressions/pitd.py:46
 msgid "confidence"
 msgstr "confidence"
 
-#: expressions/pitd.py:45
+#: expressions/pitd.py:46
 msgid "Pitch Extraction Confidence"
 msgstr "Pitch Extraction Confidence"
 
-#: expressions/pitd.py:45
+#: expressions/pitd.py:46
 msgid "Confidence"
 msgstr "Confidence"
 
-#: expressions/pitd.py:46
+#: expressions/pitd.py:47
 msgid "raw_pitch"
 msgstr "raw_pitch"
 
-#: expressions/pitd.py:46
+#: expressions/pitd.py:47
 msgid "Raw Pitch"
 msgstr "Raw Pitch"
 
-#: expressions/pitd.py:46 expressions/pitd.py:47
+#: expressions/pitd.py:47 expressions/pitd.py:48
 msgid "Pitch (Hz)"
 msgstr "Pitch (Hz)"
 
-#: expressions/pitd.py:47
+#: expressions/pitd.py:48
 msgid "aligned_pitch"
 msgstr "aligned_pitch"
 
-#: expressions/pitd.py:47
+#: expressions/pitd.py:48
 msgid "Aligned Pitch"
 msgstr "Aligned Pitch"
 
-#: expressions/pitd.py:189
+#: expressions/pitd.py:190
 #, python-brace-format
 msgid "Estimated Semitone-shift: {}"
 msgstr "Estimated Semitone-shift: {}"
@@ -509,22 +513,22 @@ msgstr "Loop region"
 msgid "Zoom"
 msgstr "Zoom"
 
-#: utils/wavtool.py:86
+#: utils/wavtool.py:87
 #, python-brace-format
 msgid "Loading F0 data from cache file: '{}'"
 msgstr "Loading F0 data from cache file: '{}'"
 
-#: utils/wavtool.py:120
+#: utils/wavtool.py:130
 #, python-brace-format
 msgid "F0 data saved to cache file: '{}'"
 msgstr "F0 data saved to cache file: '{}'"
 
-#: utils/wavtool.py:294
+#: utils/wavtool.py:304
 #, python-brace-format
 msgid "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 
-#: utils/wavtool.py:300
+#: utils/wavtool.py:310
 #, python-brace-format
 msgid "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
