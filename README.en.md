@@ -7,6 +7,15 @@
   <a href="README.en.md"><img src="https://img.shields.io/badge/lang-English-blue.svg"></a>
 </p>
 
+> [!WARNING]
+> 🚨 **Please Read Before Downloading** 🚨
+>
+> **It is strongly recommended to use v0.9.0 or later**. Earlier versions of the **PITD** expression parameter processing algorithm contain a [critical flaw](https://github.com/NewComer00/expressive/releases/tag/v0.9.0) that may result in **incorrect pitch curve generation**. To download the latest version, please visit the [Releases page](https://github.com/NewComer00/expressive/releases).
+>
+> For users migrating from an older version to `v0.9.0` or later, note that the default value of the **PITD Scaler** is now `1.0` (previously `2.0`). If you have an old configuration file, please set the **PITD Scaler** to `1.0`.
+>
+> **🎵 Thank you for using Expressive🎵**
+
 # Expressive
 
 **Expressive** is a [DiffSinger](https://github.com/openvpi/diffsinger) expression parameter importer developed for [OpenUtau](https://github.com/stakira/OpenUtau). It aims to extract expression parameters from real human vocals and import them into the appropriate tracks of your project.
@@ -21,18 +30,17 @@ The current version supports importing the following expression parameters:
 
 | **Working with OpenUtau** | **Data Viewer** |
 |:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/91ddadee-62cd-4420-abf0-dd9177e8f935" width="100%" /> |
+| <img src="https://github.com/user-attachments/assets/d4e37337-50df-4d7d-8552-c4505dc73f20" width="100%" /> | <img src="https://github.com/user-attachments/assets/91ddadee-62cd-4420-abf0-dd9177e8f935" width="100%" /> |
 
 </div>
 
-> - *OpenUtau version from [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
-> - *Singer model from [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
+> - *Example from [`examples/明天会更好`](examples/明天会更好). Click to view details.*
 
 > [!TIP]
 > <details>
 >   <summary><b>👉 Click to expand the full voiced demo video 👈</b></summary>
 >
->   <p align="center"><video src="https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b"></video></p>
+>   <p align="center"><video src="https://github.com/user-attachments/assets/89706eec-63f6-44f6-8ed7-1f1c73cb341e"></video></p>
 >   <p align="center"><video src="https://github.com/user-attachments/assets/4076eb8b-07eb-48e6-bdec-4abeac6258c7"></video></p>
 >
 > </details>
@@ -46,6 +54,8 @@ The current version supports importing the following expression parameters:
 By default, this application uses [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) as the pitch extraction backend, which runs on CPU only. [RMVPE](https://arxiv.org/abs/2306.15412v2) is currently the best-performing publicly available pitch extraction algorithm, and its inference speed is fast enough to satisfy the vast majority of use cases.
 
 The [swift-f0](https://github.com/lars76/swift-f0) and [CREPE](https://github.com/marl/crepe) pitch extraction backends are also available. The former runs on CPU only and is the fastest option, though its accuracy is modest. The latter is a classic algorithm in the field and runs more slowly. In a CUDA environment, the CREPE backend will automatically enable GPU acceleration.
+
+There is also a newly added experimental **hybrid** backend available. The hybrid backend combines the prediction results of rmvpe-onnx and swift-f0, primarily using the pitch extraction results from rmvpe-onnx. In voiced segments of the audio, if the confidence of rmvpe-onnx is low and the confidence of swift-f0 is high, the result from swift-f0 is used for correction, improving the overall accuracy of pitch extraction.
 
 > \* On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
 
@@ -297,24 +307,53 @@ Relaunching the application should restore normal functionality, and this issue 
 #### Future Plan
 The NiceGUI framework has begun improving its drag-and-drop support and should resolve this in a future release.
 
-### PITD expression curve is overall too flat
+---
+
+### PITD expression curve is overly flat
 
 #### Symptom
-The extracted PITD expression curve is too flat, with almost no significant variation overall. Pitch changes in the reference vocal are not reflected in the expression curve.
 
-#### Possible Cause
-The two confidence thresholds in the PITD extractor are set **too high**, causing many pitch changes to be discarded.
+The extracted PITD expression curve is too flat, with almost no significant variation. Pitch changes in the reference vocal are not properly reflected in the curve.
 
-#### Solution
-First try using the best-performing rmvpe-onnx backend (with default confidence thresholds). If the issue persists, try lowering both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
+#### Possible Causes
 
-### PITD expression curve has sudden jumps or spikes at certain positions
+1. In versions earlier than **v0.9.0**, there is an issue in the conversion between pitch and PITD values, which can cause the curve to appear overly flat.
+2. The two confidence thresholds in the PITD extractor are set **too high**, causing many pitch changes to be discarded.
+   You can observe missing segments in the original pitch curve in [`expressive-viewer`](#iewer).
+
+#### Solutions
+
+1. Please upgrade to **v0.9.0 or later**.
+2. First try using the best-performing **rmvpe-onnx** or **hybrid** backend (with default confidence thresholds).
+   If the issue persists, try lowering both confidence thresholds. You can use the pitch confidence curve in [`expressive-viewer`](#viewer) as a reference when tuning.
+   In general, the **Utau vocal** is relatively clean, so it is recommended to adjust the confidence threshold for the **reference vocal** first.
+
+#### Future Plans
+Incorporate semantic information into the PITD expression extraction algorithm.
+
+---
+
+### PITD expression curve has sudden jumps or spikes
 
 #### Symptom
-The PITD expression curve changes too rapidly at certain positions, with very large jumps or spikes that clearly do not match natural vocal behavior.
 
-#### Possible Cause
-The two confidence thresholds in the PITD extractor are set **too low**, causing erroneous detection results to be accepted.
+The PITD expression curve changes too abruptly at certain positions, with large jumps or spikes that do not match natural vocal behavior.
 
-#### Solution
-First try using the best-performing rmvpe-onnx backend (with default confidence thresholds). If the issue persists, try increasing both confidence thresholds. In general, the **Utau vocal** is relatively clean, so it is advisable to first adjust the confidence threshold for the **Reference vocal**.
+#### Possible Causes
+
+1. In versions earlier than **v0.9.0**, there is an issue in the conversion between pitch and PITD values.
+2. There is noise in the reference audio around the corresponding timestamps.
+   You can observe abnormal spikes in the original pitch curve in [`expressive-viewer`](#viewer)
+3. The two confidence thresholds in the PITD extractor are set **too low**, causing incorrect detections to be accepted.
+   This may also appear as spikes in the pitch curve in [`expressive-viewer`](#viewer).
+
+#### Solutions
+
+1. Please upgrade to **v0.9.0 or later**.
+2. Try denoising the reference audio using tools such as [UVR](https://github.com/Anjok07/ultimatevocalremovergui) or [MSST](https://github.com/SUC-DriverOld/MSST-WebUI).
+3. First try using the best-performing **rmvpe-onnx** or **hybrid** backend (with default confidence thresholds).
+   If the issue persists, try increasing both confidence thresholds. You can use the pitch confidence curve in [`expressive-viewer`](#viewer) to guide your adjustments.
+   In general, the **Utau vocal** is relatively clean, so it is recommended to adjust the confidence threshold for the **reference vocal** first.
+
+#### Future Plans
+Incorporate semantic information into the PITD expression extraction algorithm.

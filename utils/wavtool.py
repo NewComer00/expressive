@@ -56,10 +56,11 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
 
     Args:
         file_path (str): Path to the WAV file.
-        backend (str, optional): Pitch detection backend. One of "crepe" or "swift-f0" or "rmvpe-onnx".
+        backend (str, optional): Pitch detection backend.
             "crepe" uses the CREPE model (requires TensorFlow, GPU-accelerated).
             "swift-f0" uses SwiftF0 (faster CPU inference, requires swift-f0 package).
             "rmvpe-onnx" uses RMVPE ONNX model (fast CPU inference, requires rmvpe-onnx package).
+            "hybrid" uses a hybrid strategy based on "rmvpe-onnx" and "swift-f0".
             Defaults to "rmvpe-onnx".
         use_cache (bool, optional): Whether to use cached data if available. Defaults to True.
 
@@ -69,7 +70,7 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
             - frequency (np.ndarray of float): Detected pitch frequencies in Hz. Shape: (n_time_points).
             - confidence (np.ndarray of float): Confidence values for the detected pitches. Shape: (n_time_points).
     """
-    _SUPPORTED_BACKENDS = ("crepe", "swift-f0", "rmvpe-onnx")
+    _SUPPORTED_BACKENDS = ("crepe", "swift-f0", "rmvpe-onnx", "hybrid")
     if backend not in _SUPPORTED_BACKENDS:
         raise ValueError(f"Unknown backend '{backend}'. Choose from: {_SUPPORTED_BACKENDS}")
 
@@ -84,7 +85,7 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
 
         cache_path = cache_dir / f"{wav_hash}.{backend}.csv"
         if cache_path.is_file():
-            print(_("Loading F0 data from cache file: '{}'").format(cache_path))
+            print(f"[{backend}] " + _("Loading F0 data from cache file: '{}'").format(cache_path))
             with open(cache_path, "r", newline="") as file:
                 reader = csv.reader(file)
                 next(reader)  # Skip header
@@ -119,6 +120,8 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
             time = timestamp.tolist()
             frequency = frequency.tolist()
             confidence = confidence.tolist()
+        elif backend == "hybrid":
+            time, frequency, confidence = _merge_rmvpe_and_swift_f0(file_path, use_cache)
 
         # Save data to cache
         if use_cache:
@@ -127,9 +130,82 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
                 writer.writerow(["Time (s)", "Frequency (Hz)", "Confidence"])
                 for t, f, c in zip(time, frequency, confidence, strict=False):
                     writer.writerow([t, f, c])
-            print(_("F0 data saved to cache file: '{}'").format(cache_path))
+            print(f"[{backend}] " + _("F0 data saved to cache file: '{}'").format(cache_path))
 
     return np.asarray(time), np.asarray(frequency), np.asarray(confidence)
+
+
+def _merge_rmvpe_and_swift_f0(file_path, use_cache):
+    """Merge rmvpe-onnx and swift-f0 pitch predictions into a single output.
+
+    Uses rmvpe-onnx as the base prediction and selectively replaces frames with
+    swift-f0 results where all three conditions are met:
+      1. The frame falls within a voiced region (RMS energy >= Otsu threshold).
+      2. rmvpe-onnx confidence is low, indicating uncertain prediction.
+      3. swift-f0 confidence is high, indicating a reliable prediction.
+
+    Voiced regions are detected by computing per-frame RMS energy with librosa,
+    then thresholding with Otsu's method to separate voiced from unvoiced frames.
+    swift-f0 frames are aligned to the rmvpe-onnx time grid via nearest-neighbour
+    lookup before comparison.
+
+    Args:
+        file_path (str): Path to the WAV file. Passed directly to
+            extract_wav_frequency for both backends.
+        use_cache (bool): Whether to use cached predictions. Passed directly to
+            extract_wav_frequency for both backends.
+
+    Returns:
+        tuple: (time, frequency, confidence), where:
+            - time (list of float): Time points in seconds from the rmvpe-onnx grid.
+            - frequency (list of float): Merged pitch frequencies in Hz.
+            - confidence (list of float): Confidence values corresponding to
+              whichever backend's frequency was selected per frame.
+    """
+    _CONFIDENCE_THRESHOLDS = {
+        "rmvpe-onnx": 0.80,
+        "swift-f0":   0.95,
+    }
+
+    from skimage.filters import threshold_otsu
+    from librosa.feature import rms as librosa_rms
+
+    r_time, r_freq, r_conf = extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=use_cache)
+    s_time, s_freq, s_conf = extract_wav_frequency(file_path, backend="swift-f0",   use_cache=use_cache)
+
+    # --- Base prediction: start from rmvpe-onnx ---
+    out_freq = r_freq.copy()
+    out_conf = r_conf.copy()
+
+    # --- Voiced region via Otsu threshold on RMS ---
+    import soundfile as sf
+    audio, sr = sf.read(file_path)
+    hop_length = 512
+    frame_rms = librosa_rms(y=audio, hop_length=hop_length)[0]
+    rms_times  = np.arange(len(frame_rms)) * hop_length / sr
+    otsu_thr   = threshold_otsu(frame_rms)
+    # Snap RMS voiced mask to rmvpe-onnx time grid
+    rms_indices   = np.searchsorted(rms_times, r_time).clip(0, len(frame_rms) - 1)
+    voiced_region = frame_rms[rms_indices] >= otsu_thr
+
+    # --- Align swift-f0 to rmvpe-onnx time grid via nearest-neighbour lookup ---
+    snap_indices = np.searchsorted(s_time, r_time).clip(0, len(s_time) - 1)
+    prev_indices = np.maximum(snap_indices - 1, 0)
+    use_prev     = np.abs(s_time[prev_indices] - r_time) < np.abs(s_time[snap_indices] - r_time)
+    snap_indices = np.where(use_prev, prev_indices, snap_indices)
+
+    s_freq_aligned = s_freq[snap_indices]
+    s_conf_aligned = s_conf[snap_indices]
+
+    # --- Replace: voiced region + rmvpe low confidence + swift-f0 high confidence ---
+    r_low  = r_conf < _CONFIDENCE_THRESHOLDS["rmvpe-onnx"]
+    s_high = s_conf_aligned >= _CONFIDENCE_THRESHOLDS["swift-f0"]
+    replace_mask = voiced_region & r_low & s_high
+
+    out_freq = np.where(replace_mask, s_freq_aligned, out_freq)
+    out_conf = np.where(replace_mask, s_conf_aligned, out_conf)
+
+    return r_time.tolist(), out_freq.tolist(), out_conf.tolist()
 
 
 def extract_wav_rms(wav_path, mask_silence=True):

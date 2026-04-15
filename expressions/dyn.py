@@ -10,6 +10,7 @@ from .base import (
     register_expression
 )
 from utils.seqtool import (
+    seq_spline_smoothing,
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
@@ -24,10 +25,11 @@ class DynLoader(ExpressionLoader):
     expression_name = "dyn"
     expression_info = _l("Dynamics (curve)")
     args = SimpleNamespace(
-        trim_silence    = Args(name="trim_silence", type=bool , default=True, help=_l("**Trim silence** from the leading and trailing edges of the audio before extracting expression")),  # noqa: E501
-        align_radius    = Args(name="align_radius", type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
-        smoothness      = Args(name="smoothness"  , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
-        scaler          = Args(name="scaler"      , type=float, default=1.5 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
+        trim_silence     = Args(name="trim_silence"    , type=bool , default=True, help=_l("**Trim silence** from the leading and trailing edges of the audio before extracting expression")),  # noqa: E501
+        align_radius     = Args(name="align_radius"    , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
+        smoothness       = Args(name="smoothness"      , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
+        scaler           = Args(name="scaler"          , type=float, default=1.5 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
+        spline_smoothing = Args(name="spline_smoothing", type=bool , default=True, help=_l("Perform **spline smoothing** on the final expression curve for extra smoothness")),  # noqa: E501
     )
     plots = SimpleNamespace(
         expression  = Plot(tag=expression_info    , title=expression_info    , x_label=_l("Tick")    , y_label=expression_name, legends=[expression_name]            ),  # noqa: E501
@@ -37,10 +39,11 @@ class DynLoader(ExpressionLoader):
 
     def get_expression(
         self,
-        trim_silence = args.trim_silence.default,
-        align_radius = args.align_radius.default,
-        smoothness   = args.smoothness  .default,
-        scaler       = args.scaler      .default,
+        trim_silence     = args.trim_silence    .default,
+        align_radius     = args.align_radius    .default,
+        smoothness       = args.smoothness      .default,
+        scaler           = args.scaler          .default,
+        spline_smoothing = args.spline_smoothing.default,
     ):
         self.logger.info(_("Extracting expression..."))
 
@@ -67,6 +70,12 @@ class DynLoader(ExpressionLoader):
 
         # Generate expression curve
         dyn_val = get_experssion_dynamics(time_aligned_ref_rms, smoothness, scaler)
+
+        if spline_smoothing:
+            # Final spline smoothing of the expression curve
+            # NOTE: All NaN positions except the leading and trailing ones will be interpolated
+            # Only preserving NaN at the head/tail to avoid edge artifacts of spline smoothing
+            dyn_val = seq_spline_smoothing(dyn_tick, dyn_val, nan_policy='preserve_head_tail')
 
         # Collect plots
         self.collect_plot(self.plots.expression,  (dyn_tick, dyn_val))
