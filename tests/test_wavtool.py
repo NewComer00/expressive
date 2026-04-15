@@ -4,6 +4,7 @@ import argparse
 import csv
 import os
 import tempfile
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -31,6 +32,16 @@ def _make_wav(duration: float = 5.0, sr: int = 22050) -> str:
     n_samples = int(duration * sr)
     tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
     sf.write(tmp.name, np.zeros(n_samples, dtype=np.float32), sr)
+    tmp.close()
+    return tmp.name
+
+
+def _make_tonal_wav(duration: float = 2.0, sr: int = 22050, freq: float = 440.0) -> str:
+    """Write a sine-wave WAV so RMS is non-trivially non-zero throughout."""
+    t = np.linspace(0, duration, int(duration * sr), endpoint=False)
+    y = (0.5 * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    sf.write(tmp.name, y, sr)
     tmp.close()
     return tmp.name
 
@@ -586,15 +597,6 @@ class TestExtractWavRms(unittest.TestCase):
         except FileNotFoundError:
             pass
 
-    def _make_tonal_wav(self, duration=2.0, sr=22050, freq=440.0) -> str:
-        """Write a sine-wave WAV so RMS is non-trivially non-zero throughout."""
-        t = np.linspace(0, duration, int(duration * sr), endpoint=False)
-        y = (0.5 * np.sin(2 * np.pi * freq * t)).astype(np.float32)
-        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-        sf.write(tmp.name, y, sr)
-        tmp.close()
-        return tmp.name
-
     # --- return types and shapes ---
 
     def test_returns_tuple_of_two(self):
@@ -630,6 +632,11 @@ class TestExtractWavRms(unittest.TestCase):
         rms_time, _ = extract_wav_rms(self.wav)
         self.assertTrue(np.all(np.diff(rms_time) > 0))
 
+    def test_rms_time_does_not_exceed_duration(self):
+        """All time points should fall within (or very close to) the file duration."""
+        rms_time, _ = extract_wav_rms(self.wav)
+        self.assertLessEqual(rms_time[-1], 2.1)
+
     # --- silence masking ---
 
     def test_silent_wav_masked_with_nan(self):
@@ -653,7 +660,7 @@ class TestExtractWavRms(unittest.TestCase):
 
     def test_tonal_wav_has_active_frames(self):
         """A sine wave should have some non-NaN (active) RMS frames."""
-        wav = self._make_tonal_wav()
+        wav = _make_tonal_wav()
         try:
             _, rms = extract_wav_rms(wav, mask_silence=True)
             self.assertTrue(np.any(~np.isnan(rms)))
@@ -661,11 +668,20 @@ class TestExtractWavRms(unittest.TestCase):
             os.unlink(wav)
 
     def test_tonal_wav_active_frames_are_nonnegative(self):
-        wav = self._make_tonal_wav()
+        wav = _make_tonal_wav()
         try:
             _, rms = extract_wav_rms(wav, mask_silence=True)
             active = rms[~np.isnan(rms)]
             self.assertTrue(np.all(active >= 0))
+        finally:
+            os.unlink(wav)
+
+    def test_tonal_wav_no_nan_when_mask_false(self):
+        """A fully tonal signal with mask_silence=False must have zero NaN values."""
+        wav = _make_tonal_wav()
+        try:
+            _, rms = extract_wav_rms(wav, mask_silence=False)
+            self.assertFalse(np.any(np.isnan(rms)))
         finally:
             os.unlink(wav)
 
@@ -745,15 +761,13 @@ class TestExtractWavFrequency(unittest.TestCase):
         mock_cls = MagicMock(return_value=mock_detector)
         return patch("swift_f0.SwiftF0", mock_cls, create=True)
 
-    def _patch_rmvpe(self):
+    def _patch_rmvpe(self, times=None, freqs=None, confs=None):
         """Patch RMVPE and soundfile so the rmvpe-onnx backend runs without
-        real model weights or audio I/O."""
-        import types
-
-        fake_timestamp = np.array(self._fake_times)
-        fake_frequency = np.array(self._fake_freqs)
-        fake_confidence = np.array(self._fake_confs)
-        fake_activation = np.zeros(len(self._fake_times))
+        real model weights or audio I/O. Optionally override return values."""
+        fake_timestamp  = np.array(times  if times  is not None else self._fake_times)
+        fake_frequency  = np.array(freqs  if freqs  is not None else self._fake_freqs)
+        fake_confidence = np.array(confs  if confs  is not None else self._fake_confs)
+        fake_activation = np.zeros(len(fake_timestamp))
 
         fake_rmvpe_instance = MagicMock()
         fake_rmvpe_instance.predict.return_value = (
@@ -863,7 +877,6 @@ class TestExtractWavFrequency(unittest.TestCase):
         fake_conf = np.random.uniform(0.5, 1.0, self._n)
         fake_act  = np.zeros((self._n, 360))
 
-        import types
         fake_crepe_mod = types.ModuleType("crepe")
         fake_crepe_mod.predict = MagicMock(
             return_value=(fake_time, fake_freq, fake_conf, fake_act)
@@ -877,6 +890,131 @@ class TestExtractWavFrequency(unittest.TestCase):
 
         self.assertEqual(len(time), len(freq))
         self.assertEqual(len(freq), len(conf))
+
+    # --- hybrid backend ---
+
+    def test_hybrid_backend_accepted(self):
+        """hybrid backend must be accepted without raising ValueError."""
+        with self._patch_rmvpe(), self._patch_swift():
+            # soundfile is also used inside _merge_rmvpe_and_swift_f0
+            extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+
+    def test_hybrid_returns_tuple_of_three(self):
+        with self._patch_rmvpe(), self._patch_swift():
+            result = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 3)
+
+    def test_hybrid_output_arrays_are_ndarrays(self):
+        with self._patch_rmvpe(), self._patch_swift():
+            time, freq, conf = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+        self.assertIsInstance(time, np.ndarray)
+        self.assertIsInstance(freq, np.ndarray)
+        self.assertIsInstance(conf, np.ndarray)
+
+    def test_hybrid_all_outputs_same_length(self):
+        with self._patch_rmvpe(), self._patch_swift():
+            time, freq, conf = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+        self.assertEqual(len(time), len(freq))
+        self.assertEqual(len(freq), len(conf))
+
+    def test_hybrid_output_length_matches_rmvpe_grid(self):
+        """Hybrid uses the rmvpe-onnx time grid, so output length == rmvpe output length."""
+        with self._patch_rmvpe(), self._patch_swift():
+            time, freq, conf = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+        self.assertEqual(len(time), self._n)
+
+    def test_hybrid_time_values_are_float(self):
+        with self._patch_rmvpe(), self._patch_swift():
+            time, _, _ = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+        self.assertTrue(np.issubdtype(time.dtype, np.floating))
+
+    def test_hybrid_frequency_values_are_float(self):
+        with self._patch_rmvpe(), self._patch_swift():
+            _, freq, _ = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+        self.assertTrue(np.issubdtype(freq.dtype, np.floating))
+
+    def test_hybrid_confidence_values_are_float(self):
+        with self._patch_rmvpe(), self._patch_swift():
+            _, _, conf = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
+        self.assertTrue(np.issubdtype(conf.dtype, np.floating))
+
+    def test_hybrid_time_matches_rmvpe_time(self):
+        """The time axis returned by hybrid must equal the rmvpe-onnx time axis."""
+        with self._patch_rmvpe(), self._patch_swift():
+            time_hybrid, _, _ = extract_wav_frequency(
+                self.wav, backend="hybrid", use_cache=False
+            )
+        with self._patch_rmvpe():
+            time_rmvpe, _, _ = extract_wav_frequency(
+                self.wav, backend="rmvpe-onnx", use_cache=False
+            )
+        np.testing.assert_array_almost_equal(time_hybrid, time_rmvpe)
+
+    def test_hybrid_replaces_low_confidence_rmvpe_frames(self):
+        """When rmvpe confidence is low and swift-f0 confidence is high in a voiced
+        region, the hybrid output should include some swift-f0 frequency values."""
+        n = 50
+        times = list(np.linspace(0, 1.0, n))
+
+        # rmvpe: low confidence everywhere so swift-f0 replacements will be chosen
+        rmvpe_freqs = [200.0] * n
+        rmvpe_confs = [0.5] * n  # below threshold 0.80
+
+        # swift-f0: high confidence + different frequency
+        swift_freqs = [400.0] * n
+        swift_confs = [0.99] * n  # above threshold 0.95
+
+        # Build a tonal WAV so RMS > 0 (voiced region)
+        wav = _make_tonal_wav(duration=1.0, sr=22050, freq=440.0)
+        try:
+            with self._patch_rmvpe(times=times, freqs=rmvpe_freqs, confs=rmvpe_confs), \
+                 self._patch_swift():
+                # Override swift-f0 mock with specific values
+                fake_result = MagicMock()
+                fake_result.timestamps.tolist.return_value = times
+                fake_result.pitch_hz.tolist.return_value   = swift_freqs
+                fake_result.confidence.tolist.return_value = swift_confs
+                mock_detector = MagicMock()
+                mock_detector.detect_from_file.return_value = fake_result
+                mock_cls = MagicMock(return_value=mock_detector)
+                with patch("swift_f0.SwiftF0", mock_cls, create=True):
+                    _, freq, _ = extract_wav_frequency(wav, backend="hybrid", use_cache=False)
+
+            # At least some frames should have been replaced with 400 Hz
+            self.assertTrue(np.any(np.isclose(freq, 400.0)),
+                            "Expected some frames to be replaced by swift-f0 (400 Hz)")
+        finally:
+            os.unlink(wav)
+
+    def test_hybrid_keeps_rmvpe_frames_when_rmvpe_confident(self):
+        """When rmvpe confidence is high the hybrid output should retain rmvpe frequencies."""
+        n = 50
+        times = list(np.linspace(0, 1.0, n))
+        rmvpe_freqs = [200.0] * n
+        rmvpe_confs = [0.95] * n  # above threshold 0.80 — should not be replaced
+
+        swift_freqs = [400.0] * n
+        swift_confs = [0.99] * n
+
+        wav = _make_tonal_wav(duration=1.0, sr=22050, freq=440.0)
+        try:
+            with self._patch_rmvpe(times=times, freqs=rmvpe_freqs, confs=rmvpe_confs):
+                fake_result = MagicMock()
+                fake_result.timestamps.tolist.return_value = times
+                fake_result.pitch_hz.tolist.return_value   = swift_freqs
+                fake_result.confidence.tolist.return_value = swift_confs
+                mock_detector = MagicMock()
+                mock_detector.detect_from_file.return_value = fake_result
+                mock_cls = MagicMock(return_value=mock_detector)
+                with patch("swift_f0.SwiftF0", mock_cls, create=True):
+                    _, freq, _ = extract_wav_frequency(wav, backend="hybrid", use_cache=False)
+
+            # All frames should stay at 200 Hz (rmvpe confident, no replacement)
+            self.assertTrue(np.all(np.isclose(freq, 200.0)),
+                            "Expected rmvpe frequencies to be kept when confidence is high")
+        finally:
+            os.unlink(wav)
 
     # --- caching ---
 

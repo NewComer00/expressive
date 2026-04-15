@@ -12,6 +12,7 @@ from .base import (
 )
 from utils.i18n import _, _l, _lf
 from utils.seqtool import (
+    seq_spline_smoothing,
     unify_sequence_time,
     align_sequence_tick,
     gaussian_filter1d_with_nan,
@@ -29,17 +30,19 @@ class PitdLoader(ExpressionLoader):
         "rmvpe-onnx": _l("finest accuracy, fast, CPU only (ONNX Runtime)"),
         "swift-f0": _l("fair accuracy, fastest, CPU only (ONNX Runtime)"),
         "crepe": _l("good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"),
+        "hybrid": _l("based on rmvpe-onnx, improved by swift-f0, CPU only (ONNX Runtime)"),
     }
-    confidence_utau_recommended = {"rmvpe-onnx": 0.03, "swift-f0": 0.95, "crepe": 0.80}
-    confidence_ref_recommended  = {"rmvpe-onnx": 0.03, "swift-f0": 0.93, "crepe": 0.60}
+    confidence_utau_recommended = {"rmvpe-onnx": 0.03, "swift-f0": 0.95, "crepe": 0.80, "hybrid": 0.03}
+    confidence_ref_recommended  = {"rmvpe-onnx": 0.03, "swift-f0": 0.93, "crepe": 0.60, "hybrid": 0.03}
     args = SimpleNamespace(
-        backend         = Args(name="backend"        , type=str  , default="rmvpe-onnx", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
-        confidence_utau = Args(name="confidence_utau", type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **UTAU** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_utau_recommended.items()]))),  # noqa: E501
-        confidence_ref  = Args(name="confidence_ref" , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **reference** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_ref_recommended.items()]))),  # noqa: E501
-        align_radius    = Args(name="align_radius"   , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
-        semitone_shift  = Args(name="semitone_shift" , type=int  , default=None, help=_l("**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is an octave higher than the reference WAV, set to 12; if lower, set to -12. Omit to enable automatic shift estimation")),  # noqa: E501
-        smoothness      = Args(name="smoothness"     , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
-        scaler          = Args(name="scaler"         , type=float, default=2.0 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
+        backend          = Args(name="backend"         , type=str  , default="rmvpe-onnx", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
+        confidence_utau  = Args(name="confidence_utau" , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **UTAU** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_utau_recommended.items()]))),  # noqa: E501
+        confidence_ref   = Args(name="confidence_ref"  , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **reference** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_ref_recommended.items()]))),  # noqa: E501
+        align_radius     = Args(name="align_radius"    , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
+        semitone_shift   = Args(name="semitone_shift"  , type=int  , default=None, help=_l("**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is an octave higher than the reference WAV, set to 12; if lower, set to -12. Omit to enable automatic shift estimation")),  # noqa: E501
+        smoothness       = Args(name="smoothness"      , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
+        scaler           = Args(name="scaler"          , type=float, default=1.0 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
+        spline_smoothing = Args(name="spline_smoothing", type=bool , default=True, help=_l("Perform **spline smoothing** on the final expression curve for extra smoothness")),  # noqa: E501
     )
     plots = SimpleNamespace(
         expression    = Plot(tag=expression_info    , title=expression_info                   , x_label=_l("Tick")    , y_label=expression_name , legends=[expression_name]            ),  # noqa: E501
@@ -50,13 +53,14 @@ class PitdLoader(ExpressionLoader):
 
     def get_expression(
         self,
-        backend         = args.backend        .default,
-        confidence_utau = args.confidence_utau.default,
-        confidence_ref  = args.confidence_ref .default,
-        align_radius    = args.align_radius   .default,
-        semitone_shift  = args.semitone_shift .default,
-        smoothness      = args.smoothness     .default,
-        scaler          = args.scaler         .default,
+        backend          = args.backend         .default,
+        confidence_utau  = args.confidence_utau .default,
+        confidence_ref   = args.confidence_ref  .default,
+        align_radius     = args.align_radius    .default,
+        semitone_shift   = args.semitone_shift  .default,
+        smoothness       = args.smoothness      .default,
+        scaler           = args.scaler          .default,
+        spline_smoothing = args.spline_smoothing.default,
     ):
         self.logger.info(_("Extracting expression..."))
 
@@ -94,15 +98,21 @@ class PitdLoader(ExpressionLoader):
                 time_aligned_ref_pitch,
                 unified_utau_pitch,
                 semitone_shift=semitone_shift,
-                smoothness=smoothness,
             )
 
         # Calculate pitch delta for USTX pitch editing
         pitd_val = get_pitch_delta(
             time_pitch_aligned_ref_pitch,
             unified_utau_pitch,
+            smoothness=smoothness,
             scaler=scaler,
         )
+
+        if spline_smoothing:
+            # Final spline smoothing of the expression curve
+            # NOTE: All NaN positions except the leading and trailing ones will be interpolated
+            # Only preserving NaN at the head/tail to avoid edge artifacts of spline smoothing
+            pitd_val = seq_spline_smoothing(pitd_tick, pitd_val, nan_policy='preserve_head_tail')
 
         # Collect plots
         self.collect_plot(self.plots.expression,    (pitd_tick, pitd_val))
@@ -167,7 +177,7 @@ def get_wav_features(wav_path, backend="rmvpe-onnx", confidence_threshold=0.8, c
     return wav_time, wav_pitch, wav_confidence, wav_features
 
 
-def align_sequence_pitch(query, reference, semitone_shift=None, smoothness=0):
+def align_sequence_pitch(query, reference, semitone_shift=None):
     """Align pitch sequences by shifting in semitones and applying smoothing.
 
     Args:
@@ -175,7 +185,6 @@ def align_sequence_pitch(query, reference, semitone_shift=None, smoothness=0):
         reference (numpy.ndarray):      Target reference pitch values.
         semitone_shift (int, optional): Semitones to shift the query pitch.
                                         If None, estimated automatically.
-        smoothness (int, optional):     Smoothing sigma. Defaults to 0.
 
     Returns:
         tuple: (pitch_aligned_query, semitone_shift)
@@ -189,22 +198,30 @@ def align_sequence_pitch(query, reference, semitone_shift=None, smoothness=0):
         )
         print(_("Estimated Semitone-shift: {}").format(semitone_shift))
 
-    pitch_aligned_query = gaussian_filter1d_with_nan(
-        query * np.exp2(semitone_shift / 12),
-        sigma=smoothness,
-    )
+    pitch_aligned_query = query * np.exp2(semitone_shift / 12)
     return pitch_aligned_query, semitone_shift
 
 
-def get_pitch_delta(query, reference, scaler=2.5):
+def get_pitch_delta(query, reference, smoothness=2, scaler=1.0):
     """Calculate the scaled pitch difference between two sequences.
 
+    PITD is expressed in cents (100 cents = 1 semitone).
+    The renderer applies PITD on top of the base pitch, so the delta
+    must be in the same unit OpenUtau expects for the PITD expression.
+
     Args:
-        query (numpy.ndarray):    Pitch values from the query sequence.
-        reference (numpy.ndarray): Pitch values from the reference sequence.
-        scaler (float, optional): Scaling factor. Defaults to 2.5.
+        query (numpy.ndarray):       Pitch values from the query sequence.
+        reference (numpy.ndarray):   Pitch values from the reference sequence.
+        smoothness (int, optional):  Smoothing sigma. Defaults to 2.
+        scaler (float, optional):    Scaling factor. Defaults to 1.0.
 
     Returns:
-        numpy.ndarray: Scaled pitch difference values.
+        numpy.ndarray: Scaled pitch difference in cents, preserving NaN for unvoiced frames.
     """
-    return scaler * (query - reference)
+    voiced = (query > 0) & (reference > 0)
+
+    delta = np.full_like(query, fill_value=np.nan)
+    delta[voiced] = 1200.0 * np.log2(query[voiced] / reference[voiced])
+
+    delta = gaussian_filter1d_with_nan(delta, sigma=smoothness)
+    return scaler * delta

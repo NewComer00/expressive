@@ -543,12 +543,15 @@ def create_gui():  # noqa: C901
     with ui.card().classes("w-full").bind_visibility_from(
         state["expressions"]["dyn"], "selected"
     ):
-        with ui.row().classes("w-full"):
-            ui.label(dyn_info).classes("text-lg font-bold")
-            ui.space()
+        ui.label(dyn_info).classes("text-lg font-bold")
+    
+        with ui.grid(columns=2).classes("w-full"):
             ui.switch(_("Trim Silence")).bind_value(
                     state["expressions"]["dyn"], "trim_silence",
                 ).tooltip_md(dyn_args.trim_silence.help)
+            ui.switch(_("Spline Smoothing")).bind_value(
+                    state["expressions"]["dyn"], "spline_smoothing",
+                ).tooltip_md(dyn_args.spline_smoothing.help)
 
         with ui.grid(columns=3).classes("w-full"):
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(
@@ -573,6 +576,11 @@ def create_gui():  # noqa: C901
         state["expressions"]["pitd"], "selected"
     ):
         ui.label(pitd_info).classes("text-lg font-bold")
+
+        with ui.grid(columns=2).classes("w-full"):
+            ui.switch(_("Spline Smoothing")).bind_value(
+                    state["expressions"]["pitd"], "spline_smoothing",
+                ).tooltip_md(pitd_args.spline_smoothing.help)
 
         with ui.grid(columns=3).classes("w-full"):
             def on_backend_change(e):
@@ -633,12 +641,15 @@ def create_gui():  # noqa: C901
     with ui.card().classes("w-full").bind_visibility_from(
         state["expressions"]["tenc"], "selected"
     ):
-        with ui.row().classes("w-full"):
-            ui.label(tenc_info).classes("text-lg font-bold")
-            ui.space()
+        ui.label(tenc_info).classes("text-lg font-bold")
+
+        with ui.grid(columns=2).classes("w-full"):
             ui.switch(_("Trim Silence")).bind_value(
                 state["expressions"]["tenc"], "trim_silence",
             ).tooltip_md(tenc_args.trim_silence.help)
+            ui.switch(_("Spline Smoothing")).bind_value(
+                    state["expressions"]["tenc"], "spline_smoothing",
+                ).tooltip_md(tenc_args.spline_smoothing.help)
 
         with ui.grid(columns=3).classes("w-full"):
             ui.number(label=_("Align Radius"), min=1, format="%d").bind_value(

@@ -9,6 +9,7 @@ from utils.seqtool import (
     sequence_interval_union,
     unify_sequence_time,
     gaussian_filter1d_with_nan,
+    seq_spline_smoothing,
     align_sequence_tick,
     seq_dynamics_trends,
     seq_rcr,
@@ -276,6 +277,98 @@ class TestGaussianFilter:
             assert np.var(result) < np.var(seq)
         else:
             assert_array_almost_equal(result, seq)
+
+
+# ---------------------------------------------------------------------------
+# seq_spline_smoothing
+# ---------------------------------------------------------------------------
+
+class TestSeqSplineSmoothing:
+    """Test seq_spline_smoothing."""
+
+    def test_output_shape(self):
+        t = np.linspace(0, 1, 50)
+        v = np.sin(2 * np.pi * t)
+        result = seq_spline_smoothing(t, v)
+        assert result.shape == v.shape
+
+    def test_smooths_noisy_signal(self):
+        np.random.seed(0)
+        t = np.linspace(0, 1, 100)
+        v = np.sin(2 * np.pi * t) + np.random.normal(0, 0.3, 100)
+        result = seq_spline_smoothing(t, v)
+        assert np.var(result) < np.var(v)
+
+    def test_no_nan_policy(self):
+        t = np.linspace(0, 1, 20)
+        v = np.sin(2 * np.pi * t)
+        v[5] = np.nan
+        v[10] = np.nan
+        result = seq_spline_smoothing(t, v, nan_policy='no_nan')
+        assert not np.any(np.isnan(result))
+
+    def test_preserve_all_nan_policy(self):
+        t = np.linspace(0, 1, 20)
+        v = np.sin(2 * np.pi * t)
+        nan_indices = [3, 7, 15]
+        v[nan_indices] = np.nan
+        result = seq_spline_smoothing(t, v, nan_policy='preserve_all')
+        assert result.shape == v.shape
+        for i in nan_indices:
+            assert np.isnan(result[i])
+        non_nan = [i for i in range(len(v)) if i not in nan_indices]
+        assert not np.any(np.isnan(result[non_nan]))
+
+    def test_preserve_head_tail_nan_policy(self):
+        t = np.linspace(0, 1, 20)
+        v = np.sin(2 * np.pi * t)
+        # Leading, interior, and trailing NaNs
+        v[0]  = np.nan
+        v[1]  = np.nan
+        v[10] = np.nan
+        v[18] = np.nan
+        v[19] = np.nan
+        result = seq_spline_smoothing(t, v, nan_policy='preserve_head_tail')
+        assert result.shape == v.shape
+        # Leading and trailing NaNs preserved
+        assert np.isnan(result[0])
+        assert np.isnan(result[1])
+        assert np.isnan(result[18])
+        assert np.isnan(result[19])
+        # Interior NaN filled
+        assert not np.isnan(result[10])
+
+    def test_invalid_nan_policy_raises(self):
+        t = np.linspace(0, 1, 10)
+        v = np.ones(10)
+        with pytest.raises(ValueError, match="Unknown nan_policy"):
+            seq_spline_smoothing(t, v, nan_policy='invalid_policy')
+
+    def test_manual_lam_smoother_than_auto(self):
+        """A large lam should produce a smoother (lower variance) result than auto."""
+        np.random.seed(1)
+        t = np.linspace(0, 1, 100)
+        v = np.sin(2 * np.pi * t) + np.random.normal(0, 0.2, 100)
+        result_auto  = seq_spline_smoothing(t, v, lam=None)
+        result_heavy = seq_spline_smoothing(t, v, lam=1e4)
+        assert np.var(result_heavy) <= np.var(result_auto)
+
+    def test_no_nan_input_all_policies_agree(self):
+        """With no NaNs, all nan_policy values should return identical results."""
+        t = np.linspace(0, 1, 30)
+        v = np.cos(2 * np.pi * t)
+        r_no_nan      = seq_spline_smoothing(t, v, nan_policy='no_nan')
+        r_preserve    = seq_spline_smoothing(t, v, nan_policy='preserve_all')
+        r_head_tail   = seq_spline_smoothing(t, v, nan_policy='preserve_head_tail')
+        assert_array_almost_equal(r_no_nan, r_preserve)
+        assert_array_almost_equal(r_no_nan, r_head_tail)
+
+    @pytest.mark.parametrize("nan_policy", ['no_nan', 'preserve_all', 'preserve_head_tail'])
+    def test_all_policies_accepted(self, nan_policy):
+        t = np.linspace(0, 1, 20)
+        v = np.sin(2 * np.pi * t)
+        result = seq_spline_smoothing(t, v, nan_policy=nan_policy)
+        assert result.shape == v.shape
 
 
 # ---------------------------------------------------------------------------

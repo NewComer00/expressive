@@ -7,6 +7,15 @@
   <a href="README.en.md"><img src="https://img.shields.io/badge/lang-English-blue.svg"></a>
 </p>
 
+> [!WARNING]
+> 🚨 **下载前请注意** 🚨
+> 
+> **强烈建议您使用 `v0.9.0` 及以上版本**。早先版本的 **PITD** 表情参数处理算法存在[严重缺陷](https://github.com/NewComer00/expressive/releases/tag/v0.9.0)，会导致**音高曲线绘制错误**。下载最新版本请前往 [Releases 页面](https://github.com/NewComer00/expressive/releases)。
+>
+> 对于从旧版本迁移到 `v0.9.0` 及以上版本的用户，新版本中 **PITD 缩放因子（Scaler）的默认值为 `1.0`**，不再是原来的 `2.0`。若您有旧版本的配置文件，请将 **PITD 缩放因子（Scaler）设置为 `1.0`**。
+>
+> **🎵 感谢您使用 Expressive🎵**
+
 # Expressive
 
 **Expressive** 是一个为 [OpenUtau](https://github.com/stakira/OpenUtau) 开发的 [DiffSinger](https://github.com/openvpi/diffsinger) 表情参数导入工具，旨在从真实人声中提取表情参数，并导入至工程的相应轨道。
@@ -21,18 +30,17 @@
 
 | **工作流程** | **数据可视化** |
 |:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/268b44d4-528d-481e-acfb-3f7da7261c80" width="100%" /> | <img src="https://github.com/user-attachments/assets/91ddadee-62cd-4420-abf0-dd9177e8f935" width="100%" /> |
+| <img src="https://github.com/user-attachments/assets/d4e37337-50df-4d7d-8552-c4505dc73f20" width="100%" /> | <img src="https://github.com/user-attachments/assets/91ddadee-62cd-4420-abf0-dd9177e8f935" width="100%" /> |
 
 </div>
 
-> - *OpenUtau 版本来自 [keirokeer/OpenUtau-DiffSinger-Lunai](https://github.com/keirokeer/OpenUtau-DiffSinger-Lunai)*
-> - *歌手模型来自 [yousa-ling-official-production/yousa-ling-diffsinger-v1](https://github.com/yousa-ling-official-production/yousa-ling-diffsinger-v1)*
+> - *示例来自 [`examples/明天会更好`](examples/明天会更好)，点击查看详情信息*
 
 > [!TIP]
 > <details>
 >   <summary><b>👉 点击展开完整有声演示视频 👈</b></summary>
 >
->   <p align="center"><video src="https://github.com/user-attachments/assets/4b5b7c15-947a-4f54-b80e-a14a9eefc86b"></video></p>
+>   <p align="center"><video src="https://github.com/user-attachments/assets/89706eec-63f6-44f6-8ed7-1f1c73cb341e"></video></p>
 >   <p align="center"><video src="https://github.com/user-attachments/assets/4076eb8b-07eb-48e6-bdec-4abeac6258c7"></video></p>
 > 
 > </details>
@@ -46,6 +54,8 @@
 本应用默认选择 [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) 作为音高提取后端，仅需 CPU 即可运行。[RMVPE](https://arxiv.org/abs/2306.15412v2) 是目前公开的效果最好的音高提取算法，且推理速度较快，可以满足绝大多数使用场景。
 
 应用也提供了 [swift-f0](https://github.com/lars76/swift-f0) 与 [CREPE](https://github.com/marl/crepe) 音高提取后端。前者仅依赖 CPU，效果一般，但速度最快。后者是业内的经典算法，速度较慢。在 CUDA 环境下，CREPE 后端会自动启用 GPU 加速。
+
+应用还新增了一个实验性的 **hybrid** 后端。该后端融合了 rmvpe-onnx 与 swift-f0 的预测结果，以 rmvpe-onnx 的音高提取结果为主，在音频有声段中，如果 rmvpe-onnx 的置信度较低且 swift-f0 的置信度较高，则采用 swift-f0 的结果进行修正，从而提升整体音高提取的准确性。
 
 > \* 在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
 
@@ -302,16 +312,25 @@ graph TB;
 #### 未来计划
 NiceGUI 框架已经开始着手改进文件拖拽支持，应该在未来的版本中能够解决此问题。
 
+---
+
 ### PITD 表情曲线整体变化过于平缓
 
 #### 问题现象
 提取出的 PITD 表情曲线过于平缓，整体上几乎没有大的起伏，参考人声中的音高变化并没有反映到表情曲线上。
 
 #### 可能原因
-PITD 表情提取器中，两个置信度阈值设置**过高**，许多音高变化没有被采信。
+1. 在早于 `v0.9.0` 的版本中，PITD 表情曲线取值与音高之间的换算有问题，会导致 PITD 表情曲线整体非常平缓。
+2. PITD 表情提取器中，两个置信度阈值设置**过高**，许多音高变化没有被采信。您可以在 [`expressive-viewer`](#可视化工具viewer) 中观察到，原始的音高曲线中有很多不该出现的缺失部分。
 
 #### 解决方案
-请先尝试使用效果最好的 rmvpe-onnx 后端（默认置信度阈值）。若问题仍在，尝试降低两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
+1. 请下载安装 `v0.9.0` 及之后的版本。
+2. 请先尝试使用效果最好的 rmvpe-onnx 或 hybrid 后端（默认置信度阈值）。若问题仍在，尝试降低两个置信度阈值。您可以参考 [`expressive-viewer`](#可视化工具viewer) 的音高置信度曲线来辅助调整。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
+
+#### 未来计划
+为 PITD 表情提取算法引入语义信息。
+
+---
 
 ### PITD 表情曲线在某些位置变化过快，出现跳跃或毛刺
 
@@ -319,7 +338,14 @@ PITD 表情提取器中，两个置信度阈值设置**过高**，许多音高�
 PITD 表情曲线在某些位置变化过快，出现非常大的跳跃或毛刺，明显不符合人声的变化规律。
 
 #### 可能原因
-PITD 表情提取器中，两个置信度阈值设置**过低**，错误的识别结果被采信。
+1. 在早于 `v0.9.0` 的版本中，PITD 表情曲线取值与音高之间的换算有问题。
+2. 参考音频的对应时间戳附近有噪声。您可以在 [`expressive-viewer`](#可视化工具viewer) 中观察到，原始的音高曲线中有很多不该出现的尖刺。
+3. PITD 表情提取器中，两个置信度阈值设置**过低**，错误的识别结果被采信。您可以在 [`expressive-viewer`](#可视化工具viewer) 中观察到，原始的音高曲线中有很多不该出现的尖刺。
 
 #### 解决方案
-请先尝试使用效果最好的 rmvpe-onnx 后端（默认置信度阈值）。若问题仍在，尝试增加两个置信度阈值。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
+1. 请下载安装 `v0.9.0` 及之后的版本。
+2. 可使用 [UVR](https://github.com/Anjok07/ultimatevocalremovergui) 、[MSST](https://github.com/SUC-DriverOld/MSST-WebUI) 等工具对参考音频去噪声（denoise）。
+3. 请先尝试使用效果最好的 rmvpe-onnx 或 hybrid 后端（默认置信度阈值）。若问题仍在，尝试增加两个置信度阈值。您可以参考 [`expressive-viewer`](#可视化工具viewer) 的音高置信度曲线来辅助调整。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
+
+#### 未来计划
+为 PITD 表情提取算法引入语义信息。

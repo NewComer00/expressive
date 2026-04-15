@@ -3,7 +3,7 @@ from typing import Callable
 
 import numpy as np
 from fastdtw import fastdtw  # type: ignore
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, make_smoothing_spline
 from scipy.ndimage import gaussian_filter1d
 from scipy.stats import zscore
 
@@ -127,7 +127,7 @@ def unify_sequence_time(seq_times, seq_vals, to_ticks=False):
         ]
         return unified_seq_time, tuple(unified_seqs_val)
 
-    unified_seq_ticks = _time_to_ticks_fn(unified_seq_time)
+    unified_seq_ticks = np.unique(_time_to_ticks_fn(unified_seq_time))
     time_mapping = _ticks_to_time_fn(unified_seq_ticks)
     unified_seqs_val = [
         interp1d(st, sv, fill_value="extrapolate")(time_mapping)  # type: ignore
@@ -159,6 +159,60 @@ def gaussian_filter1d_with_nan(seq, sigma, **kwargs):
             return np.divide(vv, ww)
     else:
         return seq
+
+
+def seq_spline_smoothing(seq_time, seq_val, lam=None, nan_policy='preserve_all'):
+    """Smooth a sequence using an adaptive smoothing spline.
+
+    Args:
+        seq_time (numpy.ndarray): Time values for the sequence.
+        seq_val (numpy.ndarray):  Sequence values to smooth.
+        lam (float or None):      Smoothing parameter. None selects automatically via GCV.
+                                  Higher values produce smoother results.
+        nan_policy (str):         How to handle NaNs in the output. One of:
+            - 'no_nan':            NaNs are excluded from fitting; output is fully predicted
+                                   with no NaNs.
+            - 'preserve_all':      NaN positions are excluded from fitting and restored in
+                                   the output.
+            - 'preserve_head_tail': Only leading and trailing NaNs are restored; interior
+                                   NaNs are filled by the spline.
+
+    Returns:
+        numpy.ndarray: Smoothed sequence values, same length as seq_time.
+
+    Raises:
+        ValueError: If nan_policy is not recognized.
+
+    Example:
+        >>> seq_smoothing(time, val)                                    # auto smoothness, preserve all NaNs
+        >>> seq_smoothing(time, val, lam=0.1)                           # manual smoothness
+        >>> seq_smoothing(time, val, nan_policy='no_nan')               # fully predicted, no NaNs
+        >>> seq_smoothing(time, val, nan_policy='preserve_head_tail')   # only boundary NaNs restored
+    """
+    nan_policies = {'no_nan', 'preserve_all', 'preserve_head_tail'}
+    if nan_policy not in nan_policies:
+        raise ValueError(f"Unknown nan_policy: {nan_policy!r}. Choose from: {nan_policies}.")
+
+    seq_val  = np.asarray(seq_val,  dtype=float)
+    seq_time = np.asarray(seq_time, dtype=float)
+    nan_mask = np.isnan(seq_val)
+
+    valid_time = seq_time[~nan_mask]
+    valid_val  = seq_val[~nan_mask]
+
+    result = make_smoothing_spline(valid_time, valid_val, lam=lam)(seq_time)
+
+    if nan_policy == 'preserve_all':
+        result[nan_mask] = np.nan
+
+    elif nan_policy == 'preserve_head_tail':
+        first_valid    = np.argmax(~nan_mask)
+        last_valid     = len(nan_mask) - np.argmax(~nan_mask[::-1]) - 1
+        head_tail_mask = nan_mask.copy()
+        head_tail_mask[first_valid:last_valid + 1] = False
+        result[head_tail_mask] = np.nan
+
+    return result
 
 
 def align_sequence_tick(

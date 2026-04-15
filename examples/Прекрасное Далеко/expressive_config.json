@@ -18,13 +18,13 @@
         },
         "pitd": {
             "selected": true,
-            "backend": "rmvpe-onnx",
+            "backend": "hybrid",
             "confidence_utau": null,
             "confidence_ref": null,
             "align_radius": 1,
             "semitone_shift": 0,
-            "smoothness": 4,
-            "scaler": 2.2
+            "smoothness": 2,
+            "scaler": 1.0
         },
         "tenc": {
             "selected": true,
@@ -32,7 +32,7 @@
             "align_radius": 1,
             "smoothness": 6,
             "scaler": 1.0,
-            "bias": 10
+            "bias": 15
         }
     }
 }
