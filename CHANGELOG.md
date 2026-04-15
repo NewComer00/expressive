@@ -7,6 +7,33 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.9.0 (2026-04-15)
+
+### Bug Fixes
+
+- **pitd**: Fix overly flat PITD curves (issue #21); special thanks to @ma0shu for helping identify
+  and diagnose this critical bug ❤
+  ([`6f4bd54`](https://github.com/NewComer00/expressive/commit/6f4bd545613bed2217f0cf22f1e2614e48a4f7dd))
+
+### Documentation
+
+- **readme**: Add v0.9.0+ warning; document scaler change; update troubleshooting
+  ([`6f4bd54`](https://github.com/NewComer00/expressive/commit/6f4bd545613bed2217f0cf22f1e2614e48a4f7dd))
+
+### Features
+
+- **f0**: Add hybrid F0 backend with fallback; improve stability and reduce discontinuities
+  ([`6f4bd54`](https://github.com/NewComer00/expressive/commit/6f4bd545613bed2217f0cf22f1e2614e48a4f7dd))
+
+- **pitd, f0, docs**: Improve PITD and add hybrid F0 backend
+  ([`6f4bd54`](https://github.com/NewComer00/expressive/commit/6f4bd545613bed2217f0cf22f1e2614e48a4f7dd))
+
+### Breaking Changes
+
+- **pitd, f0, docs**: PITD scaler default changed from 2.0 to 1.0; PITD results prior to v0.9.0 are
+  unreliable
+
+
 ## v0.8.0 (2026-04-11)
 
 ### Features
