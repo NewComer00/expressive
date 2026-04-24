@@ -329,14 +329,13 @@ class WaveSurferElement(ui.element):
 
             self._error = (
                 ui.label('')
-                .classes('w-full text-xs text-red-400')
+                .classes('w-full text-xs text-red-400 hidden')
             )
-            self._error.set_visibility(False)
 
             self._loader = (
                 ui.linear_progress(show_value=False)
                 .props('instant-feedback rounded indeterminate')
-                .classes('w-full')
+                .classes('w-full hidden')
                 .style('height:3px; margin:0; color:#c800c8;')
             )
 
