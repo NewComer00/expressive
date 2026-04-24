@@ -83,6 +83,13 @@ When using a DiffSinger virtual singer for covers, users often already have an O
 
 A new USTX file with expression parameters added. The original project will not be modified.
 
+> [!TIP]
+> Starting from `v0.9.1`, if you prefer not to generate a new project file, you can **set the output path to be the same as the input project path**. In this case, the expression parameters will be written directly into the original project file.
+>
+> Under normal circumstances, the program will only update the specified expression parameters in the selected track. It will not affect other parameters or modify other tracks.
+>
+> ⚠️ **If you plan to use this feature, please make a backup in advance to prevent potential data loss in case of errors**.
+
 ## ✨ Features
 
 * [x] Windows support

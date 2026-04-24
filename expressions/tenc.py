@@ -25,7 +25,7 @@ class TencLoader(ExpressionLoader):
     expression_name = "tenc"
     expression_info = _l("Tension (curve)")
     args = SimpleNamespace(
-        trim_silence     = Args(name="trim_silence"    , type=bool , default=True, help=_l("**Trim silence** from the leading and trailing edges of the audio before extracting expression")),  # noqa: E501
+        trim_silence     = Args(name="trim_silence"    , type=bool , default=True, help=_l("**Trim silence** from the leading and trailing edges of the audio before extracting expression\n\n**NOTICE**: This may slightly cut into the beginning and ending of voiced segments. If the effect is too severe, consider disabling this option\n\n")),  # noqa: E501
         align_radius     = Args(name="align_radius"    , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
         smoothness       = Args(name="smoothness"      , type=int  , default=6   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
         scaler           = Args(name="scaler"          , type=float, default=1.0 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501

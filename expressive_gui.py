@@ -161,7 +161,7 @@ def create_gui():  # noqa: C901
         if file and len(file) > 0:
             try:
                 with open(file[0], "w+", encoding="utf-8-sig") as f:  # type: ignore
-                    json.dump(state, f, indent=4)
+                    json.dump(state, f, indent=4, ensure_ascii=False)
                 ui.notify(_("Config exported successfully!"), type="positive")
             except Exception as e:
                 ui.notify(_("Failed to export config") + f": {str(e)}", type="negative")

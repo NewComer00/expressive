@@ -122,7 +122,7 @@ def unify_sequence_time(seq_times, seq_vals, to_ticks=False):
     if not to_ticks:
         unified_seq_time = np.unique(unified_seq_time)
         unified_seqs_val = [
-            interp1d(st, sv, fill_value="extrapolate")(unified_seq_time)  # type: ignore
+            interp1d(st, sv, fill_value=np.nan, bounds_error=False)(unified_seq_time)  # type: ignore
             for (st, sv) in zip(seq_times, seq_vals, strict=False)
         ]
         return unified_seq_time, tuple(unified_seqs_val)
@@ -130,7 +130,7 @@ def unify_sequence_time(seq_times, seq_vals, to_ticks=False):
     unified_seq_ticks = np.unique(_time_to_ticks_fn(unified_seq_time))
     time_mapping = _ticks_to_time_fn(unified_seq_ticks)
     unified_seqs_val = [
-        interp1d(st, sv, fill_value="extrapolate")(time_mapping)  # type: ignore
+        interp1d(st, sv, fill_value=np.nan, bounds_error=False)(time_mapping)  # type: ignore
         for (st, sv) in zip(seq_times, seq_vals, strict=False)
     ]
     return unified_seq_ticks, tuple(unified_seqs_val)
@@ -262,7 +262,7 @@ def align_sequence_tick(
     for q in unified_queries:
         aligned_tick = np.interp(path[:, 1], np.arange(len(unified_tick)), unified_tick)
         aligned_seq  = np.interp(path[:, 0], np.arange(len(q)), q)
-        interp_seq   = interp1d(aligned_tick, aligned_seq, fill_value="extrapolate")  # type: ignore
+        interp_seq   = interp1d(aligned_tick, aligned_seq, fill_value=np.nan, bounds_error=False)  # type: ignore
         aligned_queries.append(interp_seq(unified_tick))
 
     return unified_tick, tuple(aligned_queries), tuple(unified_references)

@@ -40,8 +40,6 @@ log = logging.getLogger(__name__)
 RESOLUTION = 480          # pulses per quarter note — hardcoded in UProject.cs
 MS_PER_MIN = 60_000.0     # milliseconds per minute
 
-SUPPORTED_EXPRESSIONS = frozenset({"dyn", "pitd", "tenc"})
-
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -221,11 +219,6 @@ class UVoicePart:
             ticks:  1-D integer array of tick positions.
             values: 1-D float array of curve values; NaN entries are dropped.
         """
-        if abbr not in SUPPORTED_EXPRESSIONS:
-            raise ValueError(
-                f"Unsupported expression '{abbr}'. "
-                f"Supported: {sorted(SUPPORTED_EXPRESSIONS)}"
-            )
         mask = ~np.isnan(values)
         curve = self.get_or_create_curve(abbr)
         curve.xs = ticks[mask].astype(int).tolist()
@@ -566,7 +559,7 @@ def save_ustx(project: UProject, ustx_path: str) -> None:
         project:   The project to save.
         ustx_path: Destination path.
     """
-    output = oyaml.dump(project.to_dict(), Dumper=oyaml.Dumper)
+    output = oyaml.dump(project.to_dict(), Dumper=oyaml.Dumper, allow_unicode=True)
     with open(ustx_path, "w+", encoding="utf-8-sig") as fh:
         fh.write(output)
     log.debug("Saved USTX to %s", ustx_path)
@@ -705,6 +698,7 @@ class UstxEditor:
         if not parts:
             raise ValueError(f"No voice parts found for track_no {track_no}.")
 
+        curve_set = False
         ticks = np.asarray(expression_ticks, dtype=int)
         values = np.asarray(expression_values, dtype=float)
 
@@ -716,3 +710,11 @@ class UstxEditor:
                 continue
             relative_ticks = ticks[mask] - part_start
             part.set_curve(expression_name, relative_ticks, values[mask])
+            curve_set = True
+
+        if not curve_set:
+            log.warning(
+                "No expression points fit inside any part on track %d (0-based) for curve %s.",
+                track_no,
+                expression_name,
+            )
