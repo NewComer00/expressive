@@ -495,15 +495,19 @@ msgid ""
 "curve upward; negative values shift it downward"
 msgstr "添加到表情曲线的**偏置**偏移量；正值使曲线上移，负值使曲线下移"
 
-#: utils/ui.py:353
+#: utils/ui.py:350
+msgid "Failed to load audio"
+msgstr "音频加载失败"
+
+#: utils/ui.py:377
 msgid "Play/Pause"
 msgstr "播放/暂停"
 
-#: utils/ui.py:354
+#: utils/ui.py:378
 msgid "Loop region"
 msgstr "选区循环播放"
 
-#: utils/ui.py:355
+#: utils/ui.py:379
 msgid "Zoom"
 msgstr "缩放"
 

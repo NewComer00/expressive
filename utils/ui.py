@@ -327,6 +327,30 @@ class WaveSurferElement(ui.element):
             waveform_div.classes("w-full rounded-lg overflow-hidden")
             waveform_div.style(f"min-height:{self._height}px; background:var(--ws-bg);")
 
+            self._error = (
+                ui.label('')
+                .classes('w-full text-xs text-red-400')
+            )
+            self._error.set_visibility(False)
+
+            self._loader = (
+                ui.linear_progress(show_value=False)
+                .props('instant-feedback rounded indeterminate')
+                .classes('w-full')
+                .style('height:3px; margin:0; color:#c800c8;')
+            )
+
+        ui.on(f'{iid}-loading', lambda e: (
+            self._error.set_visibility(False),
+            self._loader.set_visibility(True),
+        ))
+        ui.on(f'{iid}-ready', lambda e: self._loader.set_visibility(False))
+        ui.on(f'{iid}-error', lambda e: (
+            self._loader.set_visibility(False),
+            self._error.set_text(e.args.get('message') or _('Failed to load audio')),
+            self._error.set_visibility(True),
+        ))
+
         ws_opts: dict[str, Any] = {
             "container": f"#{iid}_waveform",
             "waveColor": self._wave_color,
@@ -370,6 +394,20 @@ import RegionsPlugin from '{self._REGIONS_JS}';
   }});
 
   window['{iid}'] = {{ ws, regions, loop: {loop_init} }};
+
+  ws.on('loading', (percent) => {{
+    emitEvent('{iid}-loading', {{ percent: percent }});
+  }});
+
+  ws.on('ready', () => {{
+    emitEvent('{iid}-ready', {{}});
+  }});
+
+  ws.on('error', (err) => {{
+    // Filter out non-fatal errors
+    if (ws.getDuration() > 0) return;
+    emitEvent('{iid}-error', {{ message: err?.message || '' }});
+  }});
 
   if ({show_controls_json}) {{
     // Overlay controls: inject a style block + overlay div into the waveform container
@@ -537,6 +575,9 @@ def serve_wav(wav_path: str) -> str:
     Each unique directory is registered once under /wav/<hashed_dir>.
     WaveSurfer then streams the file normally — no base64 overhead.
     """
+    if not wav_path or not os.path.exists(wav_path):
+        return ''
+
     import hashlib
     directory = os.path.dirname(os.path.abspath(wav_path))
     dir_hash  = hashlib.md5(directory.encode()).hexdigest()[:8]

@@ -478,15 +478,19 @@ msgid ""
 "curve upward; negative values shift it downward"
 msgstr ""
 
-#: utils/ui.py:353
+#: utils/ui.py:350
+msgid "Failed to load audio"
+msgstr ""
+
+#: utils/ui.py:377
 msgid "Play/Pause"
 msgstr ""
 
-#: utils/ui.py:354
+#: utils/ui.py:378
 msgid "Loop region"
 msgstr ""
 
-#: utils/ui.py:355
+#: utils/ui.py:379
 msgid "Zoom"
 msgstr ""
 

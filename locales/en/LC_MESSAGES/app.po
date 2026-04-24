@@ -525,15 +525,19 @@ msgstr ""
 "**Bias** offset added to the expression curve. Positive values shift the "
 "curve upward; negative values shift it downward"
 
-#: utils/ui.py:353
+#: utils/ui.py:350
+msgid "Failed to load audio"
+msgstr "Failed to load audio"
+
+#: utils/ui.py:377
 msgid "Play/Pause"
 msgstr "Play/Pause"
 
-#: utils/ui.py:354
+#: utils/ui.py:378
 msgid "Loop region"
 msgstr "Loop region"
 
-#: utils/ui.py:355
+#: utils/ui.py:379
 msgid "Zoom"
 msgstr "Zoom"
 
