@@ -7,6 +7,26 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.9.1 (2026-04-24)
+
+### Bug Fixes
+
+- **ustx**: Catch SameFileError when same-path input/output; remove hardcoded SUPPORTED_EXPRESSIONS
+  restriction; add allow_unicode=True to oyaml.dump; warn when no expression points fit any voice
+  part
+  ([`96a8d29`](https://github.com/NewComer00/expressive/commit/96a8d29e4d92e7f19496d27ea75196f113ed997a))
+
+- **ustx, seqtool, gui**: Fix in-place editing, interpolation, and unicode
+  ([`96a8d29`](https://github.com/NewComer00/expressive/commit/96a8d29e4d92e7f19496d27ea75196f113ed997a))
+
+- **wavesurfer**: Add loading indicator and error handling
+  ([#28](https://github.com/NewComer00/expressive/pull/28),
+  [`e257918`](https://github.com/NewComer00/expressive/commit/e257918a23df77326a4369d4d54aa31cab01174f))
+
+- **wavesurfer**: Hide loader and error msg by on load
+  ([`a153c8e`](https://github.com/NewComer00/expressive/commit/a153c8ecedd0d6c59a83423c6c23b10f99563d13))
+
+
 ## v0.9.0 (2026-04-15)
 
 ### Bug Fixes
