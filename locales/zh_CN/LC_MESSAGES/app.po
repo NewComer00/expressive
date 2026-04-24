@@ -291,8 +291,16 @@ msgstr "动态曲线 Dynamics (curve)"
 #: expressions/dyn.py:28 expressions/tenc.py:28
 msgid ""
 "**Trim silence** from the leading and trailing edges of the audio before "
-"extracting expression"
-msgstr "在提取表情特征前，**剪除**音频开头与结尾的**静音部分**"
+"extracting expression\n"
+"\n"
+"**NOTICE**: This may slightly cut into the beginning and ending of voiced"
+" segments. If the effect is too severe, consider disabling this option\n"
+"\n"
+msgstr ""
+"在提取表情特征前，**剪除**音频开头与结尾的**静音部分**\n"
+"\n"
+"**注意**：该操作可能会轻微截断有声段的起始和结束部分；若影响较为明显，建议关闭此功能\n"
+"\n"
 
 #: expressions/dyn.py:29 expressions/pitd.py:41 expressions/tenc.py:29
 msgid ""

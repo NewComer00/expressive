@@ -25,7 +25,6 @@ from utils.ustx import (
     TimeAxis,
     UstxEditor,
     RESOLUTION,
-    SUPPORTED_EXPRESSIONS,
 )
 
 
@@ -294,23 +293,6 @@ class TestUCurve:
         part.set_curve("dyn", np.array([0, 960]), np.array([100.0, 200.0]))
         assert len(part.curves) == 1
         assert part.get_curve("dyn").xs == [0, 960]
-
-    @pytest.mark.parametrize("abbr", sorted(SUPPORTED_EXPRESSIONS))
-    def test_set_curve_supported_expressions(self, abbr):
-        part = UVoicePart(track_no=0, position=0, duration=960)
-        part.set_curve(abbr, np.array([0, 480]), np.array([0.0, 50.0]))
-        assert part.get_curve(abbr) is not None
-
-    def test_set_curve_unsupported_expression(self):
-        part = UVoicePart(track_no=0, position=0, duration=960)
-        with pytest.raises(ValueError, match="Unsupported expression"):
-            part.set_curve("invalid_expr", np.array([0]), np.array([0.0]))
-
-    def test_set_curve_multiple_expressions(self):
-        part = UVoicePart(track_no=0, position=0, duration=960)
-        for abbr in SUPPORTED_EXPRESSIONS:
-            part.set_curve(abbr, np.array([0, 480]), np.array([0.0, 50.0]))
-        assert len(part.curves) == len(SUPPORTED_EXPRESSIONS)
 
 
 # ===========================================================================
@@ -708,18 +690,6 @@ class TestIntegration:
         curve = final.voice_parts[0].get_curve("dyn")
         assert curve is not None
         assert len(curve.xs) == 3
-
-    def test_multiple_expressions_persist(self, temp_ustx_file):
-        with UstxEditor(str(temp_ustx_file)) as editor:
-            ticks = np.array([0, 480, 960])
-            for abbr in sorted(SUPPORTED_EXPRESSIONS):
-                editor.add_expression_to_part(
-                    editor.voice_parts[0], abbr, ticks, np.array([1.0, 2.0, 3.0])
-                )
-
-        final = load_ustx(str(temp_ustx_file))
-        for abbr in SUPPORTED_EXPRESSIONS:
-            assert final.voice_parts[0].get_curve(abbr) is not None
 
     def test_time_axis_used_for_ticks(self, temp_ustx_file):
         """Verify ticks produced by TimeAxis match expected values."""

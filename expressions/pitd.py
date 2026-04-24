@@ -75,7 +75,6 @@ class PitdLoader(ExpressionLoader):
             utau_time, utau_pitch, utau_confidence, utau_features = get_wav_features(
                 wav_path=self.utau_path, confidence_threshold=confidence_utau, backend=backend
             )
-        with StreamToLogger(self.logger, tee=True):
             ref_time, ref_pitch, ref_confidence, ref_features = get_wav_features(
                 wav_path=self.ref_path, confidence_threshold=confidence_ref, backend=backend
             )

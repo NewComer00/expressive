@@ -1,10 +1,10 @@
 import os
 import logging
 import argparse
-from shutil import copy
 from pathlib import Path
 from datetime import datetime
 from contextlib import contextmanager
+from shutil import copy, SameFileError
 from os.path import splitext, basename
 
 from utils.i18n import init_gettext, _
@@ -77,7 +77,10 @@ expressions = [
 ]
 ```
     """
-    copy(ustx_input, ustx_output)
+    try:
+        copy(ustx_input, ustx_output)
+    except SameFileError:
+        pass
 
     for exp in expressions:
         exp_type = exp["expression"]
