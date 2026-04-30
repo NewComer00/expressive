@@ -13,6 +13,7 @@ import soundfile as sf
 
 from utils.wavtool import (
     ClampedWav,
+    extract_wav_breath_voice,
     extract_wav_frequency,
     extract_wav_mfcc,
     extract_wav_rms,
@@ -641,9 +642,7 @@ class TestExtractWavRms(unittest.TestCase):
 
     def test_silent_wav_masked_with_nan(self):
         """mask_silence=True on a fully-silent file must not raise and must return
-        arrays of equal length.  Otsu's threshold on a flat-zero signal is 0, so
-        no frames satisfy rms < 0; the masking logic runs but clips nothing —
-        we only assert the call succeeds and output shapes are consistent."""
+        arrays of equal length."""
         rms_time, rms = extract_wav_rms(self.wav, mask_silence=True)
         self.assertEqual(rms_time.shape, rms.shape)
         self.assertGreater(len(rms), 0)
@@ -749,8 +748,6 @@ class TestExtractWavFrequency(unittest.TestCase):
             pass
 
     def _patch_swift(self):
-        """Patch SwiftF0 on its home module so the local import inside
-        extract_wav_frequency picks up the replacement."""
         fake_result = MagicMock()
         fake_result.timestamps.tolist.return_value = self._fake_times
         fake_result.pitch_hz.tolist.return_value   = self._fake_freqs
@@ -762,8 +759,6 @@ class TestExtractWavFrequency(unittest.TestCase):
         return patch("swift_f0.SwiftF0", mock_cls, create=True)
 
     def _patch_rmvpe(self, times=None, freqs=None, confs=None):
-        """Patch RMVPE and soundfile so the rmvpe-onnx backend runs without
-        real model weights or audio I/O. Optionally override return values."""
         fake_timestamp  = np.array(times  if times  is not None else self._fake_times)
         fake_frequency  = np.array(freqs  if freqs  is not None else self._fake_freqs)
         fake_confidence = np.array(confs  if confs  is not None else self._fake_confs)
@@ -851,12 +846,10 @@ class TestExtractWavFrequency(unittest.TestCase):
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
 
     def test_rmvpe_onnx_backend_accepted(self):
-        """rmvpe-onnx is the default backend and must be accepted (mocked)."""
         with self._patch_rmvpe():
             extract_wav_frequency(self.wav, backend="rmvpe-onnx", use_cache=False)
 
     def test_rmvpe_onnx_is_default_backend(self):
-        """Calling extract_wav_frequency without backend= should use rmvpe-onnx."""
         import inspect
         sig = inspect.signature(extract_wav_frequency)
         self.assertEqual(sig.parameters["backend"].default, "rmvpe-onnx")
@@ -871,7 +864,6 @@ class TestExtractWavFrequency(unittest.TestCase):
         self.assertEqual(len(conf), self._n)
 
     def test_crepe_backend_accepted(self):
-        """crepe backend path should be accepted (mocked to avoid TF dependency)."""
         fake_time = np.linspace(0, 2, self._n)
         fake_freq = np.random.uniform(80, 300, self._n)
         fake_conf = np.random.uniform(0.5, 1.0, self._n)
@@ -894,9 +886,7 @@ class TestExtractWavFrequency(unittest.TestCase):
     # --- hybrid backend ---
 
     def test_hybrid_backend_accepted(self):
-        """hybrid backend must be accepted without raising ValueError."""
         with self._patch_rmvpe(), self._patch_swift():
-            # soundfile is also used inside _merge_rmvpe_and_swift_f0
             extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
 
     def test_hybrid_returns_tuple_of_three(self):
@@ -919,7 +909,6 @@ class TestExtractWavFrequency(unittest.TestCase):
         self.assertEqual(len(freq), len(conf))
 
     def test_hybrid_output_length_matches_rmvpe_grid(self):
-        """Hybrid uses the rmvpe-onnx time grid, so output length == rmvpe output length."""
         with self._patch_rmvpe(), self._patch_swift():
             time, freq, conf = extract_wav_frequency(self.wav, backend="hybrid", use_cache=False)
         self.assertEqual(len(time), self._n)
@@ -956,21 +945,15 @@ class TestExtractWavFrequency(unittest.TestCase):
         region, the hybrid output should include some swift-f0 frequency values."""
         n = 50
         times = list(np.linspace(0, 1.0, n))
-
-        # rmvpe: low confidence everywhere so swift-f0 replacements will be chosen
         rmvpe_freqs = [200.0] * n
         rmvpe_confs = [0.5] * n  # below threshold 0.80
-
-        # swift-f0: high confidence + different frequency
         swift_freqs = [400.0] * n
         swift_confs = [0.99] * n  # above threshold 0.95
 
-        # Build a tonal WAV so RMS > 0 (voiced region)
         wav = _make_tonal_wav(duration=1.0, sr=22050, freq=440.0)
         try:
             with self._patch_rmvpe(times=times, freqs=rmvpe_freqs, confs=rmvpe_confs), \
                  self._patch_swift():
-                # Override swift-f0 mock with specific values
                 fake_result = MagicMock()
                 fake_result.timestamps.tolist.return_value = times
                 fake_result.pitch_hz.tolist.return_value   = swift_freqs
@@ -981,7 +964,6 @@ class TestExtractWavFrequency(unittest.TestCase):
                 with patch("swift_f0.SwiftF0", mock_cls, create=True):
                     _, freq, _ = extract_wav_frequency(wav, backend="hybrid", use_cache=False)
 
-            # At least some frames should have been replaced with 400 Hz
             self.assertTrue(np.any(np.isclose(freq, 400.0)),
                             "Expected some frames to be replaced by swift-f0 (400 Hz)")
         finally:
@@ -992,8 +974,7 @@ class TestExtractWavFrequency(unittest.TestCase):
         n = 50
         times = list(np.linspace(0, 1.0, n))
         rmvpe_freqs = [200.0] * n
-        rmvpe_confs = [0.95] * n  # above threshold 0.80 — should not be replaced
-
+        rmvpe_confs = [0.95] * n  # above threshold 0.80
         swift_freqs = [400.0] * n
         swift_confs = [0.99] * n
 
@@ -1010,13 +991,13 @@ class TestExtractWavFrequency(unittest.TestCase):
                 with patch("swift_f0.SwiftF0", mock_cls, create=True):
                     _, freq, _ = extract_wav_frequency(wav, backend="hybrid", use_cache=False)
 
-            # All frames should stay at 200 Hz (rmvpe confident, no replacement)
             self.assertTrue(np.all(np.isclose(freq, 200.0)),
                             "Expected rmvpe frequencies to be kept when confidence is high")
         finally:
             os.unlink(wav)
 
     # --- caching ---
+    # NOTE: wavtool.py uses "f0" as the cache subdirectory, not "pitd".
 
     def test_cache_file_written_when_use_cache_true(self):
         tmp_cache_dir = tempfile.mkdtemp()
@@ -1025,14 +1006,16 @@ class TestExtractWavFrequency(unittest.TestCase):
              patch("utils.wavtool.calculate_file_hash", return_value="testhash"):
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=True)
 
-        cache_path = os.path.join(tmp_cache_dir, "pitd", "testhash.swift-f0.csv")
+        # Cache subdirectory is "f0", not "pitd"
+        cache_path = os.path.join(tmp_cache_dir, "f0", "testhash.swift-f0.csv")
         self.assertTrue(os.path.exists(cache_path))
 
     def test_cache_read_skips_backend_call(self):
         """If a valid cache file exists the backend must not be invoked."""
         tmp_cache_dir = tempfile.mkdtemp()
         fake_hash = "deadbeef"
-        cache_path = os.path.join(tmp_cache_dir, "pitd", f"{fake_hash}.swift-f0.csv")
+        # Cache subdirectory is "f0"
+        cache_path = os.path.join(tmp_cache_dir, "f0", f"{fake_hash}.swift-f0.csv")
         os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 
         with open(cache_path, "w", newline="") as f:
@@ -1045,7 +1028,6 @@ class TestExtractWavFrequency(unittest.TestCase):
              patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
              patch("utils.wavtool.calculate_file_hash", return_value=fake_hash):
             time, freq, conf = extract_wav_frequency(self.wav, backend="swift-f0", use_cache=True)
-            # The SwiftF0 class must never have been instantiated
             mock_swift_cls.assert_not_called()
 
         np.testing.assert_array_equal(time, [0.0, 0.5])
@@ -1064,9 +1046,353 @@ class TestExtractWavFrequency(unittest.TestCase):
              patch("utils.wavtool.calculate_file_hash", return_value="abc123"):
             extract_wav_frequency(self.wav, backend="swift-f0", use_cache=False)
 
-        pitd_dir = os.path.join(tmp_cache_dir, "pitd")
-        cache_files = os.listdir(pitd_dir) if os.path.exists(pitd_dir) else []
+        # "f0" subdir should not exist (no cache written)
+        f0_dir = os.path.join(tmp_cache_dir, "f0")
+        cache_files = os.listdir(f0_dir) if os.path.exists(f0_dir) else []
         self.assertEqual(cache_files, [])
+
+
+# ---------------------------------------------------------------------------
+# extract_wav_breath_voice
+# ---------------------------------------------------------------------------
+
+class TestExtractWavBreathVoice(unittest.TestCase):
+    """Tests for extract_wav_breath_voice.
+
+    librosa and soundfile I/O are used directly (no ML models), so we only
+    need real WAV files — no heavy mocking required.
+    """
+
+    def setUp(self):
+        self.wav = _make_tonal_wav(duration=2.0, sr=22050, freq=440.0)
+
+    def tearDown(self):
+        try:
+            os.unlink(self.wav)
+        except FileNotFoundError:
+            pass
+
+    # --- return type and shape ---
+
+    def test_returns_tuple_of_three(self):
+        result = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 3)
+
+    def test_time_is_ndarray(self):
+        time, _, _ = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertIsInstance(time, np.ndarray)
+
+    def test_breath_index_is_ndarray(self):
+        _, breath, _ = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertIsInstance(breath, np.ndarray)
+
+    def test_voice_index_is_ndarray(self):
+        _, _, voice = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertIsInstance(voice, np.ndarray)
+
+    def test_all_outputs_same_length(self):
+        time, breath, voice = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertEqual(len(time), len(breath))
+        self.assertEqual(len(breath), len(voice))
+
+    def test_time_is_1d(self):
+        time, _, _ = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertEqual(time.ndim, 1)
+
+    def test_breath_is_1d(self):
+        _, breath, _ = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertEqual(breath.ndim, 1)
+
+    def test_voice_is_1d(self):
+        _, _, voice = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertEqual(voice.ndim, 1)
+
+    def test_time_starts_at_or_near_zero(self):
+        time, _, _ = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertGreaterEqual(time[0], 0.0)
+
+    def test_time_is_monotonically_increasing(self):
+        time, _, _ = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertTrue(np.all(np.diff(time) > 0))
+
+    def test_time_does_not_exceed_duration(self):
+        time, _, _ = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertLessEqual(time[-1], 2.1)
+
+    def test_indices_are_finite(self):
+        _, breath, voice = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertTrue(np.all(np.isfinite(breath)))
+        self.assertTrue(np.all(np.isfinite(voice)))
+
+    def test_indices_are_in_db_range(self):
+        """dB values computed with a +1e-9 floor; -180 dB is a reasonable lower bound."""
+        _, breath, voice = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertTrue(np.all(breath > -200))
+        self.assertTrue(np.all(voice  > -200))
+
+    # --- band parameters ---
+
+    def test_default_bands(self):
+        """Calling without band overrides must succeed and return consistent shapes."""
+        time, breath, voice = extract_wav_breath_voice(self.wav, use_cache=False)
+        self.assertEqual(len(time), len(breath))
+        self.assertEqual(len(time), len(voice))
+
+    def test_custom_voice_band(self):
+        """A narrower voice band should still return the same number of frames."""
+        time_def, _, _   = extract_wav_breath_voice(self.wav, use_cache=False)
+        time_cust, _, _  = extract_wav_breath_voice(
+            self.wav, voice_band=(500, 2000), use_cache=False
+        )
+        self.assertEqual(len(time_def), len(time_cust))
+
+    def test_different_bands_give_different_voice_values(self):
+        """Different frequency bands should yield different dB energy values."""
+        _, _, voice_low  = extract_wav_breath_voice(
+            self.wav, voice_band=(0, 1000), use_cache=False
+        )
+        _, _, voice_high = extract_wav_breath_voice(
+            self.wav, voice_band=(4000, 8000), use_cache=False
+        )
+        self.assertFalse(np.allclose(voice_low, voice_high))
+
+    # --- caching ---
+
+    def test_cache_file_written_when_use_cache_true(self):
+        tmp_cache_dir = tempfile.mkdtemp()
+        with patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.calculate_file_hash", return_value="testhash"), \
+             patch("utils.wavtool.calculate_args_hash", return_value="argshash"):
+            extract_wav_breath_voice(self.wav, use_cache=True)
+
+        cache_path = os.path.join(tmp_cache_dir, "bv", "testhash.argshash.npz")
+        self.assertTrue(os.path.exists(cache_path))
+
+    def test_cache_read_returns_same_data(self):
+        """A second call with use_cache=True must return the cached arrays unchanged."""
+        tmp_cache_dir = tempfile.mkdtemp()
+        with patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir):
+            t1, b1, v1 = extract_wav_breath_voice(self.wav, use_cache=True)
+            t2, b2, v2 = extract_wav_breath_voice(self.wav, use_cache=True)
+
+        np.testing.assert_array_equal(t1, t2)
+        np.testing.assert_array_equal(b1, b2)
+        np.testing.assert_array_equal(v1, v2)
+
+    def test_cache_disabled_does_not_write(self):
+        tmp_cache_dir = tempfile.mkdtemp()
+        with patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.calculate_file_hash", return_value="xyz"):
+            extract_wav_breath_voice(self.wav, use_cache=False)
+
+        bv_dir = os.path.join(tmp_cache_dir, "bv")
+        files = os.listdir(bv_dir) if os.path.exists(bv_dir) else []
+        self.assertEqual(files, [])
+
+
+# ---------------------------------------------------------------------------
+# extract_wav_embedding
+# ---------------------------------------------------------------------------
+
+class TestExtractWavEmbedding(unittest.TestCase):
+    """Tests for extract_wav_embedding.
+
+    EmbedderFactory is patched via its lazy import path
+    (``utils.embedder.EmbedderFactory``) so the ONNX model is never loaded.
+    The fake embedder callable returns a (T, D) embedding matrix and a (T,)
+    frame-time array.
+    """
+
+    _D = 768   # embedding dimension (matches mHuBERT-147 hidden size)
+    _T = 100   # number of frames
+
+    def setUp(self):
+        self.wav = _make_tonal_wav(duration=2.0, sr=16000, freq=440.0)
+        self._fake_emb   = np.random.randn(self._T, self._D).astype(np.float32)
+        self._fake_times = np.linspace(0, 2.0, self._T).astype(np.float32)
+
+    def tearDown(self):
+        try:
+            os.unlink(self.wav)
+        except FileNotFoundError:
+            pass
+
+    def _patches(self, embedder_list=None, fake_emb=None, fake_times=None):
+        """ExitStack with all patches applied.
+
+        Patches both EmbedderFactory (no ONNX model loads) and emb_features
+        (so sklearn k-means never runs against an under-sized frame count).
+        """
+        import contextlib
+        import utils.embedder as emb_mod
+
+        emb   = self._fake_emb   if fake_emb   is None else fake_emb
+        times = self._fake_times if fake_times is None else fake_times
+        names = embedder_list or ["mhubert"]
+
+        fake_features = np.random.randn(5, len(times)).astype(np.float32)
+
+        mock_ef = MagicMock()
+        mock_ef.list.return_value = names
+        mock_ef.create.return_value = MagicMock(return_value=(emb, times))
+
+        stack = contextlib.ExitStack()
+        stack.enter_context(patch.object(emb_mod, "EmbedderFactory", mock_ef))
+        stack.enter_context(patch.object(emb_mod, "emb_features",
+                                         MagicMock(return_value=fake_features)))
+        return stack
+
+    def _call(self, use_cache=False, **kwargs):
+        from utils.wavtool import extract_wav_embedding
+        with self._patches():
+            return extract_wav_embedding(
+                self.wav, embedder="mhubert", use_cache=use_cache, **kwargs
+            )
+
+    # --- return types and shapes ---
+
+    def test_returns_tuple_of_two(self):
+        result = self._call()
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+
+    def test_frame_times_is_ndarray(self):
+        frame_times, _ = self._call()
+        self.assertIsInstance(frame_times, np.ndarray)
+
+    def test_features_is_ndarray(self):
+        _, features = self._call()
+        self.assertIsInstance(features, np.ndarray)
+
+    def test_features_has_5_rows_by_default(self):
+        """Without pca_dims, emb_features returns 5 feature rows."""
+        _, features = self._call()
+        self.assertEqual(features.shape[0], 5)
+
+    def test_features_time_axis_matches_frame_times(self):
+        frame_times, features = self._call()
+        self.assertEqual(features.shape[1], len(frame_times))
+
+    def test_frame_times_is_1d(self):
+        frame_times, _ = self._call()
+        self.assertEqual(frame_times.ndim, 1)
+
+    def test_features_is_2d(self):
+        _, features = self._call()
+        self.assertEqual(features.ndim, 2)
+
+    def test_features_are_float32(self):
+        _, features = self._call()
+        self.assertEqual(features.dtype, np.float32)
+
+    def test_frame_times_length_matches_fake(self):
+        frame_times, _ = self._call()
+        self.assertEqual(len(frame_times), self._T)
+
+    # --- pca_dims ---
+
+    def test_pca_dims_reduces_rows(self):
+        _, features = self._call(pca_dims=3)
+        self.assertEqual(features.shape[0], 3)
+
+    def test_pca_dims_none_returns_5_rows(self):
+        _, features = self._call(pca_dims=None)
+        self.assertEqual(features.shape[0], 5)
+
+    def test_pca_dims_time_axis_unchanged(self):
+        _, feat_full = self._call(pca_dims=None)
+        _, feat_pca  = self._call(pca_dims=3)
+        self.assertEqual(feat_full.shape[1], feat_pca.shape[1])
+
+    def test_pca_dims_result_is_float32(self):
+        _, features = self._call(pca_dims=2)
+        self.assertEqual(features.dtype, np.float32)
+
+    # --- unknown embedder ---
+
+    def test_unknown_embedder_raises_key_error(self):
+        from utils.wavtool import extract_wav_embedding
+        with self._patches():
+            with self.assertRaises(KeyError):
+                extract_wav_embedding(self.wav, embedder="nonexistent", use_cache=False)
+
+    # --- caching ---
+
+    def test_cache_file_written_when_use_cache_true(self):
+        tmp_cache_dir = tempfile.mkdtemp()
+        from utils.wavtool import extract_wav_embedding
+        with self._patches(), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.calculate_file_hash", return_value="testhash"), \
+             patch("utils.wavtool.calculate_args_hash", return_value="argshash"):
+            extract_wav_embedding(self.wav, embedder="mhubert", use_cache=True)
+
+        embedder_dir = os.path.join(tmp_cache_dir, "embedder")
+        npz_files = [f for f in os.listdir(embedder_dir) if f.endswith(".npz")]
+        self.assertTrue(len(npz_files) > 0)
+
+    def test_cache_file_name_contains_hash_and_embedder(self):
+        tmp_cache_dir = tempfile.mkdtemp()
+        from utils.wavtool import extract_wav_embedding
+        with self._patches(), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.calculate_file_hash", return_value="filehash"), \
+             patch("utils.wavtool.calculate_args_hash", return_value="argshash"):
+            extract_wav_embedding(self.wav, embedder="mhubert", use_cache=True)
+
+        embedder_dir = os.path.join(tmp_cache_dir, "embedder")
+        npz_files = os.listdir(embedder_dir)
+        self.assertEqual(len(npz_files), 1)
+        self.assertIn("filehash", npz_files[0])
+        self.assertIn("mhubert",  npz_files[0])
+
+    def test_cache_read_skips_embedder_call(self):
+        """On the second call the embedder callable must not be invoked again."""
+        tmp_cache_dir = tempfile.mkdtemp()
+        from utils.wavtool import extract_wav_embedding
+        import utils.embedder as emb_mod
+
+        mock_ef   = MagicMock()
+        mock_ef.list.return_value = ["mhubert"]
+        mock_callable = MagicMock(return_value=(self._fake_emb, self._fake_times))
+        mock_ef.create.return_value = mock_callable
+
+        fake_features = np.random.randn(5, self._T).astype(np.float32)
+        with patch.object(emb_mod, "EmbedderFactory", mock_ef), \
+             patch.object(emb_mod, "emb_features", MagicMock(return_value=fake_features)), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir):
+            extract_wav_embedding(self.wav, embedder="mhubert", use_cache=True)
+            extract_wav_embedding(self.wav, embedder="mhubert", use_cache=True)
+
+        # create() is called once to build the embedder; the embedder itself
+        # (__call__) should only have been invoked for the first call.
+        self.assertEqual(mock_callable.call_count, 1)
+
+    def test_cache_read_returns_same_data(self):
+        """Two calls with use_cache=True must return identical arrays."""
+        tmp_cache_dir = tempfile.mkdtemp()
+        from utils.wavtool import extract_wav_embedding
+        with self._patches(), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir):
+            t1, f1 = extract_wav_embedding(self.wav, embedder="mhubert", use_cache=True)
+            t2, f2 = extract_wav_embedding(self.wav, embedder="mhubert", use_cache=True)
+
+        np.testing.assert_array_equal(t1, t2)
+        np.testing.assert_array_equal(f1, f2)
+
+    def test_cache_disabled_does_not_write(self):
+        tmp_cache_dir = tempfile.mkdtemp()
+        from utils.wavtool import extract_wav_embedding
+        with self._patches(), \
+             patch("utils.wavtool.APP_CACHE_DIR", tmp_cache_dir), \
+             patch("utils.wavtool.calculate_file_hash", return_value="xyz"), \
+             patch("utils.wavtool.calculate_args_hash", return_value="abc"):
+            extract_wav_embedding(self.wav, embedder="mhubert", use_cache=False)
+
+        embedder_dir = os.path.join(tmp_cache_dir, "embedder")
+        files = os.listdir(embedder_dir) if os.path.exists(embedder_dir) else []
+        self.assertEqual(files, [])
 
 
 if __name__ == "__main__":

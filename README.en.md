@@ -22,9 +22,11 @@
 
 The current version supports importing the following expression parameters:
 
+* `Breathiness (curve)`
 * `Dynamics (curve)`
 * `Pitch Deviation (curve)`
 * `Tension (curve)`
+* `Voicing (curve)`
 
 <div align="center">
 
@@ -51,13 +53,28 @@ The current version supports importing the following expression parameters:
 * OpenUtau Beta (or other versions with DiffSinger support)
 * Python 3.10 \*
 
+> \* On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
+
+### Machine Learning Models
+
+#### Pitch Extraction
+
 By default, this application uses [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) as the pitch extraction backend, which runs on CPU only. [RMVPE](https://arxiv.org/abs/2306.15412v2) is currently the best-performing publicly available pitch extraction algorithm, and its inference speed is fast enough to satisfy the vast majority of use cases.
 
 The [swift-f0](https://github.com/lars76/swift-f0) and [CREPE](https://github.com/marl/crepe) pitch extraction backends are also available. The former runs on CPU only and is the fastest option, though its accuracy is modest. The latter is a classic algorithm in the field and runs more slowly. In a CUDA environment, the CREPE backend will automatically enable GPU acceleration.
 
 There is also a newly added experimental **hybrid** backend available. The hybrid backend combines the prediction results of rmvpe-onnx and swift-f0, primarily using the pitch extraction results from rmvpe-onnx. In voiced segments of the audio, if the confidence of rmvpe-onnx is low and the confidence of swift-f0 is high, the result from swift-f0 is used for correction, improving the overall accuracy of pitch extraction.
 
-> \* On Windows, TensorFlow 2.10 is the last version that supports GPU acceleration, and Python 3.10 is the highest Python version supported by its `.whl` files.
+#### mHuBERT Feature Extractor
+
+> [!IMPORTANT]
+> The mHuBERT model weights are distributed under the [CC-BY-NC-SA-4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license and are **for non-commercial use only**. This application only provides a way to download the mHuBERT model weights and does not distribute them. When you download and use the mHuBERT model weights, please make sure to comply with the terms of the license.
+
+This application introduces [mHuBERT](https://huggingface.co/utter-project/mHuBERT-147) as an advanced speech feature extraction backend, used to analyze phoneme similarity across different language pronunciations.
+
+If the song you are creating has broadly similar lyrics to the reference vocal, but differs in musical arrangement (e.g., tempo, local lyric segmentation, etc.), enabling the mHuBERT backend can improve the quality of expression parameter alignment.
+
+mHuBERT runs well in both CPU and CUDA environments.
 
 ## 📌 Use Case
 
@@ -67,15 +84,9 @@ When using a DiffSinger virtual singer for covers, users often already have an O
 
 ### Inputs
 
-> [!TIP]
-> Starting from `v0.6.0`, this application supports OpenUtau voice tracks with **multiple parts** and **multiple tempos**.
-
-> [!TIP]
-> Starting from `v0.5.0`, users can define a selection region independently within the full audio of both the **Utau vocal** and the **Reference vocal**. The selected audio segment will be used as the final input.
-
-* **Utau vocal**: Emotionless synthesized vocal output from OpenUtau (WAV format). It is recommended to keep the segmentation and tempo as close to the **Reference vocal** as possible, as large discrepancies may affect alignment quality.
+* **Utau vocal**: Emotionless synthesized vocal output from OpenUtau (WAV format). It is recommended to keep the segmentation and tempo as close to the **Reference vocal** as possible, as large discrepancies may affect alignment quality. In such cases, consider enabling the [mHuBERT Feature Extractor](#mhubert-feature-extractor).
 * **Reference vocal**: Original human vocal recording (WAV format). You can use tools like [UVR](https://github.com/Anjok07/ultimatevocalremovergui) or [MSST](https://github.com/SUC-DriverOld/MSST-WebUI) to remove instrumentals, harmonies, and reverb.
-* **Input project**: Original OpenUtau project file (USTX format).
+* **Input project**: Original OpenUtau project file (USTX format). This application supports OpenUtau voice tracks with **multiple parts** and **multiple tempos**.
 * **Output path**: Where the new processed project file will be saved.
 * **Track number**: The track number in the OpenUtau project where the **Utau vocal** resides (1-based). Expression parameters will be imported into this track.
 
@@ -84,7 +95,7 @@ When using a DiffSinger virtual singer for covers, users often already have an O
 A new USTX file with expression parameters added. The original project will not be modified.
 
 > [!TIP]
-> Starting from `v0.9.1`, if you prefer not to generate a new project file, you can **set the output path to be the same as the input project path**. In this case, the expression parameters will be written directly into the original project file.
+> If you prefer not to generate a new project file, you can **set the output path to be the same as the input project path**. In this case, the expression parameters will be written directly into the original project file.
 >
 > Under normal circumstances, the program will only update the specified expression parameters in the selected track. It will not affect other parameters or modify other tracks.
 >
@@ -100,6 +111,8 @@ A new USTX file with expression parameters added. The original project will not 
 * [x] `Pitch Deviation` generation
 * [x] `Dynamics` generation
 * [x] `Tension` generation
+* [x] `Breathiness` generation
+* [x] `Voicing` generation
 
 ## 🚀 Direct Install
 
@@ -115,7 +128,7 @@ CPU-only, no CUDA runtime libraries included. Small installation size, but slowe
 
 Expressive CLI / GUI / Viewer installer for Windows x64 architecture with GPU support.
 
-Includes CUDA runtime libraries. When used on a computer with an NVIDIA GPU (driver version >= 450), it significantly improves CREPE backend inference speed.
+Includes CUDA runtime libraries. When used on a computer with an NVIDIA GPU (driver version >= 450), it significantly improves CREPE backend inference speed. The mHuBERT feature extractor also benefits from GPU acceleration.
 
 ## 👨‍💻 Install from Source
 
@@ -150,7 +163,7 @@ You can also launch a standalone expression curve visualization tool via the `ex
 ## 📖 Usage
 
 > [!TIP]
-> All commands described in this section (as well as the executable files installed via the installer) will automatically adapt to your system language. If you need a different language interface, you can set the [`LANGUAGE` or `LANG` environment variable](https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html) to override the default.
+> All Expressive commands described in this section (as well as the executable files installed via the installer) will automatically adapt to your system language. If you need a different language interface, you can set the [`LANGUAGE` or `LANG` environment variable](https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html) to override the default.
 >
 > For example, in Windows PowerShell:
 > ```powershell
@@ -163,15 +176,46 @@ You can also launch a standalone expression curve visualization tool via the `ex
 > LANGUAGE="en_US" expressive-gui
 > ```
 
-> [!IMPORTANT]
-> For users who installed from source, when using the [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) backend, the application will automatically download the model file [rmvpe.onnx (Copyright (c) 2022 lj1995 — MIT License)](https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.onnx) from Hugging Face.
+### Get Model Weights
+
+> [!TIP]
+> If you cannot directly access Hugging Face, you can obtain model files via a mirror site.
 >
-> If you wish to download the model file in advance, you can run the following command after installation:
-> ```bash
+> Using [https://hf-mirror.com/](https://hf-mirror.com/) as an example, in Windows PowerShell:
+> ```powershell
+> $env:HF_ENDPOINT = "https://hf-mirror.com"
 > rmvpe-onnx download
 > ```
 >
-> If you installed the application via the installer, the model file is already included in the installation package, and no additional download is required.
+> In Linux shell:
+> ```bash
+> HF_ENDPOINT="https://hf-mirror.com" rmvpe-onnx download
+> ```
+>
+> - The `HF_ENDPOINT` environment variable overrides the default Hugging Face API endpoint, causing model files to be downloaded from the specified mirror site.
+> - `rmvpe-onnx download` can be replaced with any command that needs to download model files from Hugging Face, including the commands to launch this application.
+
+#### RMVPE
+
+If you installed the application via the installer, the relevant model files are already included in the installation package, and no additional download is required.
+
+For users who installed from source, when using the [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) backend, the application will automatically download the model file [rmvpe.onnx (Copyright (c) 2022 lj1995 — MIT License)](https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.onnx) from Hugging Face.
+
+If you wish to download the model file in advance, you can run the following command after installation:
+```bash
+rmvpe-onnx download
+```
+
+#### mHuBERT
+
+The [mHuBERT model weights](https://huggingface.co/utter-project/mHuBERT-147) are subject to the [CC-BY-NC-SA-4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license and are **not distributed with the application**.
+
+When you use the mHuBERT feature extractor, the application will automatically download the [ONNX-format model weight files](https://huggingface.co/NewComer00/mHuBERT-147-ONNX) from Hugging Face. The weight files will be saved to the default Hugging Face cache path for the current user (i.e., the `~/.cache/huggingface/hub` directory; the exact location will be printed by the program), and will not be stored in the application's directory.
+
+You can also manually download the model weights using Hugging Face's [hf](https://huggingface.co/docs/huggingface_hub/guides/cli) tool. The files will be saved to the current user's cache directory with no additional configuration needed:
+```bash
+hf download NewComer00/mHuBERT-147-ONNX onnx/model_bnb4.onnx onnx/model_fp16.onnx onnx/model_fp32.onnx
+```
 
 ### Command Line Interface (CLI)
 
@@ -251,7 +295,7 @@ graph TB;
   refwav[/"Reference WAV"/]
   utauwav[/"OpenUtau WAV"/]
   refwav-->feat_pitd
-  ustx_in-.->|Export|utauwav
+  ustx_in-.->utauwav
   utauwav-->feat_pitd
 
   ustx_editor["USTX Editor"]
@@ -260,7 +304,7 @@ graph TB;
 
   subgraph PitdLoader
     direction TB
-    feat_pitd["Features Extraction<br>Pitch & MFCC & RMS"]
+    feat_pitd["Features Extraction<br>Pitch & MFCC & RMS<br>( & mHuBERT Embeddings )"]
 
     time_pitd["Time Alignment<br>FastDTW"]
     feat_pitd-->time_pitd
@@ -272,8 +316,8 @@ graph TB;
     pitch_algn-->get_pitd
   end
 
-  utsx_out[/"OpenUtau Project Output"/]
-  get_pitd-->utsx_out
+  ustx_out[/"OpenUtau Project Output"/]
+  get_pitd-->ustx_out
 
   subgraph DynLoader
     direction TB
@@ -295,6 +339,28 @@ graph TB;
 
     get_tenc["Get Tension"]
     time_tenc-->get_tenc
+  end
+
+  subgraph BrecLoader
+    direction TB
+    feat_brec["Features Extraction<br>HPSS → { Breath Index & Voice Index } & RMS"]
+
+    time_brec["Time Alignment<br>FastDTW"]
+    feat_brec-->time_brec
+
+    get_brec["Get Breathiness"]
+    time_brec-->get_brec
+  end
+
+  subgraph VoicLoader
+    direction TB
+    feat_voic["Features Extraction<br>HPSS → { Breath Index & Voice Index } & RMS"]
+
+    time_voic["Time Alignment<br>FastDTW"]
+    feat_voic-->time_voic
+
+    get_voic["Get Voicing"]
+    time_voic-->get_voic
   end
 ```
 
@@ -335,9 +401,6 @@ The extracted PITD expression curve is too flat, with almost no significant vari
    If the issue persists, try lowering both confidence thresholds. You can use the pitch confidence curve in [`expressive-viewer`](#viewer) as a reference when tuning.
    In general, the **Utau vocal** is relatively clean, so it is recommended to adjust the confidence threshold for the **reference vocal** first.
 
-#### Future Plans
-Incorporate semantic information into the PITD expression extraction algorithm.
-
 ---
 
 ### PITD expression curve has sudden jumps or spikes
@@ -360,7 +423,4 @@ The PITD expression curve changes too abruptly at certain positions, with large 
 2. Try denoising the reference audio using tools such as [UVR](https://github.com/Anjok07/ultimatevocalremovergui) or [MSST](https://github.com/SUC-DriverOld/MSST-WebUI).
 3. First try using the best-performing **rmvpe-onnx** or **hybrid** backend (with default confidence thresholds).
    If the issue persists, try increasing both confidence thresholds. You can use the pitch confidence curve in [`expressive-viewer`](#viewer) to guide your adjustments.
-   In general, the **Utau vocal** is relatively clean, so it is recommended to adjust the confidence threshold for the **reference vocal** first.
-
-#### Future Plans
-Incorporate semantic information into the PITD expression extraction algorithm.
+   In general, the **Utau vocal** is relatively clean, so it is recommended to adjust the confidence 

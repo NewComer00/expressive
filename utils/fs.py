@@ -24,13 +24,27 @@ def calculate_file_hash(file_path):
         file_path (str): Path to the file.
 
     Returns:
-        str: SHA-256 hash of the file contents.
+        str: 16-character SHA-256 hash of the file contents.
     """
     hash_sha256 = hashlib.sha256()
     with open(file_path, "rb") as f:
         while chunk := f.read(8192):
             hash_sha256.update(chunk)
-    return hash_sha256.hexdigest()
+    return hash_sha256.hexdigest()[:16]
+
+
+def calculate_args_hash(*args, **kwargs):
+    """Calculate a short hash of the given arguments for use in cache keys.
+
+    Args:
+        *args: Positional values to hash.
+        **kwargs: Keyword values to hash.
+
+    Returns:
+        str: 16-character hash of the combined arguments.
+    """
+    import joblib
+    return joblib.hash((args, sorted(kwargs.items())))[:16]
 
 
 def clear_cache():

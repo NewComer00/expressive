@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  expressive\n"
 "Report-Msgid-Bugs-To: https://github.com/NewComer00/expressive/issues\n"
-"POT-Creation-Date: 2026-04-15 21:12+0800\n"
+"POT-Creation-Date: 2026-04-30 20:29+0800\n"
 "PO-Revision-Date: 2026-03-01 20:21+0800\n"
 "Last-Translator: NewComer00\n"
 "Language: en\n"
@@ -18,25 +18,25 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: expressive.py:86
+#: expressive.py:93
 #, python-brace-format
 msgid "Expression '{exp_type}' is not supported."
 msgstr "Expression '{exp_type}' is not supported."
 
-#: expressive.py:132
+#: expressive.py:146
 #, python-brace-format
 msgid "Logs saved to '{log_path}'"
 msgstr "Logs saved to '{log_path}'"
 
-#: expressive.py:143
+#: expressive.py:157
 msgid "Migrate expressions from real singers to DiffSingers (CLI)"
 msgstr "Migrate expressions from real singers to DiffSingers (CLI)"
 
-#: expressive.py:152 expressive_gui.py:511
+#: expressive.py:166 expressive_gui.py:511
 msgid "Path to save the processed `.ustx` file"
 msgstr "Path to save the processed `.ustx` file"
 
-#: expressive.py:160
+#: expressive.py:174
 msgid ""
 "**Expression(s)** to apply. Repeat the flag for multiple expressions "
 "(e.g., `-e dyn -e pitd`)"
@@ -44,16 +44,16 @@ msgstr ""
 "**Expression(s)** to apply. Repeat the flag for multiple expressions "
 "(e.g., `-e dyn -e pitd`)"
 
-#: expressive.py:184
+#: expressive.py:198
 msgid "Starting Expressive CLI..."
 msgstr "Starting Expressive CLI..."
 
-#: expressive.py:194
+#: expressive.py:208
 #, python-brace-format
 msgid "Error occurred during processing: {e}"
 msgstr "Error occurred during processing: {e}"
 
-#: expressive.py:197 expressive_gui.py:235 expressive_gui.py:236
+#: expressive.py:210 expressive_gui.py:235 expressive_gui.py:236
 msgid "Processing completed successfully!"
 msgstr "Processing completed successfully!"
 
@@ -151,63 +151,75 @@ msgstr "Track Number"
 msgid "Expression Selection"
 msgstr "Expression Selection"
 
-#: expressive_gui.py:549 expressive_gui.py:647
-msgid "Trim Silence"
-msgstr "Trim Silence"
-
-#: expressive_gui.py:552 expressive_gui.py:581 expressive_gui.py:650
+#: expressive_gui.py:549 expressive_gui.py:586 expressive_gui.py:629
+#: expressive_gui.py:698 expressive_gui.py:732
 msgid "Spline Smoothing"
 msgstr "Spline Smoothing"
 
-#: expressive_gui.py:557 expressive_gui.py:617 expressive_gui.py:655
+#: expressive_gui.py:554 expressive_gui.py:591 expressive_gui.py:665
+#: expressive_gui.py:703 expressive_gui.py:737
 msgid "Align Radius"
 msgstr "Align Radius"
 
-#: expressive_gui.py:562 expressive_gui.py:628 expressive_gui.py:660
+#: expressive_gui.py:559 expressive_gui.py:596 expressive_gui.py:676
+#: expressive_gui.py:708 expressive_gui.py:742
 msgid "Smoothness"
 msgstr "Smoothness"
 
-#: expressive_gui.py:567 expressive_gui.py:633 expressive_gui.py:665
+#: expressive_gui.py:564 expressive_gui.py:601 expressive_gui.py:681
+#: expressive_gui.py:713
 msgid "Scaler"
 msgstr "Scaler"
 
-#: expressive_gui.py:601
-msgid "UTAU Confidence"
-msgstr "UTAU Confidence"
-
-#: expressive_gui.py:607
-msgid "Reference Confidence"
-msgstr "Reference Confidence"
-
-#: expressive_gui.py:613
-msgid "Backend"
-msgstr "Backend"
-
-#: expressive_gui.py:622
-msgid "Semitone Shift"
-msgstr "Semitone Shift"
-
-#: expressive_gui.py:623
-msgid "Auto Estimation"
-msgstr "Auto Estimation"
-
-#: expressive_gui.py:670
+#: expressive_gui.py:569 expressive_gui.py:718 expressive_gui.py:752
 msgid "Bias"
 msgstr "Bias"
 
-#: expressive_gui.py:678
+#: expressive_gui.py:583 expressive_gui.py:695
+msgid "Trim Silence"
+msgstr "Trim Silence"
+
+#: expressive_gui.py:617
+msgid "mHuBERT Embedder"
+msgstr "mHuBERT Embedder"
+
+#: expressive_gui.py:649
+msgid "UTAU Confidence"
+msgstr "UTAU Confidence"
+
+#: expressive_gui.py:655
+msgid "Reference Confidence"
+msgstr "Reference Confidence"
+
+#: expressive_gui.py:661
+msgid "Backend"
+msgstr "Backend"
+
+#: expressive_gui.py:670
+msgid "Semitone Shift"
+msgstr "Semitone Shift"
+
+#: expressive_gui.py:671
+msgid "Auto Estimation"
+msgstr "Auto Estimation"
+
+#: expressive_gui.py:747
+msgid "Dynamic Range"
+msgstr "Dynamic Range"
+
+#: expressive_gui.py:760
 msgid "Import Config"
 msgstr "Import Config"
 
-#: expressive_gui.py:684
+#: expressive_gui.py:766
 msgid "Export Config"
 msgstr "Export Config"
 
-#: expressive_gui.py:695
+#: expressive_gui.py:777
 msgid "Process"
 msgstr "Process"
 
-#: expressive_gui.py:737
+#: expressive_gui.py:802
 msgid "Migrate expressions from real singers to DiffSingers (GUI)"
 msgstr "Migrate expressions from real singers to DiffSingers (GUI)"
 
@@ -294,6 +306,110 @@ msgstr "Expression written to USTX file: '{}'"
 msgid "Expression result is empty. Skipping USTX update."
 msgstr "Expression result is empty. Skipping USTX update."
 
+#: expressions/brec.py:31
+msgid "Breathiness (curve)"
+msgstr "Breathiness (curve)"
+
+#: expressions/brec.py:33 expressions/dyn.py:29 expressions/pitd.py:60
+#: expressions/tenc.py:29 expressions/voic.py:33
+msgid ""
+"**Radius** for the FastDTW alignment algorithm; larger values allow more "
+"flexible alignment but increase computation time"
+msgstr ""
+"**Radius** for the FastDTW alignment algorithm; larger values allow more "
+"flexible alignment but increase computation time"
+
+#: expressions/brec.py:34 expressions/dyn.py:30 expressions/pitd.py:62
+#: expressions/tenc.py:30 expressions/voic.py:34
+msgid ""
+"Controls the **smoothness** of the expression curve using Gaussian "
+"filtering. Higher values produce smoother curves but may lose fine detail"
+msgstr ""
+"Controls the **smoothness** of the expression curve using Gaussian "
+"filtering. Higher values produce smoother curves but may lose fine detail"
+
+#: expressions/brec.py:35 expressions/dyn.py:31 expressions/pitd.py:63
+#: expressions/tenc.py:31
+msgid ""
+"**Scaling factor** applied to the expression curve. Values >1 amplify the"
+" expression, =1 keeps original intensity, <1 reduces it"
+msgstr ""
+"**Scaling factor** applied to the expression curve. Values >1 amplify the"
+" expression, =1 keeps original intensity, <1 reduces it"
+
+#: expressions/brec.py:36 expressions/tenc.py:32 expressions/voic.py:36
+msgid ""
+"**Bias** offset added to the expression curve. Positive values shift the "
+"curve upward; negative values shift it downward"
+msgstr ""
+"**Bias** offset added to the expression curve. Positive values shift the "
+"curve upward; negative values shift it downward"
+
+#: expressions/brec.py:37 expressions/dyn.py:32 expressions/pitd.py:64
+#: expressions/tenc.py:33 expressions/voic.py:37
+msgid ""
+"Perform **spline smoothing** on the final expression curve for extra "
+"smoothness"
+msgstr ""
+"Perform **spline smoothing** on the final expression curve for extra "
+"smoothness"
+
+#: expressions/brec.py:40 expressions/brec.py:42 expressions/dyn.py:35
+#: expressions/dyn.py:37 expressions/pitd.py:68 expressions/pitd.py:71
+#: expressions/tenc.py:36 expressions/tenc.py:38 expressions/voic.py:40
+#: expressions/voic.py:42
+msgid "Tick"
+msgstr "Tick"
+
+#: expressions/brec.py:41
+msgid "raw_breath_index"
+msgstr "raw_breath_index"
+
+#: expressions/brec.py:41
+msgid "Raw Breath Index"
+msgstr "Raw Breath Index"
+
+#: expressions/brec.py:41 expressions/dyn.py:36 expressions/pitd.py:69
+#: expressions/pitd.py:70 expressions/tenc.py:37 expressions/voic.py:41
+msgid "Time (s)"
+msgstr "Time (s)"
+
+#: expressions/brec.py:41 expressions/brec.py:42
+msgid "Breath Index"
+msgstr "Breath Index"
+
+#: expressions/brec.py:41 expressions/brec.py:42 expressions/dyn.py:36
+#: expressions/dyn.py:37 expressions/pitd.py:69 expressions/pitd.py:70
+#: expressions/pitd.py:71 expressions/tenc.py:37 expressions/tenc.py:38
+#: expressions/voic.py:41 expressions/voic.py:42
+msgid "Reference"
+msgstr "Reference"
+
+#: expressions/brec.py:41 expressions/brec.py:42 expressions/dyn.py:36
+#: expressions/dyn.py:37 expressions/pitd.py:69 expressions/pitd.py:70
+#: expressions/pitd.py:71 expressions/tenc.py:37 expressions/tenc.py:38
+#: expressions/voic.py:41 expressions/voic.py:42
+msgid "UTAU"
+msgstr "UTAU"
+
+#: expressions/brec.py:42
+msgid "aligned_breath_index"
+msgstr "aligned_breath_index"
+
+#: expressions/brec.py:42
+msgid "Aligned Breath Index"
+msgstr "Aligned Breath Index"
+
+#: expressions/brec.py:53 expressions/dyn.py:48 expressions/pitd.py:86
+#: expressions/tenc.py:50 expressions/voic.py:53
+msgid "Extracting expression..."
+msgstr "Extracting expression..."
+
+#: expressions/brec.py:83 expressions/dyn.py:86 expressions/pitd.py:150
+#: expressions/tenc.py:88 expressions/voic.py:83
+msgid "Expression extraction complete."
+msgstr "Expression extraction complete."
+
 #: expressions/dyn.py:26
 msgid "Dynamics (curve)"
 msgstr "Dynamics (curve)"
@@ -314,43 +430,6 @@ msgstr ""
 " segments. If the effect is too severe, consider disabling this option\n"
 "\n"
 
-#: expressions/dyn.py:29 expressions/pitd.py:41 expressions/tenc.py:29
-msgid ""
-"**Radius** for the FastDTW alignment algorithm; larger values allow more "
-"flexible alignment but increase computation time"
-msgstr ""
-"**Radius** for the FastDTW alignment algorithm; larger values allow more "
-"flexible alignment but increase computation time"
-
-#: expressions/dyn.py:30 expressions/pitd.py:43 expressions/tenc.py:30
-msgid ""
-"Controls the **smoothness** of the expression curve using Gaussian "
-"filtering. Higher values produce smoother curves but may lose fine detail"
-msgstr ""
-"Controls the **smoothness** of the expression curve using Gaussian "
-"filtering. Higher values produce smoother curves but may lose fine detail"
-
-#: expressions/dyn.py:31 expressions/pitd.py:44 expressions/tenc.py:31
-msgid ""
-"**Scaling factor** applied to the expression curve. Values >1 amplify the"
-" expression, =1 keeps original intensity, <1 reduces it"
-msgstr ""
-"**Scaling factor** applied to the expression curve. Values >1 amplify the"
-" expression, =1 keeps original intensity, <1 reduces it"
-
-#: expressions/dyn.py:32 expressions/pitd.py:45 expressions/tenc.py:33
-msgid ""
-"Perform **spline smoothing** on the final expression curve for extra "
-"smoothness"
-msgstr ""
-"Perform **spline smoothing** on the final expression curve for extra "
-"smoothness"
-
-#: expressions/dyn.py:35 expressions/dyn.py:37 expressions/pitd.py:48
-#: expressions/pitd.py:51 expressions/tenc.py:36 expressions/tenc.py:38
-msgid "Tick"
-msgstr "Tick"
-
 #: expressions/dyn.py:36 expressions/tenc.py:37
 msgid "raw_rms"
 msgstr "raw_rms"
@@ -359,27 +438,10 @@ msgstr "raw_rms"
 msgid "Raw RMS"
 msgstr "Raw RMS"
 
-#: expressions/dyn.py:36 expressions/pitd.py:49 expressions/pitd.py:50
-#: expressions/tenc.py:37
-msgid "Time (s)"
-msgstr "Time (s)"
-
 #: expressions/dyn.py:36 expressions/dyn.py:37 expressions/tenc.py:37
 #: expressions/tenc.py:38
 msgid "RMS"
 msgstr "RMS"
-
-#: expressions/dyn.py:36 expressions/dyn.py:37 expressions/pitd.py:49
-#: expressions/pitd.py:50 expressions/pitd.py:51 expressions/tenc.py:37
-#: expressions/tenc.py:38
-msgid "Reference"
-msgstr "Reference"
-
-#: expressions/dyn.py:36 expressions/dyn.py:37 expressions/pitd.py:49
-#: expressions/pitd.py:50 expressions/pitd.py:51 expressions/tenc.py:37
-#: expressions/tenc.py:38
-msgid "UTAU"
-msgstr "UTAU"
 
 #: expressions/dyn.py:37 expressions/tenc.py:38
 msgid "aligned_rms"
@@ -388,14 +450,6 @@ msgstr "aligned_rms"
 #: expressions/dyn.py:37 expressions/tenc.py:38
 msgid "Aligned RMS"
 msgstr "Aligned RMS"
-
-#: expressions/dyn.py:48 expressions/pitd.py:65 expressions/tenc.py:50
-msgid "Extracting expression..."
-msgstr "Extracting expression..."
-
-#: expressions/dyn.py:86 expressions/pitd.py:124 expressions/tenc.py:88
-msgid "Expression extraction complete."
-msgstr "Expression extraction complete."
 
 #: expressions/pitd.py:28
 msgid "Pitch Deviation (curve)"
@@ -417,22 +471,68 @@ msgstr "good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"
 msgid "based on rmvpe-onnx, improved by swift-f0, CPU only (ONNX Runtime)"
 msgstr "based on rmvpe-onnx, improved by swift-f0, CPU only (ONNX Runtime)"
 
+#: expressions/pitd.py:36
+msgid "(378 MB) maximum accuracy, full size"
+msgstr "(378 MB) maximum accuracy, full size"
+
+#: expressions/pitd.py:37
+msgid "(189 MB) high accuracy, medium size"
+msgstr "(189 MB) high accuracy, medium size"
+
 #: expressions/pitd.py:38
-#, python-format
-msgid ""
-"**F0 detection backend** for extracting pitch from WAV files. Available "
-"options:\n"
-"\n"
-"%s\n"
-"\n"
-msgstr ""
-"**F0 detection backend** for extracting pitch from WAV files. Available "
-"options:\n"
-"\n"
-"%s\n"
-"\n"
+msgid "(89.7 MB) fair accuracy, small size"
+msgstr "(89.7 MB) fair accuracy, small size"
 
 #: expressions/pitd.py:39
+msgid "disabled, skip this feature"
+msgstr "disabled, skip this feature"
+
+#: expressions/pitd.py:41
+msgid ""
+"\n"
+"mHuBERT model weights are licensed under CC-BY-NC-SA-4.0.\n"
+"Do NOT use the mHuBERT model weights for commercial purposes.\n"
+"This software does not grant you rights to the model weights.\n"
+"You are solely responsible for compliance with the model license:\n"
+"https://creativecommons.org/licenses/by-nc-sa/4.0/\n"
+"\n"
+"Original model author: utter-project\n"
+"\n"
+"Original model page:   https://huggingface.co/utter-project/mHuBERT-147\n"
+"\n"
+"ONNX conversion:       https://huggingface.co/NewComer00/mHuBERT-147-ONNX"
+"\n"
+msgstr ""
+"\n"
+"mHuBERT model weights are licensed under CC-BY-NC-SA-4.0.\n"
+"Do NOT use the mHuBERT model weights for commercial purposes.\n"
+"This software does not grant you rights to the model weights.\n"
+"You are solely responsible for compliance with the model license:\n"
+"https://creativecommons.org/licenses/by-nc-sa/4.0/\n"
+"\n"
+"Original model author: utter-project\n"
+"\n"
+"Original model page:   https://huggingface.co/utter-project/mHuBERT-147\n"
+"\n"
+"ONNX conversion:       https://huggingface.co/NewComer00/mHuBERT-147-ONNX"
+"\n"
+
+#: expressions/pitd.py:57
+#, python-format
+msgid ""
+"**F0 detection backend** for extracting pitch from WAV files. Available "
+"options:\n"
+"\n"
+"%s\n"
+"\n"
+msgstr ""
+"**F0 detection backend** for extracting pitch from WAV files. Available "
+"options:\n"
+"\n"
+"%s\n"
+"\n"
+
+#: expressions/pitd.py:58
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
@@ -449,7 +549,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:40
+#: expressions/pitd.py:59
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
@@ -466,7 +566,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:42
+#: expressions/pitd.py:61
 msgid ""
 "**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is"
 " an octave higher than the reference WAV, set to 12; if lower, set to "
@@ -476,39 +576,62 @@ msgstr ""
 " an octave higher than the reference WAV, set to 12; if lower, set to "
 "-12. Omit to enable automatic shift estimation"
 
-#: expressions/pitd.py:49
+#: expressions/pitd.py:65
+#, python-format
+msgid ""
+"**mHuBERT embedder variant** for feature extraction. If not `disabled`, "
+"mHuBERT embedder will be downloaded automatically and used for advanced "
+"feature extraction. Use this when the difference between UTAU and "
+"reference audio so significant that conventional features are not enough."
+" mHuBERT embedder runs well both on CPU and NVIDIA GPU. Available "
+"options:\n"
+"\n"
+"%s\n"
+"\n"
+msgstr ""
+"**mHuBERT embedder variant** for feature extraction. If not `disabled`, "
+"mHuBERT embedder will be downloaded automatically and used for advanced "
+"feature extraction. Use this when the difference between UTAU and "
+"reference audio so significant that conventional features are not enough."
+" mHuBERT embedder runs well both on CPU and NVIDIA GPU. Available "
+"options:\n"
+"\n"
+"%s\n"
+"\n"
+
+#: expressions/pitd.py:69
 msgid "confidence"
 msgstr "confidence"
 
-#: expressions/pitd.py:49
+#: expressions/pitd.py:69
 msgid "Pitch Extraction Confidence"
 msgstr "Pitch Extraction Confidence"
 
-#: expressions/pitd.py:49
+#: expressions/pitd.py:69
 msgid "Confidence"
 msgstr "Confidence"
 
-#: expressions/pitd.py:50
+#: expressions/pitd.py:70
 msgid "raw_pitch"
 msgstr "raw_pitch"
 
-#: expressions/pitd.py:50
+#: expressions/pitd.py:70
 msgid "Raw Pitch"
 msgstr "Raw Pitch"
 
-#: expressions/pitd.py:50 expressions/pitd.py:51
+#: expressions/pitd.py:70 expressions/pitd.py:71
 msgid "Pitch (Hz)"
 msgstr "Pitch (Hz)"
 
-#: expressions/pitd.py:51
+#: expressions/pitd.py:71
 msgid "aligned_pitch"
 msgstr "aligned_pitch"
 
-#: expressions/pitd.py:51
+#: expressions/pitd.py:71
 msgid "Aligned Pitch"
 msgstr "Aligned Pitch"
 
-#: expressions/pitd.py:199
+#: expressions/pitd.py:237
 #, python-brace-format
 msgid "Estimated Semitone-shift: {}"
 msgstr "Estimated Semitone-shift: {}"
@@ -517,46 +640,104 @@ msgstr "Estimated Semitone-shift: {}"
 msgid "Tension (curve)"
 msgstr "Tension (curve)"
 
-#: expressions/tenc.py:32
-msgid ""
-"**Bias** offset added to the expression curve. Positive values shift the "
-"curve upward; negative values shift it downward"
-msgstr ""
-"**Bias** offset added to the expression curve. Positive values shift the "
-"curve upward; negative values shift it downward"
+#: expressions/voic.py:31
+msgid "Voicing (curve)"
+msgstr "Voicing (curve)"
 
-#: utils/ui.py:350
+#: expressions/voic.py:35
+msgid ""
+"**Dynamic range** of the expression curve. Values >1 amplify the "
+"variation, =1 keeps original range, <1 compresses it"
+msgstr ""
+"**Dynamic range** of the expression curve. Values >1 amplify the "
+"variation, =1 keeps original range, <1 compresses it"
+
+#: expressions/voic.py:41
+msgid "raw_voice_index"
+msgstr "raw_voice_index"
+
+#: expressions/voic.py:41
+msgid "Raw Voice Index"
+msgstr "Raw Voice Index"
+
+#: expressions/voic.py:41 expressions/voic.py:42
+msgid "Voice Index"
+msgstr "Voice Index"
+
+#: expressions/voic.py:42
+msgid "aligned_voice_index"
+msgstr "aligned_voice_index"
+
+#: expressions/voic.py:42
+msgid "Aligned Voice Index"
+msgstr "Aligned Voice Index"
+
+#: utils/embedder.py:244
+#, python-brace-format
+msgid "Loaded {name} model from '{path}'."
+msgstr "Loaded {name} model from '{path}'."
+
+#: utils/embedder.py:246
+msgid "ONNX Runtime is using CUDA for inference acceleration."
+msgstr "ONNX Runtime is using CUDA for inference acceleration."
+
+#: utils/embedder.py:284
+#, python-brace-format
+msgid "Fetching {name} ({variant}) from Internet or local cache..."
+msgstr "Fetching {name} ({variant}) from Internet or local cache..."
+
+#: utils/ui.py:349
 msgid "Failed to load audio"
 msgstr "Failed to load audio"
 
-#: utils/ui.py:377
+#: utils/ui.py:376
 msgid "Play/Pause"
 msgstr "Play/Pause"
 
-#: utils/ui.py:378
+#: utils/ui.py:377
 msgid "Loop region"
 msgstr "Loop region"
 
-#: utils/ui.py:379
+#: utils/ui.py:378
 msgid "Zoom"
 msgstr "Zoom"
 
-#: utils/wavtool.py:88
+#: utils/wavtool.py:67
+#, python-brace-format
+msgid "Loading embedding data from cache file: '{}'"
+msgstr "Loading embedding data from cache file: '{}'"
+
+#: utils/wavtool.py:83
+#, python-brace-format
+msgid "Embedding data saved to cache file: '{}'"
+msgstr "Embedding data saved to cache file: '{}'"
+
+#: utils/wavtool.py:117
+#, python-brace-format
+msgid "Loading breath/voice data from cache file: '{}'"
+msgstr "Loading breath/voice data from cache file: '{}'"
+
+#: utils/wavtool.py:140
+#, python-brace-format
+msgid "Breath/voice data saved to cache file: '{}'"
+msgstr "Breath/voice data saved to cache file: '{}'"
+
+#: utils/wavtool.py:217
 #, python-brace-format
 msgid "Loading F0 data from cache file: '{}'"
 msgstr "Loading F0 data from cache file: '{}'"
 
-#: utils/wavtool.py:133
+#: utils/wavtool.py:259
 #, python-brace-format
 msgid "F0 data saved to cache file: '{}'"
 msgstr "F0 data saved to cache file: '{}'"
 
-#: utils/wavtool.py:380
+#: utils/wavtool.py:506
 #, python-brace-format
 msgid "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 
-#: utils/wavtool.py:386
+#: utils/wavtool.py:512
 #, python-brace-format
 msgid "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"

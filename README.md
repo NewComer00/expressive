@@ -22,9 +22,11 @@
 
 当前版本支持以下表情参数的导入：
 
+* `Breathiness (curve)`
 * `Dynamics (curve)`
 * `Pitch Deviation (curve)`
 * `Tension (curve)`
+* `Voicing (curve)`
 
 <div align="center">
 
@@ -51,13 +53,28 @@
 * OpenUtau Beta（或支持 DiffSinger 的其他版本）
 * Python 3.10 \*
 
+> \* 在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
+
+### 机器学习模型
+
+#### 音高提取
+
 本应用默认选择 [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) 作为音高提取后端，仅需 CPU 即可运行。[RMVPE](https://arxiv.org/abs/2306.15412v2) 是目前公开的效果最好的音高提取算法，且推理速度较快，可以满足绝大多数使用场景。
 
 应用也提供了 [swift-f0](https://github.com/lars76/swift-f0) 与 [CREPE](https://github.com/marl/crepe) 音高提取后端。前者仅依赖 CPU，效果一般，但速度最快。后者是业内的经典算法，速度较慢。在 CUDA 环境下，CREPE 后端会自动启用 GPU 加速。
 
 应用还新增了一个实验性的 **hybrid** 后端。该后端融合了 rmvpe-onnx 与 swift-f0 的预测结果，以 rmvpe-onnx 的音高提取结果为主，在音频有声段中，如果 rmvpe-onnx 的置信度较低且 swift-f0 的置信度较高，则采用 swift-f0 的结果进行修正，从而提升整体音高提取的准确性。
 
-> \* 在 Windows 平台下，TensorFlow 2.10 是最后一个支持 GPU 加速的版本，Python 3.10 是它的 `.whl` 文件支持的最高 Python 版本。
+#### mHuBERT 特征提取器
+
+> [!IMPORTANT]
+> mHuBERT 模型权重遵循 [CC-BY-NC-SA-4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可证分发，**仅供非商业用途使用**。本应用只提供 mHuBERT 模型权重的下载方式，不分发模型权重。您下载并使用 mHuBERT 模型权重时，请务必遵守其许可证的规定。
+
+本应用引入了 [mHuBERT](https://huggingface.co/utter-project/mHuBERT-147) 作为高级语音特征提取后端，用于分析不同语言发音的音素相似度。
+
+如果您创作的歌曲与参考歌手人声的歌词大体相似，但乐曲编排（如曲速、局部歌词的切分方式等）不同，那么启用 mHuBERT 后端会提升表情参数的对齐效果。
+
+mHuBERT 在 CPU 与 CUDA 环境下均运行良好。
 
 ## 📌 使用场景
 
@@ -67,15 +84,9 @@
 
 ### 输入
 
-> [!TIP]
-> 从 `v0.6.0` 开始，本应用支持带有**多分段**与**多曲速**的 OpenUtau 人声音轨。
-
-> [!TIP]
-> 从 `v0.5.0` 开始，用户可以分别在**歌姬音声**与**参考人声**的完整音频中划定选区，选区内的音频段落将作为最终输入。
-
-* **歌姬音声**：由 OpenUtau 输出的无表情虚拟歌声音频（WAV 格式）。建议分段与曲速尽量与**参考人声**相近，若相差过大可能影响对齐效果。
+* **歌姬音声**：由 OpenUtau 输出的无表情虚拟歌声音频（WAV 格式）。建议分段与曲速尽量与**参考人声**相近，若相差过大可能影响对齐效果，此时可考虑启用 [mHuBERT 特征提取器](#mhubert-特征提取器)。
 * **参考人声**：原始人声录音（WAV 格式），可使用 [UVR](https://github.com/Anjok07/ultimatevocalremovergui) 、[MSST](https://github.com/SUC-DriverOld/MSST-WebUI) 等工具去除伴奏、和声与混响。
-* **输入工程**：原始 OpenUtau 工程文件（USTX 格式）。
+* **输入工程**：原始 OpenUtau 工程文件（USTX 格式）。本应用支持带有**多分段**与**多曲速**的 OpenUtau 人声音轨。
 * **输出路径**：处理完成后新工程文件的保存位置。
 * **音轨编号**：OpenUtau 工程中**歌姬音声**所在的音轨编号（从 1 开始）。表情参数会被导入到该音轨中。
 
@@ -84,7 +95,7 @@
 一个携带表情参数的新 USTX 文件。原始工程不会被修改。
 
 > [!TIP]
-> 从 `v0.9.1` 开始，如果您不希望额外生成新的工程文件，可以**将输出路径设置为与输入工程路径一致**。这样，表情参数会直接写入原始工程文件中。
+> 如果您不希望额外生成新的工程文件，可以**将输出路径设置为与输入工程路径一致**。这样，表情参数会直接写入原始工程文件中。
 >
 > 正常情况下，程序只会更新您所选音轨中的指定表情参数，不会影响其它参数，也不会修改其他音轨。
 >
@@ -100,20 +111,24 @@
 * [x] `Pitch Deviation` 参数生成
 * [x] `Dynamics` 参数生成
 * [x] `Tension` 参数生成
+* [x] `Breathiness` 参数生成
+* [x] `Voicing` 参数生成
 
 ## 🚀 直接安装
 
 您可以直接在 [Releases](https://github.com/NewComer00/expressive/releases) 页面下载预编译的可执行文件:
 
 ### `Expressive-<version>-Windows-x64-CPU.exe`
+
 适用于 x64 架构 Windows 的 Expressive CLI / GUI / Viewer 安装包。
 
 仅可使用 CPU，无 CUDA 运行时库。安装体积小，但选择 CREPE 后端提取音高时速度较慢。
 
 ### `Expressive-<version>-Windows-x64-GPU.exe`
+
 带 GPU 支持的适用于 x64 架构 Windows 的 Expressive CLI / GUI / Viewer 安装包。
 
-含 CUDA 运行时库。在配备 NVIDIA 显卡（驱动版本 >= 450）的电脑上使用时，会大幅提高 CREPE 后端的推理速度。
+含 CUDA 运行时库。在配备 NVIDIA 显卡（驱动版本 >= 450）的电脑上使用时，会大幅提高 CREPE 后端的推理速度。mHuBERT 特征提取器也可享受 GPU 加速。
 
 ## 👨‍💻 源码安装
 
@@ -150,7 +165,7 @@ pip install -e ".[gpu,gui]"
 ## 📖 使用方式
 
 > [!TIP]
-> 本节介绍的所有命令（以及您通过安装包安装的可执行文件）均会自动适配您的系统语言。如果您需要不同语言的界面，可以设置[环境变量 `LANGUAGE` 或 `LANG`](https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html) 来覆盖默认语言。
+> 本节介绍的所有 Expressive 命令（以及您通过安装包安装的可执行文件）均会自动适配您的系统语言。如果您需要不同语言的界面，可以设置[环境变量 `LANGUAGE` 或 `LANG`](https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html) 来覆盖默认语言。
 > 
 > 例如，在 Windows PowerShell 中：
 > ```powershell
@@ -163,15 +178,46 @@ pip install -e ".[gpu,gui]"
 > LANGUAGE="en_US" expressive-gui
 > ```
 
-> [!IMPORTANT]
-> 从源码安装的用户在运行 [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) 后端时，应用会自动从 Hugging Face 下载模型文件 [rmvpe.onnx（Copyright (c) 2022 lj1995 — MIT License）](https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.onnx)。
->
-> 如果您希望提前下载模型文件，可在安装完成后运行以下命令：
-> ```bash
+### 获取模型权重
+
+> [!TIP]
+> 如果您无法直接访问 Hugging Face，可通过镜像站点来获取模型文件。
+> 
+> 以 [https://hf-mirror.com/](https://hf-mirror.com/) 镜像站点为例，在 Windows PowerShell 中：
+> ```powershell
+> $env:HF_ENDPOINT = "https://hf-mirror.com"
 > rmvpe-onnx download
 > ```
+> 
+> 在 Linux Shell 中：
+> ```bash
+> HF_ENDPOINT="https://hf-mirror.com" rmvpe-onnx download
+> ```
 >
-> 若您是通过安装包获取的本应用，安装包中已包含该模型文件，无需额外下载。
+> - `HF_ENDPOINT` 环境变量会覆盖 Hugging Face 的默认 API 端点，使得模型文件从指定的镜像站点下载。
+> - `rmvpe-onnx download` 可以替换为任何需要从 Hugging Face 下载模型文件的命令，包括启动本应用的命令。
+
+#### RMVPE
+
+若您是通过安装包获取的本应用，安装包中已包含相关模型文件，无需额外下载。
+
+从源码安装的用户在运行 [rmvpe-onnx](https://github.com/newcomer00/rmvpe-onnx) 后端时，应用会自动从 Hugging Face 下载模型文件 [rmvpe.onnx（Copyright (c) 2022 lj1995 — MIT License）](https://huggingface.co/lj1995/VoiceConversionWebUI/blob/main/rmvpe.onnx)。
+
+如果您希望提前下载模型文件，可在安装完成后运行以下命令：
+```bash
+rmvpe-onnx download
+```
+
+#### mHuBERT
+
+[mHuBERT 模型权重](https://huggingface.co/utter-project/mHuBERT-147)受到 [CC-BY-NC-SA-4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可约束，**不伴随应用分发**。
+
+您在使用 mHuBERT 特征提取器时，应用会自动从 Hugging Face 下载 [ONNX 格式的模型权重文件](https://huggingface.co/NewComer00/mHuBERT-147-ONNX)。权重文件会被保存在 Hugging Face 默认的当前用户缓存路径中（即 `~/.cache/huggingface/hub` 目录，程序会输出具体位置），不会存储在本应用的目录里。
+
+您也可以使用 Hugging Face 的 [hf](https://huggingface.co/docs/huggingface_hub/guides/cli) 工具手动下载模型权重，文件将被保存在当前用户的缓存目录，无需额外设置：
+```bash
+hf download NewComer00/mHuBERT-147-ONNX onnx/model_bnb4.onnx onnx/model_fp16.onnx onnx/model_fp32.onnx
+```
 
 ### 命令行界面（CLI）
 
@@ -256,7 +302,7 @@ graph TB;
   refwav[/"Reference WAV"/]
   utauwav[/"OpenUtau WAV"/]
   refwav-->feat_pitd
-  ustx_in-.->|Export|utauwav
+  ustx_in-.->utauwav
   utauwav-->feat_pitd
 
   ustx_editor["USTX Editor"]
@@ -265,7 +311,7 @@ graph TB;
 
   subgraph PitdLoader
     direction TB
-    feat_pitd["Features Extraction<br>Pitch & MFCC & RMS"]
+    feat_pitd["Features Extraction<br>Pitch & MFCC & RMS<br>( & mHuBERT Embeddings )"]
 
     time_pitd["Time Alignment<br>FastDTW"]
     feat_pitd-->time_pitd
@@ -277,7 +323,7 @@ graph TB;
     pitch_algn-->get_pitd
   end
 
-  utsx_out[/"OpenUtau Project Output"/]
+  ustx_out[/"OpenUtau Project Output"/]
   get_pitd-->utsx_out
 
   subgraph DynLoader
@@ -300,6 +346,28 @@ graph TB;
 
     get_tenc["Get Tension"]
     time_tenc-->get_tenc
+  end
+
+  subgraph BrecLoader
+    direction TB
+    feat_brec["Features Extraction<br>HPSS → { Breath Index & Voice Index } & RMS"]
+
+    time_brec["Time Alignment<br>FastDTW"]
+    feat_brec-->time_brec
+
+    get_brec["Get Breathiness"]
+    time_brec-->get_brec
+  end
+
+  subgraph VoicLoader
+    direction TB
+    feat_voic["Features Extraction<br>HPSS → { Breath Index & Voice Index } & RMS"]
+
+    time_voic["Time Alignment<br>FastDTW"]
+    feat_voic-->time_voic
+
+    get_voic["Get Voicing"]
+    time_voic-->get_voic
   end
 ```
 
@@ -334,9 +402,6 @@ NiceGUI 框架已经开始着手改进文件拖拽支持，应该在未来的版
 1. 请下载安装 `v0.9.0` 及之后的版本。
 2. 请先尝试使用效果最好的 rmvpe-onnx 或 hybrid 后端（默认置信度阈值）。若问题仍在，尝试降低两个置信度阈值。您可以参考 [`expressive-viewer`](#可视化工具viewer) 的音高置信度曲线来辅助调整。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
 
-#### 未来计划
-为 PITD 表情提取算法引入语义信息。
-
 ---
 
 ### PITD 表情曲线在某些位置变化过快，出现跳跃或毛刺
@@ -353,6 +418,3 @@ PITD 表情曲线在某些位置变化过快，出现非常大的跳跃或毛刺
 1. 请下载安装 `v0.9.0` 及之后的版本。
 2. 可使用 [UVR](https://github.com/Anjok07/ultimatevocalremovergui) 、[MSST](https://github.com/SUC-DriverOld/MSST-WebUI) 等工具对参考音频去噪声（denoise）。
 3. 请先尝试使用效果最好的 rmvpe-onnx 或 hybrid 后端（默认置信度阈值）。若问题仍在，尝试增加两个置信度阈值。您可以参考 [`expressive-viewer`](#可视化工具viewer) 的音高置信度曲线来辅助调整。一般来说，**歌姬音声**比较纯净，可以先调整**参考人声**的置信度阈值。
-
-#### 未来计划
-为 PITD 表情提取算法引入语义信息。

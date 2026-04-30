@@ -11,9 +11,11 @@ requires-python = "==3.10.*"
 dependencies = [
     "numpy<2",
     "tensorflow==2.10",
+    "onnxruntime==1.20.1",
     "crepe @ git+https://github.com/NewComer00/crepe.git@master",
     "swift-f0",
     "rmvpe-onnx",
+    "huggingface-hub",
     "oyaml",
     "fastdtw",
     "scipy",
@@ -30,10 +32,13 @@ dependencies = [
     "filelock",
     "plotly",
     "watchfiles",
+    "joblib",
 ]
 
 [project.optional-dependencies]
 gpu = [
+    "onnxruntime-gpu @ https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/download/onnxruntime-gpu/1.20.1/onnxruntime_gpu-1.20.1-cp310-cp310-win_amd64.whl ; sys_platform=='win32'",
+    "onnxruntime-gpu @ https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-11/pypi/download/onnxruntime-gpu/1.20.1/onnxruntime_gpu-1.20.1-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl ; sys_platform=='linux'",
     "nvidia-cuda-runtime-cu11",
     "nvidia-cuda-nvcc-cu11",
     "nvidia-cublas-cu11",

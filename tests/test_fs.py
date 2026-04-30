@@ -2,7 +2,7 @@
 
 import pytest
 
-from utils.fs import APP_CACHE_DIR, calculate_file_hash, clear_cache
+from utils.fs import APP_CACHE_DIR, calculate_args_hash, calculate_file_hash, clear_cache
 
 
 class TestCalculateFileHash:
@@ -15,8 +15,8 @@ class TestCalculateFileHash:
 
         hash_result = calculate_file_hash(str(test_file))
 
-        # SHA-256 of "Hello, World!"
-        expected_hash = "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f"
+        # calculate_file_hash returns only the first 16 hex characters
+        expected_hash = "dffd6021bb2bd5b0"
         assert hash_result == expected_hash
 
     def test_calculate_file_hash_empty_file(self, tmp_path):
@@ -26,19 +26,19 @@ class TestCalculateFileHash:
 
         hash_result = calculate_file_hash(str(test_file))
 
-        # SHA-256 of empty string
-        expected_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        # First 16 hex chars of SHA-256 of empty string
+        expected_hash = "e3b0c44298fc1c14"
         assert hash_result == expected_hash
 
-    def test_calculate_file_hash_binary_file(self, tmp_path):
-        """Test calculating hash of a binary file."""
+    def test_calculate_file_hash_returns_16_chars(self, tmp_path):
+        """Hash is always truncated to 16 hex characters."""
         test_file = tmp_path / "binary.bin"
         test_file.write_bytes(b"\x00\x01\x02\x03\x04\x05")
 
         hash_result = calculate_file_hash(str(test_file))
 
         assert isinstance(hash_result, str)
-        assert len(hash_result) == 64  # SHA-256 produces 64 hex characters
+        assert len(hash_result) == 16
 
     def test_calculate_file_hash_large_file(self, tmp_path):
         """Test calculating hash of a large file (tests chunking)."""
@@ -50,7 +50,7 @@ class TestCalculateFileHash:
         hash_result = calculate_file_hash(str(test_file))
 
         assert isinstance(hash_result, str)
-        assert len(hash_result) == 64
+        assert len(hash_result) == 16
 
     def test_calculate_file_hash_same_content_same_hash(self, tmp_path):
         """Test that identical files produce the same hash."""
@@ -84,40 +84,89 @@ class TestCalculateFileHash:
         with pytest.raises(FileNotFoundError):
             calculate_file_hash("/nonexistent/file.txt")
 
+    def test_calculate_file_hash_only_hex_chars(self, tmp_path):
+        """Hash must contain only lowercase hex characters."""
+        test_file = tmp_path / "hex.txt"
+        test_file.write_text("hex check")
+        hash_result = calculate_file_hash(str(test_file))
+        assert all(c in "0123456789abcdef" for c in hash_result)
+
+    def test_calculate_file_hash_deterministic(self, tmp_path):
+        """Calling twice on the same file yields the same result."""
+        test_file = tmp_path / "det.txt"
+        test_file.write_text("determinism")
+        assert calculate_file_hash(str(test_file)) == calculate_file_hash(str(test_file))
+
+
+class TestCalculateArgsHash:
+    """Test argument hash calculation."""
+
+    def test_returns_string(self):
+        result = calculate_args_hash(1, 2, key="value")
+        assert isinstance(result, str)
+
+    def test_returns_16_chars(self):
+        result = calculate_args_hash("a", "b")
+        assert len(result) == 16
+
+    def test_same_args_same_hash(self):
+        h1 = calculate_args_hash(1, 2, x=3)
+        h2 = calculate_args_hash(1, 2, x=3)
+        assert h1 == h2
+
+    def test_different_args_different_hash(self):
+        h1 = calculate_args_hash(1, 2)
+        h2 = calculate_args_hash(1, 3)
+        assert h1 != h2
+
+    def test_kwargs_order_invariant(self):
+        """Keyword argument order must not change the hash (sorted internally)."""
+        h1 = calculate_args_hash(a=1, b=2)
+        h2 = calculate_args_hash(b=2, a=1)
+        assert h1 == h2
+
+    def test_no_args_returns_string(self):
+        result = calculate_args_hash()
+        assert isinstance(result, str)
+        assert len(result) == 16
+
+    def test_positional_and_keyword_distinguished(self):
+        """Positional and keyword args with the same value should differ."""
+        h_pos = calculate_args_hash(1)
+        h_kw = calculate_args_hash(x=1)
+        assert h_pos != h_kw
+
+    def test_none_args_stable(self):
+        h1 = calculate_args_hash(None)
+        h2 = calculate_args_hash(None)
+        assert h1 == h2
+
 
 class TestClearCache:
     """Test cache clearing functionality."""
 
     def test_clear_cache_when_exists(self, tmp_path, monkeypatch):
         """Test clearing cache when directory exists."""
-        # Mock APP_CACHE_DIR to use temp directory
         mock_cache_dir = tmp_path / "cache"
         mock_cache_dir.mkdir()
 
-        # Create some files in the cache
         (mock_cache_dir / "file1.txt").write_text("data1")
         (mock_cache_dir / "file2.txt").write_text("data2")
 
-        # Patch APP_CACHE_DIR
         monkeypatch.setattr("utils.fs.APP_CACHE_DIR", str(mock_cache_dir))
 
-        # Clear cache
         clear_cache()
 
-        # Verify directory was removed
         assert not mock_cache_dir.exists()
 
     def test_clear_cache_when_not_exists(self, tmp_path, monkeypatch):
         """Test clearing cache when directory doesn't exist."""
         mock_cache_dir = tmp_path / "nonexistent_cache"
 
-        # Patch APP_CACHE_DIR
         monkeypatch.setattr("utils.fs.APP_CACHE_DIR", str(mock_cache_dir))
 
-        # Should not raise error
         clear_cache()
 
-        # Directory should still not exist
         assert not mock_cache_dir.exists()
 
     def test_clear_cache_with_subdirectories(self, tmp_path, monkeypatch):
@@ -125,19 +174,15 @@ class TestClearCache:
         mock_cache_dir = tmp_path / "cache"
         mock_cache_dir.mkdir()
 
-        # Create nested structure
         subdir = mock_cache_dir / "subdir"
         subdir.mkdir()
         (subdir / "nested_file.txt").write_text("nested data")
         (mock_cache_dir / "root_file.txt").write_text("root data")
 
-        # Patch APP_CACHE_DIR
         monkeypatch.setattr("utils.fs.APP_CACHE_DIR", str(mock_cache_dir))
 
-        # Clear cache
         clear_cache()
 
-        # Verify entire tree was removed
         assert not mock_cache_dir.exists()
         assert not subdir.exists()
 

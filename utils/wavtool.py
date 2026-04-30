@@ -6,11 +6,140 @@ import argparse
 import tempfile
 from pathlib import Path
 
+import scipy
 import librosa
 import numpy as np
 
 from utils.i18n import _
-from utils.fs import APP_CACHE_DIR, calculate_file_hash
+from utils.fs import APP_CACHE_DIR, calculate_args_hash, calculate_file_hash
+
+
+def extract_wav_embedding(
+    wav_path,
+    embedder: str = "mhubert",
+    pca_dims: int | None = None,
+    use_cache=True,
+    **embedder_kwargs,
+):
+    """Extract frame-level embedding features from a WAV file.
+
+    Args:
+        wav_path:          Path to the input WAV file.
+        embedder:          Registered embedder name — one of
+                           :meth:`EmbedderFactory.list`.
+        pca_dims:          If set, reduce the 5 feature rows to *pca_dims*
+                           principal components using
+                           :class:`sklearn.decomposition.PCA`.
+                           ``None`` returns all 5 rows unchanged.
+        use_cache:         Load from / save to a per-file ``.npz`` cache keyed
+                           by file hash and embedder name.
+        **embedder_kwargs: Forwarded to the embedder constructor (e.g.
+                           ``variant``, ``device``).
+
+    Returns:
+        tuple: ``(frame_times, features)`` where
+
+        - ``frame_times``: ``(T,)`` float32 array, seconds.
+        - ``features``:    ``(5, T)`` or ``(pca_dims, T)`` float32 array.
+
+    Raises:
+        KeyError: If *embedder* is not in :meth:`EmbedderFactory.list`.
+    """
+    from utils.embedder import EmbedderFactory, emb_features
+
+    if embedder not in EmbedderFactory.list():
+        raise KeyError(
+            f"Unknown embedder {embedder!r}. "
+            f"Available: {EmbedderFactory.list()}"
+        )
+
+    cache_dir = Path(APP_CACHE_DIR) / "embedder"
+    suffix    = f"{embedder}.{calculate_args_hash(**embedder_kwargs)}"
+    if pca_dims is not None:
+        suffix += f".pca{pca_dims}"
+
+    if use_cache:
+        os.makedirs(cache_dir, exist_ok=True)
+        wav_hash   = calculate_file_hash(wav_path)
+        cache_path = cache_dir / f"{wav_hash}.{suffix}.npz"
+
+        if cache_path.is_file():
+            print(f"[{embedder}] " + _("Loading embedding data from cache file: '{}'").format(cache_path))
+            data = np.load(cache_path)
+            return np.asarray(data["frame_times"]), np.asarray(data["embeddings"])
+
+    emb, frame_times = EmbedderFactory.create(embedder, **embedder_kwargs)(wav_path)
+
+    norms    = np.linalg.norm(emb, axis=1, keepdims=True)
+    emb_norm = emb / np.maximum(norms, 1e-8)   # (T, D)
+    features = emb_features(emb_norm)           # (5, T)
+
+    if pca_dims is not None:
+        from sklearn.decomposition import PCA
+        features = PCA(n_components=pca_dims).fit_transform(features.T).T.astype(np.float32)  # (pca_dims, T)
+
+    if use_cache:
+        np.savez(cache_path, frame_times=frame_times, embeddings=features)
+        print(f"[{embedder}] " + _("Embedding data saved to cache file: '{}'").format(cache_path))
+
+    return np.asarray(frame_times), np.asarray(features)
+
+
+def extract_wav_breath_voice(wav_path, breath_band=(10000, np.inf), voice_band=(0, 4000), use_cache=True):
+    """Extract breath and voice intensity indices from a WAV file.
+
+    Separates harmonic content via HPSS, then computes per-frame RMS energy
+    in the specified frequency bands as dB indices.
+
+    Args:
+        wav_path (str): Path to the WAV file.
+        breath_band (tuple, optional): Frequency range (Hz) for breath detection.
+            Defaults to (10000, inf).
+        voice_band (tuple, optional): Frequency range (Hz) for voice detection.
+            Defaults to (0, 4000).
+        use_cache (bool, optional): Whether to use cached data if available.
+            Defaults to True.
+
+    Returns:
+        tuple: (time, breath_index, voice_index), where:
+            - time (np.ndarray of float): Time points in seconds. Shape: (n_frames,).
+            - breath_index (np.ndarray of float): Breath intensity in dB. Shape: (n_frames,).
+            - voice_index (np.ndarray of float): Voice intensity in dB. Shape: (n_frames,).
+    """
+    cache_dir = Path(APP_CACHE_DIR) / "bv"
+
+    if use_cache:
+        os.makedirs(cache_dir, exist_ok=True)
+        wav_hash   = calculate_file_hash(wav_path)
+        bands_hash = calculate_args_hash(breath_band, voice_band)
+        cache_path = cache_dir / f"{wav_hash}.{bands_hash}.npz"
+        if cache_path.is_file():
+            print(_("Loading breath/voice data from cache file: '{}'").format(cache_path))
+            data = np.load(cache_path)
+            return data["time"], data["breath_index"], data["voice_index"]
+
+    y, sr  = librosa.load(wav_path, sr=None, mono=True)
+    y_h, y_n = librosa.effects.hpss(y, margin=(1.0, 5.0))
+
+    D     = librosa.stft(y_h, n_fft=2048, hop_length=512)
+    freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
+
+    def band_rms(mask):
+        return np.sqrt(np.mean(np.abs(D[mask, :]) ** 2, axis=0))
+
+    voice_mask   = (freqs >= voice_band[0])  & (freqs < voice_band[1])
+    voice_index  = 20 * np.log10(band_rms(voice_mask)  + 1e-9)
+
+    breath_mask  = (freqs >= breath_band[0]) & (freqs < breath_band[1])
+    breath_index = 20 * np.log10(band_rms(breath_mask) + 1e-9)
+
+    time = librosa.frames_to_time(np.arange(D.shape[1]), sr=sr, hop_length=512)
+
+    if use_cache:
+        np.savez(cache_path, time=time, breath_index=breath_index, voice_index=voice_index)
+        print(_("Breath/voice data saved to cache file: '{}'").format(cache_path))
+
+    return time, breath_index, voice_index
 
 
 def extract_wav_mfcc(wav_path, n_feat=6, n_mfcc=13):
@@ -77,7 +206,7 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
     time = []
     frequency = []
     confidence = []
-    cache_dir = Path(APP_CACHE_DIR) / "pitd"
+    cache_dir = Path(APP_CACHE_DIR) / "f0"
     # Try reading data from cache
     if use_cache:
         os.makedirs(cache_dir, exist_ok=True)
@@ -99,10 +228,7 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
         # Extract pitch using the specified backend
         if backend == "crepe":
             import crepe
-            from utils.gpu import add_cuda_to_path
-            from scipy.io import wavfile
-            add_cuda_to_path(skip_missing=True)
-            sr, audio = wavfile.read(file_path)
+            sr, audio = scipy.io.wavfile.read(file_path)
             time, frequency, confidence, _unused = crepe.predict(audio, sr, viterbi=True)
         elif backend == "swift-f0":
             from swift_f0 import SwiftF0
@@ -115,7 +241,7 @@ def extract_wav_frequency(file_path, backend="rmvpe-onnx", use_cache=True):
             from rmvpe_onnx import RMVPE
             import soundfile as sf
             audio, sr = sf.read(file_path)
-            rmvpe = RMVPE()
+            rmvpe = RMVPE(device="cpu")
             timestamp, frequency, confidence, _unused = rmvpe.predict(audio=audio, sr=sr)
             time = timestamp.tolist()
             frequency = frequency.tolist()
