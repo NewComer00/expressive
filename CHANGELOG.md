@@ -7,6 +7,17 @@ and this project adheres to Semantic Versioning.
 
 <!-- version list -->
 
+## v0.10.0 (2026-04-30)
+
+### Features
+
+- **expressions**: Add BrecLoader and VoicLoader for Breathiness and Voicing
+  ([`55fe4f4`](https://github.com/NewComer00/expressive/commit/55fe4f4eb9d92946fdff53f6117091b9271b49e6))
+
+- **expressions, embedder, wavtool**: Add Breathiness & Voicing params, mHuBERT backend
+  ([`55fe4f4`](https://github.com/NewComer00/expressive/commit/55fe4f4eb9d92946fdff53f6117091b9271b49e6))
+
+
 ## v0.9.1 (2026-04-24)
 
 ### Bug Fixes
