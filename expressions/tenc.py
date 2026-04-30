@@ -71,7 +71,7 @@ class TencLoader(ExpressionLoader):
         time_aligned_ref_rms[np.isnan(time_unified_utau_rms)] = np.nan
 
         # Generate expression curve
-        tenc_val = get_experssion_tension(time_aligned_ref_rms, smoothness, scaler, bias)
+        tenc_val = get_expression_tension(time_aligned_ref_rms, smoothness, scaler, bias)
 
         if spline_smoothing:
             # Final spline smoothing of the expression curve
@@ -107,7 +107,7 @@ def get_wav_features(wav_path, mask_silence=True):
     return wav_time, wav_rms, wav_features
 
 
-def get_experssion_tension(time_aligned_rms, smoothness=2, scaler=1.0, bias=0):
+def get_expression_tension(time_aligned_rms, smoothness=2, scaler=1.0, bias=0):
     base_scaler = 10.0
     smoothed_tenc = gaussian_filter1d_with_nan(
         base_scaler * zscore(time_aligned_rms, nan_policy='omit'),

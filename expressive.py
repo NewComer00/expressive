@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from shutil import copy, SameFileError
 from os.path import splitext, basename
 
+from utils.gpu import add_cuda_to_path
 from utils.i18n import init_gettext, _
 from utils.fs import APP_LOG_DIR
 from __version__ import VERSION
@@ -77,6 +78,9 @@ expressions = [
 ]
 ```
     """
+    # Ensure CUDA libraries are available before any ML frameworks are imported
+    add_cuda_to_path(skip_missing=True)
+    
     try:
         copy(ustx_input, ustx_output)
     except SameFileError:
@@ -107,27 +111,34 @@ def setup_loggers():
     log_dir.mkdir(exist_ok=True, parents=True)
     log_path = log_dir / f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter_file = logging.Formatter('%(asctime)s %(levelname)s [%(name)s]: %(message)s')
+    formatter_app  = logging.Formatter("%(asctime)s %(levelname)s [%(name)s]: %(message)s", datefmt="%H:%M:%S")
+    formatter_exp  = logging.Formatter("%(asctime)s %(levelname)s [%(expression)s]: %(message)s", datefmt="%H:%M:%S")
 
     # Set up file handler
     file_handler = logging.FileHandler(log_path, encoding="utf-8-sig")
     file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter_file)
 
     # Set up stdout handler
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.DEBUG)
+    app_handler = logging.StreamHandler()
+    app_handler.setLevel(logging.DEBUG)
+    app_handler.setFormatter(formatter_app)
+    exp_handler = logging.StreamHandler()
+    exp_handler.setLevel(logging.DEBUG)
+    exp_handler.setFormatter(formatter_exp)
 
     # Main application logger
     logger_app = logging.getLogger(splitext(basename(__file__))[0])
     logger_app.setLevel(logging.DEBUG)
     logger_app.addHandler(file_handler)
-    logger_app.addHandler(stream_handler)
+    logger_app.addHandler(app_handler)
 
     # Expression loader logger
     logger_exp = logging.getLogger(getExpressionLoader(None).__name__)
     logger_exp.setLevel(logging.DEBUG)
     logger_exp.addHandler(file_handler)
+    logger_exp.addHandler(exp_handler)
 
     try:
         yield logger_app, logger_exp, log_path
@@ -194,8 +205,7 @@ def main():
                 expressions,
             )
         except Exception as e:
-            logger_app.error(_("Error occurred during processing: {e}").format(e=e))
-            raise
+            logger_app.exception(_("Error occurred during processing: {e}").format(e=e))
         else:
             logger_app.info(_("Processing completed successfully!"))
 

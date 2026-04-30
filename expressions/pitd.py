@@ -19,7 +19,7 @@ from utils.seqtool import (
     seq_dynamics_trends,
 )
 from utils.log import StreamToLogger
-from utils.wavtool import extract_wav_mfcc, extract_wav_frequency, extract_wav_rms
+from utils.wavtool import extract_wav_embedding, extract_wav_mfcc, extract_wav_frequency, extract_wav_rms
 
 
 @register_expression
@@ -28,21 +28,41 @@ class PitdLoader(ExpressionLoader):
     expression_info = _l("Pitch Deviation (curve)")
     backend_choices = {
         "rmvpe-onnx": _l("finest accuracy, fast, CPU only (ONNX Runtime)"),
-        "swift-f0": _l("fair accuracy, fastest, CPU only (ONNX Runtime)"),
-        "crepe": _l("good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"),
-        "hybrid": _l("based on rmvpe-onnx, improved by swift-f0, CPU only (ONNX Runtime)"),
+        "swift-f0":   _l("fair accuracy, fastest, CPU only (ONNX Runtime)"),
+        "crepe":      _l("good accuracy, slow, CPU & NVIDIA GPU (TensorFlow)"),
+        "hybrid":     _l("based on rmvpe-onnx, improved by swift-f0, CPU only (ONNX Runtime)"),
     }
+    mhubert_embedder_choices = {
+        "fp32":     _l("(378 MB) maximum accuracy, full size"),
+        "fp16":     _l("(189 MB) high accuracy, medium size"),
+        "bnb4":     _l("(89.7 MB) fair accuracy, small size"),
+        "disabled": _l("disabled, skip this feature"),
+    }
+    mhubert_embedder_warning = _l("""
+mHuBERT model weights are licensed under CC-BY-NC-SA-4.0.
+Do NOT use the mHuBERT model weights for commercial purposes.
+This software does not grant you rights to the model weights.
+You are solely responsible for compliance with the model license:
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Original model author: utter-project
+
+Original model page:   https://huggingface.co/utter-project/mHuBERT-147
+
+ONNX conversion:       https://huggingface.co/NewComer00/mHuBERT-147-ONNX
+""")
     confidence_utau_recommended = {"rmvpe-onnx": 0.03, "swift-f0": 0.95, "crepe": 0.80, "hybrid": 0.03}
     confidence_ref_recommended  = {"rmvpe-onnx": 0.03, "swift-f0": 0.93, "crepe": 0.60, "hybrid": 0.03}
     args = SimpleNamespace(
-        backend          = Args(name="backend"         , type=str  , default="rmvpe-onnx", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
-        confidence_utau  = Args(name="confidence_utau" , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **UTAU** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_utau_recommended.items()]))),  # noqa: E501
-        confidence_ref   = Args(name="confidence_ref"  , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **reference** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_ref_recommended.items()]))),  # noqa: E501
-        align_radius     = Args(name="align_radius"    , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
-        semitone_shift   = Args(name="semitone_shift"  , type=int  , default=None, help=_l("**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is an octave higher than the reference WAV, set to 12; if lower, set to -12. Omit to enable automatic shift estimation")),  # noqa: E501
-        smoothness       = Args(name="smoothness"      , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
-        scaler           = Args(name="scaler"          , type=float, default=1.0 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
-        spline_smoothing = Args(name="spline_smoothing", type=bool , default=True, help=_l("Perform **spline smoothing** on the final expression curve for extra smoothness")),  # noqa: E501
+        backend          = Args(name="backend"          , type=str  , default="rmvpe-onnx", choices=list(backend_choices.keys()), help=_lf("**F0 detection backend** for extracting pitch from WAV files. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.backend_choices.items()]))),  # noqa: E501
+        confidence_utau  = Args(name="confidence_utau"  , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **UTAU** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_utau_recommended.items()]))),  # noqa: E501
+        confidence_ref   = Args(name="confidence_ref"   , type=float, default=None, help=_lf("Minimum **confidence level** for keeping detected pitch values in the **reference** WAV. Lower values retain more frames but may include errors. Omit to use the recommended value for the selected backend:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.confidence_ref_recommended.items()]))),  # noqa: E501
+        align_radius     = Args(name="align_radius"     , type=int  , default=1   , help=_l("**Radius** for the FastDTW alignment algorithm; larger values allow more flexible alignment but increase computation time")),  # noqa: E501
+        semitone_shift   = Args(name="semitone_shift"   , type=int  , default=None, help=_l("**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is an octave higher than the reference WAV, set to 12; if lower, set to -12. Omit to enable automatic shift estimation")),  # noqa: E501
+        smoothness       = Args(name="smoothness"       , type=int  , default=2   , help=_l("Controls the **smoothness** of the expression curve using Gaussian filtering. Higher values produce smoother curves but may lose fine detail")),  # noqa: E501
+        scaler           = Args(name="scaler"           , type=float, default=1.0 , help=_l("**Scaling factor** applied to the expression curve. Values >1 amplify the expression, =1 keeps original intensity, <1 reduces it")),  # noqa: E501
+        spline_smoothing = Args(name="spline_smoothing" , type=bool , default=True, help=_l("Perform **spline smoothing** on the final expression curve for extra smoothness")),  # noqa: E501
+        mhubert_embedder = Args(name="mhubert_embedder" , type=str  , default="disabled", choices=list(mhubert_embedder_choices.keys()), help=_lf("**mHuBERT embedder variant** for feature extraction. If not `disabled`, mHuBERT embedder will be downloaded automatically and used for advanced feature extraction. Use this when the difference between UTAU and reference audio so significant that conventional features are not enough. mHuBERT embedder runs well both on CPU and NVIDIA GPU. Available options:\n\n%s\n\n", lambda: "\n".join([f"- `{k}`: {v}" for k, v in PitdLoader.mhubert_embedder_choices.items()]))),  # noqa: E501
     )
     plots = SimpleNamespace(
         expression    = Plot(tag=expression_info    , title=expression_info                   , x_label=_l("Tick")    , y_label=expression_name , legends=[expression_name]            ),  # noqa: E501
@@ -61,8 +81,13 @@ class PitdLoader(ExpressionLoader):
         smoothness       = args.smoothness      .default,
         scaler           = args.scaler          .default,
         spline_smoothing = args.spline_smoothing.default,
+        mhubert_embedder = args.mhubert_embedder.default,
     ):
         self.logger.info(_("Extracting expression..."))
+
+        # Show license warning for mhubert_embedder
+        if mhubert_embedder != "disabled":
+            self.logger.warning(self.__class__.mhubert_embedder_warning)
 
         # Resolve per-backend confidence defaults
         if confidence_utau is None:
@@ -71,12 +96,14 @@ class PitdLoader(ExpressionLoader):
             confidence_ref = self.__class__.confidence_ref_recommended[backend]
 
         # Extract pitch features from WAV files
-        with StreamToLogger(self.logger, tee=True):
+        with StreamToLogger(self.logger, tee=False):
             utau_time, utau_pitch, utau_confidence, utau_features = get_wav_features(
-                wav_path=self.utau_path, confidence_threshold=confidence_utau, backend=backend
+                wav_path=self.utau_path, confidence_threshold=confidence_utau,
+                backend=backend, mhubert_embedder=mhubert_embedder,
             )
             ref_time, ref_pitch, ref_confidence, ref_features = get_wav_features(
-                wav_path=self.ref_path, confidence_threshold=confidence_ref, backend=backend
+                wav_path=self.ref_path, confidence_threshold=confidence_ref,
+                backend=backend, mhubert_embedder=mhubert_embedder,
             )
 
         # Align all sequences to a common MIDI tick time base.
@@ -92,7 +119,7 @@ class PitdLoader(ExpressionLoader):
         )
 
         # Align pitch sequences along the pitch axis
-        with StreamToLogger(self.logger, tee=True):
+        with StreamToLogger(self.logger, tee=False):
             time_pitch_aligned_ref_pitch, _unused = align_sequence_pitch(
                 time_aligned_ref_pitch,
                 unified_utau_pitch,
@@ -124,7 +151,13 @@ class PitdLoader(ExpressionLoader):
         return self.expression_tick, self.expression_val
 
 
-def get_wav_features(wav_path, backend="rmvpe-onnx", confidence_threshold=0.8, confidence_filter_size=9):
+def get_wav_features(
+    wav_path,
+    backend="rmvpe-onnx",
+    confidence_threshold=0.8,
+    confidence_filter_size=9,
+    mhubert_embedder="disabled",
+):
     """Extract features from a WAV file.
 
     Args:
@@ -132,6 +165,7 @@ def get_wav_features(wav_path, backend="rmvpe-onnx", confidence_threshold=0.8, c
         backend (str, optional): F0 detection backend ("crepe" or "swift-f0" or "rmvpe-onnx"). Defaults to "rmvpe-onnx".
         confidence_threshold (float, optional): Confidence threshold for pitch detection. Defaults to 0.8.
         confidence_filter_size (int, optional): Size of the median filter for confidence. Defaults to 9.
+        mhubert_embedder (str, optional): Model type of mHuBERT embedder. Default to "disabled".
 
     Returns:
         tuple: (wav_time, wav_pitch, wav_confidence, wav_features)
@@ -170,6 +204,11 @@ def get_wav_features(wav_path, backend="rmvpe-onnx", confidence_threshold=0.8, c
     feature_times += [rms_time] * len(rms_dynamics_trends)
     feature_vals  += list(rms_dynamics_trends)
 
+    if mhubert_embedder != "disabled":
+        embedding_time, embedding = extract_mhubert_embedding(wav_path, variant=mhubert_embedder)
+        feature_times += [embedding_time] * len(embedding)
+        feature_vals  += list(embedding)
+
     wav_time, (wav_pitch, wav_confidence, *wav_features) = unify_sequence_time(
         seq_times=feature_times, seq_vals=feature_vals
     )
@@ -193,7 +232,7 @@ def align_sequence_pitch(query, reference, semitone_shift=None):
         base_pitch_vocal = np.nanmedian(reference)
         semitone_shift   = int(
             np.round(hz_to_midi(base_pitch_vocal))
-            - np.round(hz_to_midi(base_pitch_wav)).astype(int)
+            - np.round(hz_to_midi(base_pitch_wav))
         )
         print(_("Estimated Semitone-shift: {}").format(semitone_shift))
 
@@ -224,3 +263,9 @@ def get_pitch_delta(query, reference, smoothness=2, scaler=1.0):
 
     delta = gaussian_filter1d_with_nan(delta, sigma=smoothness)
     return scaler * delta
+
+
+def extract_mhubert_embedding(wav_path, variant="bnb4"):
+    embedding_time, embedding = extract_wav_embedding(
+        wav_path, embedder="mhubert", device="cuda", variant=variant)
+    return embedding_time, embedding

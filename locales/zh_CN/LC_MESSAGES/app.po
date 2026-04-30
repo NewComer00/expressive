@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  expressive\n"
 "Report-Msgid-Bugs-To: https://github.com/NewComer00/expressive/issues\n"
-"POT-Creation-Date: 2026-04-15 21:12+0800\n"
+"POT-Creation-Date: 2026-04-30 20:29+0800\n"
 "PO-Revision-Date: 2026-03-01 20:21+0800\n"
 "Last-Translator: NewComer00\n"
 "Language: zh_CN\n"
@@ -18,40 +18,40 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: expressive.py:86
+#: expressive.py:93
 #, python-brace-format
 msgid "Expression '{exp_type}' is not supported."
 msgstr "不支持的表情类型：'{exp_type}'。"
 
-#: expressive.py:132
+#: expressive.py:146
 #, python-brace-format
 msgid "Logs saved to '{log_path}'"
 msgstr "日志已保存到 '{log_path}'"
 
-#: expressive.py:143
+#: expressive.py:157
 msgid "Migrate expressions from real singers to DiffSingers (CLI)"
 msgstr "将表情参数从真实歌手迁移到 DiffSinger 歌手，适用于命令行界面（CLI）"
 
-#: expressive.py:152 expressive_gui.py:511
+#: expressive.py:166 expressive_gui.py:511
 msgid "Path to save the processed `.ustx` file"
 msgstr "用于保存处理后 USTX 文件的路径"
 
-#: expressive.py:160
+#: expressive.py:174
 msgid ""
 "**Expression(s)** to apply. Repeat the flag for multiple expressions "
 "(e.g., `-e dyn -e pitd`)"
 msgstr "要应用的表情参数。重复该标志以应用多个表情（例如，`-e dyn -e pitd`）"
 
-#: expressive.py:184
+#: expressive.py:198
 msgid "Starting Expressive CLI..."
 msgstr "正在启动 Expressive CLI..."
 
-#: expressive.py:194
+#: expressive.py:208
 #, python-brace-format
 msgid "Error occurred during processing: {e}"
 msgstr "处理时发生错误：{e}"
 
-#: expressive.py:197 expressive_gui.py:235 expressive_gui.py:236
+#: expressive.py:210 expressive_gui.py:235 expressive_gui.py:236
 msgid "Processing completed successfully!"
 msgstr "处理完成！"
 
@@ -149,63 +149,75 @@ msgstr "轨道编号"
 msgid "Expression Selection"
 msgstr "表情参数"
 
-#: expressive_gui.py:549 expressive_gui.py:647
-msgid "Trim Silence"
-msgstr "剪除静音"
-
-#: expressive_gui.py:552 expressive_gui.py:581 expressive_gui.py:650
+#: expressive_gui.py:549 expressive_gui.py:586 expressive_gui.py:629
+#: expressive_gui.py:698 expressive_gui.py:732
 msgid "Spline Smoothing"
 msgstr "样条曲线平滑"
 
-#: expressive_gui.py:557 expressive_gui.py:617 expressive_gui.py:655
+#: expressive_gui.py:554 expressive_gui.py:591 expressive_gui.py:665
+#: expressive_gui.py:703 expressive_gui.py:737
 msgid "Align Radius"
 msgstr "对齐半径"
 
-#: expressive_gui.py:562 expressive_gui.py:628 expressive_gui.py:660
+#: expressive_gui.py:559 expressive_gui.py:596 expressive_gui.py:676
+#: expressive_gui.py:708 expressive_gui.py:742
 msgid "Smoothness"
 msgstr "平滑度"
 
-#: expressive_gui.py:567 expressive_gui.py:633 expressive_gui.py:665
+#: expressive_gui.py:564 expressive_gui.py:601 expressive_gui.py:681
+#: expressive_gui.py:713
 msgid "Scaler"
 msgstr "缩放因子"
 
-#: expressive_gui.py:601
-msgid "UTAU Confidence"
-msgstr "歌姬音频置信度"
-
-#: expressive_gui.py:607
-msgid "Reference Confidence"
-msgstr "参考音频置信度"
-
-#: expressive_gui.py:613
-msgid "Backend"
-msgstr "后端"
-
-#: expressive_gui.py:622
-msgid "Semitone Shift"
-msgstr "半音偏移"
-
-#: expressive_gui.py:623
-msgid "Auto Estimation"
-msgstr "自动估算"
-
-#: expressive_gui.py:670
+#: expressive_gui.py:569 expressive_gui.py:718 expressive_gui.py:752
 msgid "Bias"
 msgstr "偏置"
 
-#: expressive_gui.py:678
+#: expressive_gui.py:583 expressive_gui.py:695
+msgid "Trim Silence"
+msgstr "剪除静音"
+
+#: expressive_gui.py:617
+msgid "mHuBERT Embedder"
+msgstr "mHuBERT 特征提取器"
+
+#: expressive_gui.py:649
+msgid "UTAU Confidence"
+msgstr "歌姬音频置信度"
+
+#: expressive_gui.py:655
+msgid "Reference Confidence"
+msgstr "参考音频置信度"
+
+#: expressive_gui.py:661
+msgid "Backend"
+msgstr "后端"
+
+#: expressive_gui.py:670
+msgid "Semitone Shift"
+msgstr "半音偏移"
+
+#: expressive_gui.py:671
+msgid "Auto Estimation"
+msgstr "自动估算"
+
+#: expressive_gui.py:747
+msgid "Dynamic Range"
+msgstr "动态范围"
+
+#: expressive_gui.py:760
 msgid "Import Config"
 msgstr "导入配置"
 
-#: expressive_gui.py:684
+#: expressive_gui.py:766
 msgid "Export Config"
 msgstr "导出配置"
 
-#: expressive_gui.py:695
+#: expressive_gui.py:777
 msgid "Process"
 msgstr "开始处理"
 
-#: expressive_gui.py:737
+#: expressive_gui.py:802
 msgid "Migrate expressions from real singers to DiffSingers (GUI)"
 msgstr "将表情参数从真实歌手迁移到 DiffSinger 歌手，适用于图形用户界面（GUI）"
 
@@ -284,6 +296,100 @@ msgstr "表情参数已写入 USTX 文件：'{}'"
 msgid "Expression result is empty. Skipping USTX update."
 msgstr "表情参数结果为空，USTX 文件将不会更新。"
 
+#: expressions/brec.py:31
+msgid "Breathiness (curve)"
+msgstr "气息强度曲线 Breathiness (curve)"
+
+#: expressions/brec.py:33 expressions/dyn.py:29 expressions/pitd.py:60
+#: expressions/tenc.py:29 expressions/voic.py:33
+msgid ""
+"**Radius** for the FastDTW alignment algorithm; larger values allow more "
+"flexible alignment but increase computation time"
+msgstr "FastDTW 对齐算法的**半径**；值越大对齐越灵活，但计算时间也越长"
+
+#: expressions/brec.py:34 expressions/dyn.py:30 expressions/pitd.py:62
+#: expressions/tenc.py:30 expressions/voic.py:34
+msgid ""
+"Controls the **smoothness** of the expression curve using Gaussian "
+"filtering. Higher values produce smoother curves but may lose fine detail"
+msgstr "通过高斯滤波控制表情曲线的**平滑度**；值越大曲线越平滑，但可能丢失细节"
+
+#: expressions/brec.py:35 expressions/dyn.py:31 expressions/pitd.py:63
+#: expressions/tenc.py:31
+msgid ""
+"**Scaling factor** applied to the expression curve. Values >1 amplify the"
+" expression, =1 keeps original intensity, <1 reduces it"
+msgstr "应用于表情曲线的**缩放因子**；大于 1 则放大，等于 1 则保持原强度，小于 1 则缩小"
+
+#: expressions/brec.py:36 expressions/tenc.py:32 expressions/voic.py:36
+msgid ""
+"**Bias** offset added to the expression curve. Positive values shift the "
+"curve upward; negative values shift it downward"
+msgstr "添加到表情曲线的**偏置**偏移量；正值使曲线上移，负值使曲线下移"
+
+#: expressions/brec.py:37 expressions/dyn.py:32 expressions/pitd.py:64
+#: expressions/tenc.py:33 expressions/voic.py:37
+msgid ""
+"Perform **spline smoothing** on the final expression curve for extra "
+"smoothness"
+msgstr "对提取出的表情曲线进行**样条曲线平滑**，以获得更自然的效果"
+
+#: expressions/brec.py:40 expressions/brec.py:42 expressions/dyn.py:35
+#: expressions/dyn.py:37 expressions/pitd.py:68 expressions/pitd.py:71
+#: expressions/tenc.py:36 expressions/tenc.py:38 expressions/voic.py:40
+#: expressions/voic.py:42
+msgid "Tick"
+msgstr "时间刻度（Tick）"
+
+#: expressions/brec.py:41
+msgid "raw_breath_index"
+msgstr "原音频的 Breath Index"
+
+#: expressions/brec.py:41
+msgid "Raw Breath Index"
+msgstr "原音频的气息指数（Breath Index）特征"
+
+#: expressions/brec.py:41 expressions/dyn.py:36 expressions/pitd.py:69
+#: expressions/pitd.py:70 expressions/tenc.py:37 expressions/voic.py:41
+msgid "Time (s)"
+msgstr "时间（秒）"
+
+#: expressions/brec.py:41 expressions/brec.py:42
+msgid "Breath Index"
+msgstr "气息指数"
+
+#: expressions/brec.py:41 expressions/brec.py:42 expressions/dyn.py:36
+#: expressions/dyn.py:37 expressions/pitd.py:69 expressions/pitd.py:70
+#: expressions/pitd.py:71 expressions/tenc.py:37 expressions/tenc.py:38
+#: expressions/voic.py:41 expressions/voic.py:42
+msgid "Reference"
+msgstr "参考音频"
+
+#: expressions/brec.py:41 expressions/brec.py:42 expressions/dyn.py:36
+#: expressions/dyn.py:37 expressions/pitd.py:69 expressions/pitd.py:70
+#: expressions/pitd.py:71 expressions/tenc.py:37 expressions/tenc.py:38
+#: expressions/voic.py:41 expressions/voic.py:42
+msgid "UTAU"
+msgstr "歌姬音频"
+
+#: expressions/brec.py:42
+msgid "aligned_breath_index"
+msgstr "对齐后的 Breath Index"
+
+#: expressions/brec.py:42
+msgid "Aligned Breath Index"
+msgstr "对齐后的气息指数（Breath Index）特征"
+
+#: expressions/brec.py:53 expressions/dyn.py:48 expressions/pitd.py:86
+#: expressions/tenc.py:50 expressions/voic.py:53
+msgid "Extracting expression..."
+msgstr "正在提取表情参数..."
+
+#: expressions/brec.py:83 expressions/dyn.py:86 expressions/pitd.py:150
+#: expressions/tenc.py:88 expressions/voic.py:83
+msgid "Expression extraction complete."
+msgstr "表情参数提取完成。"
+
 #: expressions/dyn.py:26
 msgid "Dynamics (curve)"
 msgstr "动态曲线 Dynamics (curve)"
@@ -302,35 +408,6 @@ msgstr ""
 "**注意**：该操作可能会轻微截断有声段的起始和结束部分；若影响较为明显，建议关闭此功能\n"
 "\n"
 
-#: expressions/dyn.py:29 expressions/pitd.py:41 expressions/tenc.py:29
-msgid ""
-"**Radius** for the FastDTW alignment algorithm; larger values allow more "
-"flexible alignment but increase computation time"
-msgstr "FastDTW 对齐算法的**半径**；值越大对齐越灵活，但计算时间也越长"
-
-#: expressions/dyn.py:30 expressions/pitd.py:43 expressions/tenc.py:30
-msgid ""
-"Controls the **smoothness** of the expression curve using Gaussian "
-"filtering. Higher values produce smoother curves but may lose fine detail"
-msgstr "通过高斯滤波控制表情曲线的**平滑度**；值越大曲线越平滑，但可能丢失细节"
-
-#: expressions/dyn.py:31 expressions/pitd.py:44 expressions/tenc.py:31
-msgid ""
-"**Scaling factor** applied to the expression curve. Values >1 amplify the"
-" expression, =1 keeps original intensity, <1 reduces it"
-msgstr "应用于表情曲线的**缩放因子**；大于 1 则放大，等于 1 则保持原强度，小于 1 则缩小"
-
-#: expressions/dyn.py:32 expressions/pitd.py:45 expressions/tenc.py:33
-msgid ""
-"Perform **spline smoothing** on the final expression curve for extra "
-"smoothness"
-msgstr "对提取出的表情曲线进行**样条曲线平滑**，以获得更自然的效果"
-
-#: expressions/dyn.py:35 expressions/dyn.py:37 expressions/pitd.py:48
-#: expressions/pitd.py:51 expressions/tenc.py:36 expressions/tenc.py:38
-msgid "Tick"
-msgstr "时间刻度（Tick）"
-
 #: expressions/dyn.py:36 expressions/tenc.py:37
 msgid "raw_rms"
 msgstr "原音频的 RMS"
@@ -339,27 +416,10 @@ msgstr "原音频的 RMS"
 msgid "Raw RMS"
 msgstr "原音频的均方根能量（RMS）特征"
 
-#: expressions/dyn.py:36 expressions/pitd.py:49 expressions/pitd.py:50
-#: expressions/tenc.py:37
-msgid "Time (s)"
-msgstr "时间（秒）"
-
 #: expressions/dyn.py:36 expressions/dyn.py:37 expressions/tenc.py:37
 #: expressions/tenc.py:38
 msgid "RMS"
 msgstr "RMS"
-
-#: expressions/dyn.py:36 expressions/dyn.py:37 expressions/pitd.py:49
-#: expressions/pitd.py:50 expressions/pitd.py:51 expressions/tenc.py:37
-#: expressions/tenc.py:38
-msgid "Reference"
-msgstr "参考音频"
-
-#: expressions/dyn.py:36 expressions/dyn.py:37 expressions/pitd.py:49
-#: expressions/pitd.py:50 expressions/pitd.py:51 expressions/tenc.py:37
-#: expressions/tenc.py:38
-msgid "UTAU"
-msgstr "歌姬音频"
 
 #: expressions/dyn.py:37 expressions/tenc.py:38
 msgid "aligned_rms"
@@ -368,14 +428,6 @@ msgstr "对齐后的 RMS"
 #: expressions/dyn.py:37 expressions/tenc.py:38
 msgid "Aligned RMS"
 msgstr "对齐后的均方根能量（RMS）特征"
-
-#: expressions/dyn.py:48 expressions/pitd.py:65 expressions/tenc.py:50
-msgid "Extracting expression..."
-msgstr "正在提取表情参数..."
-
-#: expressions/dyn.py:86 expressions/pitd.py:124 expressions/tenc.py:88
-msgid "Expression extraction complete."
-msgstr "表情参数提取完成。"
 
 #: expressions/pitd.py:28
 msgid "Pitch Deviation (curve)"
@@ -397,7 +449,52 @@ msgstr "精度较好，较慢，支持 CPU 和 NVIDIA GPU，基于 TensorFlow"
 msgid "based on rmvpe-onnx, improved by swift-f0, CPU only (ONNX Runtime)"
 msgstr "以 rmvpe-onnx 为基准，综合了 swift-f0 的结果，仅支持 CPU，基于 ONNX Runtime"
 
+#: expressions/pitd.py:36
+msgid "(378 MB) maximum accuracy, full size"
+msgstr "(378 MB) 精度最高，完整模型"
+
+#: expressions/pitd.py:37
+msgid "(189 MB) high accuracy, medium size"
+msgstr "(189 MB) 精度较高，中等大小"
+
 #: expressions/pitd.py:38
+msgid "(89.7 MB) fair accuracy, small size"
+msgstr "(89.7 MB) 精度一般，轻量模型"
+
+#: expressions/pitd.py:39
+msgid "disabled, skip this feature"
+msgstr "不启用此功能"
+
+#: expressions/pitd.py:41
+msgid ""
+"\n"
+"mHuBERT model weights are licensed under CC-BY-NC-SA-4.0.\n"
+"Do NOT use the mHuBERT model weights for commercial purposes.\n"
+"This software does not grant you rights to the model weights.\n"
+"You are solely responsible for compliance with the model license:\n"
+"https://creativecommons.org/licenses/by-nc-sa/4.0/\n"
+"\n"
+"Original model author: utter-project\n"
+"\n"
+"Original model page:   https://huggingface.co/utter-project/mHuBERT-147\n"
+"\n"
+"ONNX conversion:       https://huggingface.co/NewComer00/mHuBERT-147-ONNX"
+"\n"
+msgstr ""
+"\n"
+"mHuBERT 模型权重依据 CC-BY-NC-SA-4.0 协议授权。\n"
+"请勿将 mHuBERT 模型权重用于任何商业用途。\n"
+"本软件不授予您对模型权重的任何权利。\n"
+"您须自行负责遵守模型许可协议：\n"
+"https://creativecommons.org/licenses/by-nc-sa/4.0/\n"
+"\n"
+"原始模型作者：utter-project\n"
+"\n"
+"原始模型页面：https://huggingface.co/utter-project/mHuBERT-147\n"
+"\n"
+"ONNX 转换版本：https://huggingface.co/NewComer00/mHuBERT-147-ONNX\n"
+
+#: expressions/pitd.py:57
 #, python-format
 msgid ""
 "**F0 detection backend** for extracting pitch from WAV files. Available "
@@ -411,7 +508,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:39
+#: expressions/pitd.py:58
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
@@ -426,7 +523,7 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:40
+#: expressions/pitd.py:59
 #, python-format
 msgid ""
 "Minimum **confidence level** for keeping detected pitch values in the "
@@ -441,46 +538,66 @@ msgstr ""
 "%s\n"
 "\n"
 
-#: expressions/pitd.py:42
+#: expressions/pitd.py:61
 msgid ""
 "**Semitone shift** between the UTAU and reference WAV. If the UTAU WAV is"
 " an octave higher than the reference WAV, set to 12; if lower, set to "
 "-12. Omit to enable automatic shift estimation"
 msgstr "歌姬音频与参考音频之间的**半音偏移**；若歌姬比参考高一个八度则设为 12，低一个八度则设为 -12；忽略该参数则启用自动估算"
 
-#: expressions/pitd.py:49
+#: expressions/pitd.py:65
+#, python-format
+msgid ""
+"**mHuBERT embedder variant** for feature extraction. If not `disabled`, "
+"mHuBERT embedder will be downloaded automatically and used for advanced "
+"feature extraction. Use this when the difference between UTAU and "
+"reference audio so significant that conventional features are not enough."
+" mHuBERT embedder runs well both on CPU and NVIDIA GPU. Available "
+"options:\n"
+"\n"
+"%s\n"
+"\n"
+msgstr ""
+"**mHuBERT 特征提取模型的种类**；默认值为 `disabled`，即不启用该功能。如果不为 `disabled`，则会自动下载 "
+"mHuBERT 特征提取器并用于提取高级特征。当歌姬音频与参考音频差异较大，以至于常规特征不足以准确对齐时，建议启用此功能。mHuBERT "
+"特征提取器 在 CPU 和 NVIDIA GPU 上均能良好运行。可选项如下：\n"
+"\n"
+"%s\n"
+"\n"
+
+#: expressions/pitd.py:69
 msgid "confidence"
 msgstr "置信度"
 
-#: expressions/pitd.py:49
+#: expressions/pitd.py:69
 msgid "Pitch Extraction Confidence"
 msgstr "音高提取置信度"
 
-#: expressions/pitd.py:49
+#: expressions/pitd.py:69
 msgid "Confidence"
 msgstr "置信度"
 
-#: expressions/pitd.py:50
+#: expressions/pitd.py:70
 msgid "raw_pitch"
 msgstr "原音频的 Pitch"
 
-#: expressions/pitd.py:50
+#: expressions/pitd.py:70
 msgid "Raw Pitch"
 msgstr "原音频的音高（Pitch）特征"
 
-#: expressions/pitd.py:50 expressions/pitd.py:51
+#: expressions/pitd.py:70 expressions/pitd.py:71
 msgid "Pitch (Hz)"
 msgstr "音高（Hz）"
 
-#: expressions/pitd.py:51
+#: expressions/pitd.py:71
 msgid "aligned_pitch"
 msgstr "对齐后的 Pitch"
 
-#: expressions/pitd.py:51
+#: expressions/pitd.py:71
 msgid "Aligned Pitch"
 msgstr "对齐后的音高（Pitch）特征"
 
-#: expressions/pitd.py:199
+#: expressions/pitd.py:237
 #, python-brace-format
 msgid "Estimated Semitone-shift: {}"
 msgstr "估计的半音偏移：{}"
@@ -489,44 +606,102 @@ msgstr "估计的半音偏移：{}"
 msgid "Tension (curve)"
 msgstr "张力曲线 Tension (curve)"
 
-#: expressions/tenc.py:32
-msgid ""
-"**Bias** offset added to the expression curve. Positive values shift the "
-"curve upward; negative values shift it downward"
-msgstr "添加到表情曲线的**偏置**偏移量；正值使曲线上移，负值使曲线下移"
+#: expressions/voic.py:31
+msgid "Voicing (curve)"
+msgstr "人声强度曲线 Voicing (curve)"
 
-#: utils/ui.py:350
+#: expressions/voic.py:35
+msgid ""
+"**Dynamic range** of the expression curve. Values >1 amplify the "
+"variation, =1 keeps original range, <1 compresses it"
+msgstr "表情曲线的**动态范围**；值大于 1 则放大变化，等于 1 则保持原动态范围，小于 1 则压缩动态范围"
+
+#: expressions/voic.py:41
+msgid "raw_voice_index"
+msgstr "原音频的 Voice Index"
+
+#: expressions/voic.py:41
+msgid "Raw Voice Index"
+msgstr "原音频的人声指数（Voice Index）特征"
+
+#: expressions/voic.py:41 expressions/voic.py:42
+msgid "Voice Index"
+msgstr "人声指数（Voice Index）"
+
+#: expressions/voic.py:42
+msgid "aligned_voice_index"
+msgstr "对齐后的 Voice Index"
+
+#: expressions/voic.py:42
+msgid "Aligned Voice Index"
+msgstr "对齐后的人声指数（Voice Index）特征"
+
+#: utils/embedder.py:244
+#, python-brace-format
+msgid "Loaded {name} model from '{path}'."
+msgstr "{name} 模型已加载，模型路径：'{path}'。"
+
+#: utils/embedder.py:246
+msgid "ONNX Runtime is using CUDA for inference acceleration."
+msgstr "ONNX Runtime 已启用 CUDA 进行推理加速。"
+
+#: utils/embedder.py:284
+#, python-brace-format
+msgid "Fetching {name} ({variant}) from Internet or local cache..."
+msgstr "正在从互联网或本地缓存获取 {name} 模型（{variant}）..."
+
+#: utils/ui.py:349
 msgid "Failed to load audio"
 msgstr "音频加载失败"
 
-#: utils/ui.py:377
+#: utils/ui.py:376
 msgid "Play/Pause"
 msgstr "播放/暂停"
 
-#: utils/ui.py:378
+#: utils/ui.py:377
 msgid "Loop region"
 msgstr "选区循环播放"
 
-#: utils/ui.py:379
+#: utils/ui.py:378
 msgid "Zoom"
 msgstr "缩放"
 
-#: utils/wavtool.py:88
+#: utils/wavtool.py:67
+#, python-brace-format
+msgid "Loading embedding data from cache file: '{}'"
+msgstr "正在从缓存文件加载特征数据：'{}'"
+
+#: utils/wavtool.py:83
+#, python-brace-format
+msgid "Embedding data saved to cache file: '{}'"
+msgstr "特征数据已保存到缓存文件：'{}'"
+
+#: utils/wavtool.py:117
+#, python-brace-format
+msgid "Loading breath/voice data from cache file: '{}'"
+msgstr "正在从缓存文件加载气息/人声数据：'{}'"
+
+#: utils/wavtool.py:140
+#, python-brace-format
+msgid "Breath/voice data saved to cache file: '{}'"
+msgstr "气息/人声数据已保存到缓存文件：'{}'"
+
+#: utils/wavtool.py:217
 #, python-brace-format
 msgid "Loading F0 data from cache file: '{}'"
 msgstr "正在从缓存文件加载 F0 数据：'{}'"
 
-#: utils/wavtool.py:133
+#: utils/wavtool.py:259
 #, python-brace-format
 msgid "F0 data saved to cache file: '{}'"
 msgstr "F0 数据已保存到缓存文件：'{}'"
 
-#: utils/wavtool.py:380
+#: utils/wavtool.py:506
 #, python-brace-format
 msgid "start {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "开始时间 {:.3f}秒 被截取到 {:.3f}秒（完整时长：{:.3f}秒） "
 
-#: utils/wavtool.py:386
+#: utils/wavtool.py:512
 #, python-brace-format
 msgid "end {:.3f}s clamped to {:.3f}s (total duration: {:.3f}s)"
 msgstr "结束时间 {:.3f}秒 被截取到 {:.3f}秒（完整时长：{:.3f}秒） "

@@ -1,0 +1,59 @@
+﻿{
+    "utau_wav": "examples/Lullaby for a Soldier/utau.wav",
+    "ref_wav": "examples/Lullaby for a Soldier/reference.wav",
+    "ustx_input": "examples/Lullaby for a Soldier/project.ustx",
+    "ustx_output": "examples/Lullaby for a Soldier/output.ustx",
+    "track_number": 1,
+    "ref_start": "0:00.50",
+    "ref_end": "0:38.84",
+    "utau_start": "0:00.42",
+    "utau_end": "0:38.39",
+    "expressions": {
+        "brec": {
+            "selected": true,
+            "align_radius": 1,
+            "smoothness": 4,
+            "scaler": 2.5,
+            "bias": 20,
+            "spline_smoothing": true
+        },
+        "dyn": {
+            "selected": true,
+            "trim_silence": true,
+            "align_radius": 1,
+            "smoothness": 2,
+            "scaler": 0.5,
+            "spline_smoothing": true
+        },
+        "pitd": {
+            "selected": true,
+            "backend": "hybrid",
+            "confidence_utau": null,
+            "confidence_ref": null,
+            "align_radius": 1,
+            "semitone_shift": 0,
+            "smoothness": 2,
+            "scaler": 1.0,
+            "spline_smoothing": true,
+            "mhubert_embedder": "bnb4"
+        },
+        "tenc": {
+            "selected": true,
+            "trim_silence": true,
+            "align_radius": 1,
+            "smoothness": 6,
+            "scaler": 1.0,
+            "bias": -30,
+            "spline_smoothing": true
+        },
+        "voic": {
+            "selected": false,
+            "align_radius": 1,
+            "smoothness": 4,
+            "dynamic_range": 1.5,
+            "bias": -30,
+            "spline_smoothing": true,
+            "scaler": 1.0
+        }
+    }
+}
